@@ -14,7 +14,7 @@ import {
   type MouseEventParams,
   type Time,
 } from "lightweight-charts";
-import { ChevronLeft, ChevronRight, RotateCcw, Trash2, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Maximize2, Minimize2, RotateCcw, Trash2, X } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 
 export type ChartDataElement = CandlestickData<Time> & { value?: number };
@@ -96,6 +96,7 @@ export function LightweightChart({
   const [canScrollTp, setCanScrollTp] = useState(false);
   const [tpAtStart, setTpAtStart] = useState(true);
   const [tpAtEnd, setTpAtEnd] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const { theme } = useTheme();
 
   const isDark = theme !== "light";
@@ -416,9 +417,11 @@ export function LightweightChart({
   };
 
   return (
-    <div className="w-full h-full relative">
+    <div className={`w-full h-full relative ${isFullscreen ? "fixed inset-0 z-[9999] bg-[#05070F]" : ""}`}>
       <div
         className={`w-full h-full relative overflow-hidden rounded-xl ${
+          isFullscreen ? "rounded-none" : ""
+        } ${
           selectionMode ? "cursor-cell" : "cursor-crosshair"
         }`}
       >
@@ -589,6 +592,19 @@ export function LightweightChart({
             title="بازنشانی دید"
           >
             <RotateCcw className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            type="button"
+            className="h-7 md:h-8 w-7 md:w-8 inline-flex items-center justify-center rounded-lg border border-white/10 bg-[#02000B]/70 hover:bg-[#542C85]/30 text-white/80 transition-colors cursor-pointer"
+            aria-label={isFullscreen ? "خروج از تمام‌صفحه" : "تمام‌صفحه"}
+            title={isFullscreen ? "خروج از تمام‌صفحه" : "تمام‌صفحه"}
+          >
+            {isFullscreen ? (
+              <Minimize2 className="w-3.5 h-3.5" />
+            ) : (
+              <Maximize2 className="w-3.5 h-3.5" />
+            )}
           </button>
         </div>
       </div>
