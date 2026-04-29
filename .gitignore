@@ -61,9 +61,5 @@ Desktop.ini
 *.rar
 *.7z
 
-# Generated API
-/lib/api/
-/lib/landing-api/
-
 # Local Workspace
 .codex/
