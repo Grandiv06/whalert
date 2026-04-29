@@ -591,7 +591,7 @@ export function LightweightChart({
         </div>
       </div>
 
-      <div className="absolute left-2 bottom-8 z-20 bg-[#02000B]/96 border border-white/10 backdrop-blur-xl rounded-lg p-2.5 pointer-events-none shadow-[0_8px_24px_-12px_rgba(0,0,0,0.92)]">
+      <div className="hidden md:block absolute left-2 bottom-8 z-20 bg-[#02000B]/96 border border-white/10 backdrop-blur-xl rounded-lg p-2.5 pointer-events-none shadow-[0_8px_24px_-12px_rgba(0,0,0,0.92)]">
         <div className="flex items-center gap-2 text-[11px] mb-1.5 text-white/70" dir="ltr">
           <span>{formatCandleTime(activeCandle?.time)}</span>
           {latestCandle && (
