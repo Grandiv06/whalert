@@ -252,12 +252,14 @@ export function LightweightChart({
     const container = chartContainerRef.current;
     resizeObserver.observe(container);
 
+    const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
     const chart = createChart(container, {
       width: container.clientWidth,
       height: container.clientHeight || 400,
       layout: {
         background: { type: ColorType.Solid, color: "transparent" },
         textColor: isDark ? "#A39CB1" : "#111111",
+        fontSize: isMobile ? 10 : 12,
       },
       grid: {
         vertLines: { color: isDark ? "rgba(255, 255, 255, 0.03)" : "rgba(0, 0, 0, 0.04)" },
@@ -429,7 +431,7 @@ export function LightweightChart({
             <button
               type="button"
               onClick={onToggleSelectionMode}
-              className={`h-8 px-3 inline-flex items-center rounded-lg border text-[11px] font-medium transition-colors cursor-pointer ${
+              className={`h-7 md:h-8 px-2 md:px-3 inline-flex items-center rounded-lg border text-[10px] md:text-[11px] font-medium transition-colors cursor-pointer ${
                 selectionMode
                   ? "border-[#A87FF3]/70 bg-[#542C85]/40 text-white"
                   : "border-[#542C85]/40 bg-[#542C85]/15 text-[#C2A8FF] hover:bg-[#542C85]/30"
@@ -439,11 +441,11 @@ export function LightweightChart({
             </button>
           )}
           {selectionMode && (
-            <div className="h-8 inline-flex items-center gap-1 rounded-lg border border-white/10 bg-[#02000B]/75 px-1 cursor-pointer">
+            <div className="h-7 md:h-8 inline-flex items-center gap-1 rounded-lg border border-white/10 bg-[#02000B]/75 px-1 cursor-pointer">
               <button
                 type="button"
                 onClick={() => onSelectSelectionMode?.("entry")}
-                className={`h-6 rounded-md px-2.5 text-[10px] transition-colors cursor-pointer ${
+                className={`h-5 md:h-6 rounded-md px-1.5 md:px-2.5 text-[9px] md:text-[10px] transition-colors cursor-pointer ${
                   selectionMode === "entry"
                     ? "bg-sky-500/25 text-sky-100 border border-sky-400/40"
                     : "text-white/65 hover:bg-white/10 hover:text-white"
@@ -454,7 +456,7 @@ export function LightweightChart({
               <button
                 type="button"
                 onClick={() => onSelectSelectionMode?.("tp")}
-                className={`h-6 rounded-md px-2.5 text-[10px] transition-colors cursor-pointer ${
+                className={`h-5 md:h-6 rounded-md px-1.5 md:px-2.5 text-[9px] md:text-[10px] transition-colors cursor-pointer ${
                   selectionMode === "tp"
                     ? "bg-emerald-500/25 text-emerald-100 border border-emerald-400/40"
                     : "text-white/65 hover:bg-white/10 hover:text-white"
@@ -465,7 +467,7 @@ export function LightweightChart({
               <button
                 type="button"
                 onClick={() => onSelectSelectionMode?.("sl")}
-                className={`h-6 rounded-md px-2.5 text-[10px] transition-colors cursor-pointer ${
+                className={`h-5 md:h-6 rounded-md px-1.5 md:px-2.5 text-[9px] md:text-[10px] transition-colors cursor-pointer ${
                   selectionMode === "sl"
                     ? "bg-rose-500/25 text-rose-100 border border-rose-400/40"
                     : "text-white/65 hover:bg-white/10 hover:text-white"
@@ -479,7 +481,7 @@ export function LightweightChart({
             <div className="relative inline-flex items-center">
               <div
                 ref={tpScrollRef}
-                className="h-8 max-w-[144px] inline-flex items-center gap-1 rounded-lg border border-emerald-400/20 bg-[#02000B]/75 px-1 overflow-x-auto overflow-y-hidden whitespace-nowrap scrollbar-thin"
+                className="h-7 md:h-8 max-w-[120px] md:max-w-[144px] inline-flex items-center gap-1 rounded-lg border border-emerald-400/20 bg-[#02000B]/75 px-1 overflow-x-auto overflow-y-hidden whitespace-nowrap scrollbar-thin"
               >
                 {normalizedTakeProfits.map((_, index) => {
                   const isSelected = selectedTpIndex === index;
@@ -488,7 +490,7 @@ export function LightweightChart({
                       key={`tp-select-${index}`}
                       type="button"
                       onClick={() => onSelectTpIndex?.(isSelected ? null : index)}
-                      className={`h-6 min-w-[42px] shrink-0 rounded-md px-1 text-[10px] transition-colors ${
+                      className={`h-5 md:h-6 min-w-[36px] md:min-w-[42px] shrink-0 rounded-md px-0.5 md:px-1 text-[9px] md:text-[10px] transition-colors ${
                         isSelected
                           ? "bg-emerald-500/25 text-emerald-100 border border-emerald-400/50"
                           : "text-emerald-200/75 hover:bg-emerald-500/15 hover:text-emerald-100"
@@ -530,7 +532,7 @@ export function LightweightChart({
             </div>
           )}
           {selectionMode === "tp" && selectedTpIndex !== null && (
-            <div className="h-8 inline-flex items-center gap-1 rounded-lg border border-rose-400/25 bg-rose-500/10 px-1">
+            <div className="h-7 md:h-8 inline-flex items-center gap-1 rounded-lg border border-rose-400/25 bg-rose-500/10 px-1">
               <button
                 type="button"
                 onClick={() => onRemoveTpIndex?.(selectedTpIndex)}
@@ -553,7 +555,7 @@ export function LightweightChart({
           )}
           {timeframeOptions.length > 0 && (
             <div
-              className="h-8 inline-flex items-center gap-1 rounded-lg border border-white/10 bg-[#02000B]/65 px-1 font-mono [font-variant-numeric:tabular-nums] cursor-pointer"
+              className="h-7 md:h-8 inline-flex items-center gap-1 rounded-lg border border-white/10 bg-[#02000B]/65 px-1 font-mono [font-variant-numeric:tabular-nums] cursor-pointer"
               dir="ltr"
               lang="en"
             >
@@ -563,7 +565,7 @@ export function LightweightChart({
                   type="button"
                   onClick={() => onTimeframeChange?.(option.value)}
                   lang="en"
-                  className={`h-6 rounded-md px-2.5 text-[10px] transition-colors font-mono cursor-pointer ${
+                  className={`h-5 md:h-6 rounded-md px-1.5 md:px-2.5 text-[9px] md:text-[10px] transition-colors font-mono cursor-pointer ${
                     activeTimeframe === option.value
                       ? "bg-[#542C85] text-white"
                       : "text-white/65 hover:bg-white/10 hover:text-white"
@@ -575,14 +577,14 @@ export function LightweightChart({
             </div>
           )}
           {title && (
-            <span className="h-8 px-3 inline-flex items-center rounded-lg border border-white/10 bg-[#02000B]/70 text-white/85 text-xs font-semibold ms-2 cursor-pointer">
+            <span className="h-7 md:h-8 px-2 md:px-3 inline-flex items-center rounded-lg border border-white/10 bg-[#02000B]/70 text-white/85 text-[10px] md:text-xs font-semibold ms-1 md:ms-2 cursor-pointer">
               {title}
             </span>
           )}
           <button
             onClick={handleFitContent}
             type="button"
-            className="h-8 w-8 inline-flex items-center justify-center rounded-lg border border-white/10 bg-[#02000B]/70 hover:bg-[#542C85]/30 text-white/80 transition-colors cursor-pointer"
+            className="h-7 md:h-8 w-7 md:w-8 inline-flex items-center justify-center rounded-lg border border-white/10 bg-[#02000B]/70 hover:bg-[#542C85]/30 text-white/80 transition-colors cursor-pointer"
             aria-label="بازنشانی دید"
             title="بازنشانی دید"
           >
