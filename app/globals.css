@@ -1,0 +1,528 @@
+@import "tailwindcss";
+@plugin "tailwindcss-animate";
+
+/* Class-based dark mode (match old dashboard) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* IRANYekan font faces (served from /public/fonts) */
+@font-face {
+  font-family: "IRANYekan";
+  src: url("/fonts/IRANYekan/woff2/Thin.woff2") format("woff2");
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IRANYekan";
+  src: url("/fonts/IRANYekan/woff2/UltraLight.woff2") format("woff2");
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IRANYekan";
+  src: url("/fonts/IRANYekan/woff2/Light.woff2") format("woff2");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IRANYekan";
+  src: url("/fonts/IRANYekan/woff2/Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IRANYekan";
+  src: url("/fonts/IRANYekan/woff2/Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IRANYekan";
+  src: url("/fonts/IRANYekan/woff2/DemiBold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IRANYekan";
+  src: url("/fonts/IRANYekan/woff2/Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IRANYekan";
+  src: url("/fonts/IRANYekan/woff2/ExtraBold.woff2") format("woff2");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IRANYekan";
+  src: url("/fonts/IRANYekan/woff2/Black.woff2") format("woff2");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Landing theme (from black-trader-academy) */
+:root {
+  --primary-100: #e2a8fe;
+  --primary-150: #ae77d5;
+  --primary-200: #af77d5;
+  --primary-300: #7e4eac;
+  --primary-400: #532d84;
+  --primary-450: #542c85;
+  --primary-500: #2e165b;
+  --primary-600: #120632;
+  --primary-650: #140733;
+  --primary-700: #02000a;
+  --primary-950: #02000a;
+  --font-white: #ffffff;
+  --font-light: #a39cb1;
+  --font-medium: #542c85;
+  --font-dark: #111111;
+  --text-secondary: #8b7fa3;
+}
+
+/* Design tokens (light/dark) */
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+  --primary: 222.2 47.4% 11.2%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 222.2 84% 4.9%;
+  --radius: 0.5rem;
+  --chart-1: 12 76% 61%;
+  --chart-2: 173 58% 39%;
+  --chart-3: 197 37% 24%;
+  --chart-4: 43 74% 66%;
+  --chart-5: 27 87% 67%;
+}
+
+.dark {
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+  --card: 222.2 84% 4.9%;
+  --card-foreground: 210 40% 98%;
+  --popover: 222.2 84% 4.9%;
+  --popover-foreground: 210 40% 98%;
+  --primary: 210 40% 98%;
+  --primary-foreground: 222.2 47.4% 11.2%;
+  --secondary: 217.2 32.6% 17.5%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+  --accent: 217.2 32.6% 17.5%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 212.7 26.8% 83.9%;
+  --chart-1: 220 70% 50%;
+  --chart-2: 160 60% 45%;
+  --chart-3: 30 80% 55%;
+  --chart-4: 280 65% 60%;
+  --chart-5: 340 75% 55%;
+}
+
+@theme inline {
+  --font-sans:
+    IRANYekan, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    Helvetica, Arial, "Noto Sans", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --color-chart-1: hsl(var(--chart-1));
+  --color-chart-2: hsl(var(--chart-2));
+  --color-chart-3: hsl(var(--chart-3));
+  --color-chart-4: hsl(var(--chart-4));
+  --color-chart-5: hsl(var(--chart-5));
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  /* Container (from old-dashboard tailwind.config) */
+  --breakpoint-2xl: 1400px;
+
+  /* Landing primary palette */
+  --color-primary-100: var(--primary-100);
+  --color-primary-150: var(--primary-150);
+  --color-primary-200: var(--primary-200);
+  --color-primary-300: var(--primary-300);
+  --color-primary-400: var(--primary-400);
+  --color-primary-450: var(--primary-450);
+  --color-primary-500: var(--primary-500);
+  --color-primary-600: var(--primary-600);
+  --color-primary-650: var(--primary-650);
+  --color-primary-700: var(--primary-700);
+  --color-primary-950: var(--primary-950);
+  --color-font-white: var(--font-white);
+  --color-font-light: var(--font-light);
+  --color-font-medium: var(--font-medium);
+}
+
+/* Landing border gradients */
+.border-gradient {
+  border: 2px solid transparent;
+  background:
+    linear-gradient(var(--background), var(--background)) padding-box,
+    linear-gradient(to right, var(--font-medium), rgba(84, 44, 133, 0))
+      border-box;
+}
+
+/* Header pill (black-trader-academy): gradient border + primary-650/80 fill + blur */
+.header-pill {
+  border: 2px solid transparent;
+  border-radius: 9999px;
+  background:
+    linear-gradient(
+      color-mix(in srgb, var(--primary-650) 80%, transparent),
+      color-mix(in srgb, var(--primary-650) 80%, transparent)
+    )
+      padding-box,
+    linear-gradient(to right, var(--font-medium), rgba(84, 44, 133, 0))
+      border-box;
+  backdrop-filter: blur(4px);
+}
+.border-gradient-sidebar {
+  border-left: 2px solid transparent;
+  background:
+    linear-gradient(var(--primary-700), var(--primary-700)) padding-box,
+    linear-gradient(to bottom, var(--primary-400), rgba(84, 44, 133, 0))
+      border-box;
+}
+
+/* Latest signals swiper – bullet and nav colors match site theme */
+.latest-signals-swiper {
+  --swiper-theme-color: var(--primary-400);
+  --swiper-pagination-color: var(--primary-400);
+  --swiper-pagination-bullet-inactive-color: var(--primary-400);
+  --swiper-pagination-bullet-inactive-opacity: 0.4;
+  --swiper-pagination-bullet-opacity: 1;
+}
+.latest-signals-swiper .swiper-pagination-bullet {
+  background: var(--primary-400);
+  opacity: 0.4;
+}
+.latest-signals-swiper .swiper-pagination-bullet-active {
+  background: var(--primary-400);
+  opacity: 1;
+}
+.latest-signals-swiper .swiper-button-prev,
+.latest-signals-swiper .swiper-button-next {
+  color: var(--primary-400);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html[dir="rtl"],
+  html[lang="fa"] {
+    direction: rtl;
+  }
+  html,
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+  #root,
+  #__next {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+}
+
+@layer utilities {
+  /* IRANYekan helper classes (use in className) - from old-dashboard */
+  .iranyekan {
+    font-family:
+      IRANYekan,
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      "Segoe UI",
+      Roboto,
+      Helvetica,
+      Arial,
+      "Noto Sans",
+      sans-serif;
+  }
+  .iranyekan-thin {
+    font-family:
+      IRANYekan,
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      "Segoe UI",
+      Roboto,
+      Helvetica,
+      Arial,
+      "Noto Sans",
+      sans-serif;
+    font-weight: 100;
+  }
+  .iranyekan-extralight {
+    font-family:
+      IRANYekan,
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      "Segoe UI",
+      Roboto,
+      Helvetica,
+      Arial,
+      "Noto Sans",
+      sans-serif;
+    font-weight: 200;
+  }
+  .iranyekan-light {
+    font-family:
+      IRANYekan,
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      "Segoe UI",
+      Roboto,
+      Helvetica,
+      Arial,
+      "Noto Sans",
+      sans-serif;
+    font-weight: 300;
+  }
+  .iranyekan-regular {
+    font-family:
+      IRANYekan,
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      "Segoe UI",
+      Roboto,
+      Helvetica,
+      Arial,
+      "Noto Sans",
+      sans-serif;
+    font-weight: 400;
+  }
+  .iranyekan-medium {
+    font-family:
+      IRANYekan,
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      "Segoe UI",
+      Roboto,
+      Helvetica,
+      Arial,
+      "Noto Sans",
+      sans-serif;
+    font-weight: 500;
+  }
+  .iranyekan-demibold {
+    font-family:
+      IRANYekan,
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      "Segoe UI",
+      Roboto,
+      Helvetica,
+      Arial,
+      "Noto Sans",
+      sans-serif;
+    font-weight: 600;
+  }
+  .iranyekan-bold {
+    font-family:
+      IRANYekan,
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      "Segoe UI",
+      Roboto,
+      Helvetica,
+      Arial,
+      "Noto Sans",
+      sans-serif;
+    font-weight: 700;
+  }
+  .iranyekan-extrabold {
+    font-family:
+      IRANYekan,
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      "Segoe UI",
+      Roboto,
+      Helvetica,
+      Arial,
+      "Noto Sans",
+      sans-serif;
+    font-weight: 800;
+  }
+  .iranyekan-black {
+    font-family:
+      IRANYekan,
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      "Segoe UI",
+      Roboto,
+      Helvetica,
+      Arial,
+      "Noto Sans",
+      sans-serif;
+    font-weight: 900;
+  }
+
+  /* Custom scrollbar */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+  .scrollbar-thumb-white\/10::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+  .scrollbar-track-transparent::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-subscription {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(168, 127, 243, 0.65) rgba(255, 255, 255, 0.06);
+    scrollbar-gutter: stable;
+  }
+  .scrollbar-subscription::-webkit-scrollbar {
+    width: 10px;
+  }
+  .scrollbar-subscription::-webkit-scrollbar-track {
+    background: linear-gradient(
+      180deg,
+      rgba(84, 44, 133, 0.18) 0%,
+      rgba(48, 24, 84, 0.3) 100%
+    );
+    border-radius: 999px;
+  }
+  .scrollbar-subscription::-webkit-scrollbar-thumb {
+    background: linear-gradient(
+      180deg,
+      rgba(183, 139, 255, 0.85) 0%,
+      rgba(124, 77, 204, 0.9) 100%
+    );
+    border-radius: 999px;
+    border: 2px solid rgba(18, 10, 36, 0.9);
+  }
+  .scrollbar-subscription::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(
+      180deg,
+      rgba(166, 114, 255, 0.98) 0%,
+      rgba(109, 66, 199, 0.98) 100%
+    ) !important;
+  }
+  .scrollbar-subscription:hover::-webkit-scrollbar-track {
+    background: linear-gradient(
+      180deg,
+      rgba(76, 38, 126, 0.28) 0%,
+      rgba(38, 19, 64, 0.4) 100%
+    ) !important;
+  }
+
+  /* Dark mode background gradient */
+  .dark-bg-gradient {
+    background:
+      linear-gradient(
+        187deg,
+        rgba(45, 22, 90, 0.5) 6.11%,
+        #02000b 144.97%,
+        #000 206.7%
+      ),
+      #02000b;
+  }
+}
+
+/* Recharts: remove white hover/cursor background behind bars and sectors */
+.recharts-tooltip-cursor {
+  fill: transparent !important;
+}
+
+@keyframes plansArrivalPulse {
+  0% {
+    transform: translateY(20px);
+    opacity: 0.7;
+    filter: drop-shadow(0 0 0 rgba(181, 124, 255, 0));
+  }
+  45% {
+    transform: translateY(0);
+    opacity: 1;
+    filter: drop-shadow(0 0 24px rgba(181, 124, 255, 0.3));
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+    filter: drop-shadow(0 0 0 rgba(181, 124, 255, 0));
+  }
+}
+
+.plans-arrival-pulse {
+  animation: plansArrivalPulse 1.25s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
