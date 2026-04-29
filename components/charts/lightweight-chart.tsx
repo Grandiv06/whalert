@@ -83,6 +83,7 @@ export function LightweightChart({
   tpColor = DEFAULT_TP_COLOR,
   slColor = DEFAULT_SL_COLOR,
 }: LightweightChartProps) {
+  const rootRef = useRef<HTMLDivElement>(null);
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
@@ -163,6 +164,31 @@ export function LightweightChart({
     const percent = open === 0 ? 0 : (value / open) * 100;
     return { value, percent };
   }, [latestCandle]);
+  
+  const toggleFullscreen = async () => {
+    if (!rootRef.current) return;
+    
+    try {
+      if (!document.fullscreenElement) {
+        await rootRef.current.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch (err) {
+      setIsFullscreen(!isFullscreen);
+    }
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, []);
 
   useEffect(() => {
     selectionModeRef.current = selectionMode;
@@ -417,7 +443,7 @@ export function LightweightChart({
   };
 
   return (
-    <div className={`w-full h-full relative ${isFullscreen ? "fixed inset-0 z-[9999] bg-[#05070F]" : ""}`}>
+    <div ref={rootRef} className={`w-full h-full relative ${isFullscreen ? "fixed inset-0 z-[9999] bg-[#05070F]" : ""}`}>
       <div
         className={`w-full h-full relative overflow-hidden rounded-xl ${
           isFullscreen ? "rounded-none" : ""
@@ -594,7 +620,7 @@ export function LightweightChart({
             <RotateCcw className="w-3.5 h-3.5" />
           </button>
           <button
-            onClick={() => setIsFullscreen(!isFullscreen)}
+            onClick={toggleFullscreen}
             type="button"
             className="h-7 md:h-8 w-7 md:w-8 inline-flex items-center justify-center rounded-lg border border-white/10 bg-[#02000B]/70 hover:bg-[#542C85]/30 text-white/80 transition-colors cursor-pointer"
             aria-label={isFullscreen ? "خروج از تمام‌صفحه" : "تمام‌صفحه"}
