@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   createChart,
   ColorType,
@@ -98,7 +99,8 @@ export function LightweightChart({
   const [canScrollTp, setCanScrollTp] = useState(false);
   const [tpAtStart, setTpAtStart] = useState(true);
   const [tpAtEnd, setTpAtEnd] = useState(true);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isNativeFullscreen, setIsNativeFullscreen] = useState(false);
+  const [isFallbackFullscreen, setIsFallbackFullscreen] = useState(false);
   const [fallbackFullscreenHeight, setFallbackFullscreenHeight] = useState(0);
   const { theme } = useTheme();
 
@@ -107,7 +109,8 @@ export function LightweightChart({
     if (typeof navigator === "undefined") return false;
     return /iPhone|iPod/i.test(navigator.userAgent);
   }, []);
-  const useCssFullscreenFallback = isFullscreen && isIPhone;
+  const isFullscreen = isNativeFullscreen || isFallbackFullscreen;
+  const useCssFullscreenFallback = isFallbackFullscreen;
   const latestCandle = useMemo(
     () => (data.length > 0 ? data[data.length - 1] : null),
     [data],
@@ -179,25 +182,35 @@ export function LightweightChart({
       typeof rootRef.current.requestFullscreen === "function" &&
       typeof document.exitFullscreen === "function";
 
+    if (isFallbackFullscreen) {
+      setIsFallbackFullscreen(false);
+      return;
+    }
+
+    if (isNativeFullscreen) {
+      try {
+        await document.exitFullscreen();
+      } catch {
+        setIsFallbackFullscreen(false);
+      }
+      return;
+    }
+
     if (isIPhone || !canUseNativeFullscreen) {
-      setIsFullscreen((prev) => !prev);
+      setIsFallbackFullscreen(true);
       return;
     }
 
     try {
-      if (!document.fullscreenElement) {
-        await rootRef.current.requestFullscreen();
-      } else {
-        await document.exitFullscreen();
-      }
+      await rootRef.current.requestFullscreen();
     } catch {
-      setIsFullscreen((prev) => !prev);
+      setIsFallbackFullscreen(true);
     }
   };
 
   useEffect(() => {
     const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+      setIsNativeFullscreen(!!document.fullscreenElement);
     };
 
     document.addEventListener("fullscreenchange", handleFullscreenChange);
@@ -505,23 +518,14 @@ export function LightweightChart({
     chartRef.current?.timeScale().fitContent();
   };
 
-  return (
+  const chartBody = (
     <div
-      ref={rootRef}
-      className={`w-full h-full relative ${isFullscreen ? "fixed inset-0 z-[9999] bg-[#05070F]" : ""}`}
-      style={
-        useCssFullscreenFallback && fallbackFullscreenHeight > 0
-          ? { height: `${fallbackFullscreenHeight}px` }
-          : undefined
-      }
+      className={`w-full h-full relative overflow-hidden rounded-xl ${
+        isFullscreen ? "rounded-none" : ""
+      } ${
+        selectionMode ? "cursor-cell" : "cursor-crosshair"
+      }`}
     >
-      <div
-        className={`w-full h-full relative overflow-hidden rounded-xl ${
-          isFullscreen ? "rounded-none" : ""
-        } ${
-          selectionMode ? "cursor-cell" : "cursor-crosshair"
-        }`}
-      >
       <div
         className="absolute inset-x-3 top-3 z-20 flex items-start gap-3 pointer-events-none"
         dir="ltr"
@@ -757,7 +761,37 @@ export function LightweightChart({
           </div>
         </div>
       )}
+    </div>
+  );
+
+  if (useCssFullscreenFallback && typeof document !== "undefined") {
+    return createPortal(
+      <div
+        ref={rootRef}
+        className="fixed inset-0 z-[9999] bg-[#05070F]"
+        style={{
+          width: "100vw",
+          height:
+            fallbackFullscreenHeight > 0
+              ? `${fallbackFullscreenHeight}px`
+              : "100dvh",
+          paddingTop: "env(safe-area-inset-top)",
+          paddingBottom: "env(safe-area-inset-bottom)",
+        }}
+      >
+        {chartBody}
       </div>
+      ,
+      document.body,
+    );
+  }
+
+  return (
+    <div
+      ref={rootRef}
+      className={`w-full h-full relative ${isFullscreen ? "fixed inset-0 z-[9999] bg-[#05070F]" : ""}`}
+    >
+      {chartBody}
     </div>
   );
 }
