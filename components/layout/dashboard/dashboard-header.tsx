@@ -1,10 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
+import { usePathname, useRouter } from "next/navigation";
 import { Menu, User } from "lucide-react";
 import { useSidebar } from "@/contexts/sidebar-context";
+import { useCreateSignalLoading } from "@/contexts/create-signal-loading-context";
 import { dashboardSettingsHref } from "@/config/dashboard-nav";
 import { cn } from "@/lib/utils";
 import {
@@ -32,7 +33,13 @@ function profileImageSrc(raw: string | null | undefined): string | null {
 }
 
 export function DashboardHeader() {
+  const router = useRouter();
   const { toggleMobileMenu } = useSidebar();
+  const pathname = usePathname();
+  const { isAnalyzing, isManualDirty, setLeaveModalRequest } =
+    useCreateSignalLoading();
+  const shouldBlockNav =
+    pathname === "/dashboard/create-signal/" && (isAnalyzing || isManualDirty);
   const { data: pictureOut } = useQuery({
     queryKey: ["profilePicture"],
     queryFn: async () => {
@@ -57,7 +64,21 @@ export function DashboardHeader() {
         <Menu className="w-6 h-6" />
       </button>
       <div className="flex items-center gap-2">
-        <Link href={dashboardSettingsHref} className="flex items-center">
+        <button
+          type="button"
+          onClick={() => {
+            if (shouldBlockNav) {
+              setLeaveModalRequest({
+                type: "navigate",
+                target: dashboardSettingsHref,
+              });
+              return;
+            }
+            router.push(dashboardSettingsHref);
+          }}
+          className="flex items-center"
+          aria-label="تنظیمات حساب کاربری"
+        >
           <div
             className={cn(
               "w-9 h-9 rounded-full overflow-hidden border border-primary/50",
@@ -77,7 +98,7 @@ export function DashboardHeader() {
               <User className="w-5 h-5 text-primary" />
             )}
           </div>
-        </Link>
+        </button>
       </div>
     </header>
   );

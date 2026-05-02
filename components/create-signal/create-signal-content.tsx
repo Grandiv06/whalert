@@ -396,6 +396,7 @@ export type CreateSignalContentProps = {
   isDark?: boolean;
   pathname?: string;
   onAnalyzingChange?: (value: boolean) => void;
+  onManualDirtyChange?: (value: boolean) => void;
   onLeaveModalRequest?: (request: LeaveModalRequest | null) => void;
   services: CreateSignalServices;
   config?: CreateSignalConfig;
@@ -648,6 +649,7 @@ export function CreateSignalContent({
   isDark = true,
   pathname = "/dashboard/create-signal",
   onAnalyzingChange,
+  onManualDirtyChange,
   onLeaveModalRequest,
   services,
   config,
@@ -662,6 +664,7 @@ export function CreateSignalContent({
   );
 
   const setAnalyzing = onAnalyzingChange ?? (() => {});
+  const setManualDirty = onManualDirtyChange ?? (() => {});
   const setLeaveModalRequest = onLeaveModalRequest ?? (() => {});
   const [step, setStep] = useState<Step>("input");
   const [tradingViewLink, setTradingViewLink] = useState("");
@@ -931,15 +934,6 @@ export function CreateSignalContent({
 
   useEffect(() => {
     if (step !== "analyzing") return;
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-    };
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [step]);
-
-  useEffect(() => {
-    if (step !== "analyzing") return;
     const handlePopState = () => {
       window.history.pushState(null, "", pathname);
       setLeaveModalRequest({ type: "back" });
@@ -1090,6 +1084,25 @@ export function CreateSignalContent({
   const manualAlertMessage = manualChartAlert;
   const hasManualConfiguredLevels =
     entryParsed > 0 || stopParsed > 0 || validTargets.length > 0;
+
+  useEffect(() => {
+    const shouldWarnBeforeUnload =
+      step === "analyzing" ||
+      (creationMode === "manual" && hasManualConfiguredLevels);
+
+    if (!shouldWarnBeforeUnload) return;
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [creationMode, hasManualConfiguredLevels, step]);
+
+  useEffect(() => {
+    setManualDirty(creationMode === "manual" && hasManualConfiguredLevels);
+    return () => setManualDirty(false);
+  }, [creationMode, hasManualConfiguredLevels, setManualDirty]);
 
   const validation = mergedConfig.validation;
 

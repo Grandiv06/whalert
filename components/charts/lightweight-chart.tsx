@@ -507,7 +507,6 @@ export function LightweightChart({
     normalizedTakeProfits,
     selectedTpIndex,
     side,
-    data.length,
     normalizedEntryColor,
     normalizedTpColor,
     normalizedSlColor,

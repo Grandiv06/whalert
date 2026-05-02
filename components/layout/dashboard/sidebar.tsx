@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useTheme } from "@/hooks/useTheme";
 import { useSidebar } from "@/contexts/sidebar-context";
 import { useCreateSignalLoading } from "@/contexts/create-signal-loading-context";
-import { User, LogOut, X, Crown } from "lucide-react";
+import { User, LogOut, X, Crown, AlertTriangle } from "lucide-react";
 import { renderIcon } from "@/lib/utils/iconMapper";
 import Image from "next/image";
 import {
@@ -84,7 +84,12 @@ export function DashboardSidebar() {
   const router = useRouter();
   const { theme } = useTheme();
   const { isMobileMenuOpen, setIsMobileMenuOpen } = useSidebar();
-  const { isAnalyzing, leaveModalRequest, setLeaveModalRequest } =
+  const {
+    isAnalyzing,
+    isManualDirty,
+    leaveModalRequest,
+    setLeaveModalRequest,
+  } =
     useCreateSignalLoading();
   const [leaveModalOpen, setLeaveModalOpen] = useState(false);
   const [pendingNavigateTo, setPendingNavigateTo] = useState<string | null>(
@@ -92,7 +97,8 @@ export function DashboardSidebar() {
   );
   const [pendingBackNav, setPendingBackNav] = useState(false);
 
-  const shouldBlockNav = isAnalyzing && pathname === "/dashboard/create-signal/";
+  const shouldBlockNav =
+    pathname === "/dashboard/create-signal/" && (isAnalyzing || isManualDirty);
 
   const handleNavClick = (e: React.MouseEvent, href: string) => {
     if (shouldBlockNav && href !== "/dashboard/create-signal/") {
@@ -591,31 +597,35 @@ export function DashboardSidebar() {
             }}
           >
             <AlertDialogContent
-              className="bg-[#1A1A2E] border-white/10"
+              className="w-[calc(100%-2rem)] max-w-md rounded-2xl border-white/10 bg-[radial-gradient(120%_120%_at_80%_0%,rgba(124,77,204,0.28),rgba(26,26,46,0.94)_45%,rgba(12,8,25,0.98)_100%)] backdrop-blur-xl sm:w-full"
               dir="rtl"
             >
               <AlertDialogHeader>
-                <AlertDialogTitle className="text-white">
-                  لغو عملیات
+                <AlertDialogTitle className="text-white flex items-center gap-2">
+                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-amber-500/20 text-amber-300">
+                    <AlertTriangle className="h-4 w-4" />
+                  </span>
+                  {isAnalyzing ? "لغو عملیات تحلیل" : "خروج از صفحه ایجاد سیگنال"}
                 </AlertDialogTitle>
-                <AlertDialogDescription className="text-white/70">
-                  در حال حاضر هوش مصنوعی در حال استخراج داده است. اگر از این
-                  صفحه خارج شوید، این عملیات لغو خواهد شد. آیا مطمئن هستید؟
+                <AlertDialogDescription className="text-white/75 leading-7">
+                  {isAnalyzing
+                    ? "هوش مصنوعی در حال استخراج داده است. با خروج از این صفحه، فرآیند تحلیل متوقف می‌شود."
+                    : "شما روی چارت نقاطی ثبت کرده‌اید. اگر خارج شوید، نقاط ورود/حدسود/حدضرر پاک می‌شوند و قابل بازگشت نیستند."}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter className="gap-3">
                 <button
                   onClick={handleConfirmLeave}
                   disabled={!pendingNavigateTo && !pendingBackNav}
-                  className="inline-flex h-11 items-center justify-center rounded-lg px-6 py-2.5 text-sm font-semibold transition-all duration-200 bg-[#542C85] hover:bg-purple-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex h-11 items-center justify-center rounded-xl px-6 py-2.5 text-sm font-semibold transition-all duration-200 bg-gradient-to-r from-[#6B3FA5] to-[#542C85] hover:brightness-110 text-white shadow-[0_0_24px_-8px_rgba(124,77,204,0.95)] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
-                  بله، خارج شوم
+                  {isAnalyzing ? "بله، تحلیل لغو شود" : "بله، خارج می‌شوم"}
                 </button>
                 <AlertDialogCancel
                   onClick={() => setLeaveModalOpen(false)}
-                  className="border-white/20 bg-white/5 text-white hover:bg-white/10"
+                  className="border-white/20 bg-white/5 text-white hover:bg-white/10 cursor-pointer"
                 >
-                  انصراف
+                  ماندن در صفحه
                 </AlertDialogCancel>
               </AlertDialogFooter>
             </AlertDialogContent>

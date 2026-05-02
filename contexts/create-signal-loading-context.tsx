@@ -15,6 +15,8 @@ export type LeaveModalRequest =
 interface CreateSignalLoadingContextValue {
   isAnalyzing: boolean;
   setAnalyzing: (v: boolean) => void;
+  isManualDirty: boolean;
+  setManualDirty: (v: boolean) => void;
   leaveModalRequest: LeaveModalRequest | null;
   setLeaveModalRequest: (r: LeaveModalRequest | null) => void;
 }
@@ -24,12 +26,21 @@ const CreateSignalLoadingContext =
 
 export function CreateSignalLoadingProvider({ children }: { children: ReactNode }) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isManualDirty, setIsManualDirty] = useState(false);
   const [leaveModalRequest, setLeaveModalRequest] = useState<LeaveModalRequest | null>(null);
   const setAnalyzing = useCallback((v: boolean) => setIsAnalyzing(v), []);
+  const setManualDirty = useCallback((v: boolean) => setIsManualDirty(v), []);
 
   return (
     <CreateSignalLoadingContext.Provider
-      value={{ isAnalyzing, setAnalyzing, leaveModalRequest, setLeaveModalRequest }}
+      value={{
+        isAnalyzing,
+        setAnalyzing,
+        isManualDirty,
+        setManualDirty,
+        leaveModalRequest,
+        setLeaveModalRequest,
+      }}
     >
       {children}
     </CreateSignalLoadingContext.Provider>
@@ -42,6 +53,8 @@ export function useCreateSignalLoading(): CreateSignalLoadingContextValue {
     return {
       isAnalyzing: false,
       setAnalyzing: () => {},
+      isManualDirty: false,
+      setManualDirty: () => {},
       leaveModalRequest: null,
       setLeaveModalRequest: () => {},
     };

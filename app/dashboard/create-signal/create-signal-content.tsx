@@ -33,24 +33,28 @@ const createSignalServices: CreateSignalServices = {
     ),
 };
 
+const createSignalConfig = {
+  availableSymbols: [
+    { label: "مظنه", value: "مظنه طلا", apiSymbol: "MAZAANE" },
+    { label: "انس", value: "انس", apiSymbol: "XAUUSD" },
+  ],
+};
+
 export function CreateSignalContent() {
   const pathname = usePathname();
   const { theme } = useTheme();
-  const { setAnalyzing, setLeaveModalRequest } = useCreateSignalLoading();
+  const { setAnalyzing, setLeaveModalRequest, setManualDirty } =
+    useCreateSignalLoading();
 
   return (
     <CreateSignalContentPortable
       isDark={theme === "dark"}
       pathname={pathname}
       onAnalyzingChange={setAnalyzing}
+      onManualDirtyChange={setManualDirty}
       onLeaveModalRequest={setLeaveModalRequest}
       services={createSignalServices}
-      config={{
-        availableSymbols: [
-          { label: "مظنه", value: "مظنه طلا", apiSymbol: "MAZAANE" },
-          { label: "انس", value: "انس", apiSymbol: "XAUUSD" },
-        ],
-      }}
+      config={createSignalConfig}
     />
   );
 }
