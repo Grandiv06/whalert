@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -707,6 +707,7 @@ export function CreateSignalContent({
 
   const [entryPointDisplay, setEntryPointDisplay] = useState<string>("0");
   const [targetsDisplay, setTargetsDisplay] = useState<string[]>([]);
+  const targetInputRefs = useRef<Array<HTMLInputElement | null>>([]);
   const [stopLossDisplay, setStopLossDisplay] = useState<string>("0");
   const [description, setDescription] = useState("");
   const [isChartZoomed, setIsChartZoomed] = useState(false);
@@ -1031,6 +1032,13 @@ export function CreateSignalContent({
   };
 
   const handleAddTarget = () => {
+    const lastTargetValue = targetsDisplay[targetsDisplay.length - 1];
+    const hasInvalidLastTarget =
+      targetsDisplay.length > 0 && parseDisplayNumber(lastTargetValue ?? "") <= 0;
+    if (hasInvalidLastTarget) {
+      setManualChartAlert("ابتدا قیمت معتبرِ هدف فعلی را وارد کنید.");
+      return;
+    }
     setManualChartAlert("");
     setPublishError("");
     setTargetsDisplay([...targetsDisplay, ""]);
@@ -1048,6 +1056,18 @@ export function CreateSignalContent({
     setManualChartAlert("");
     setPublishError("");
     setTargetsDisplay(targetsDisplay.filter((_, i) => i !== index));
+  };
+
+  const handleTargetInputNavigation = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    index: number,
+    value: string,
+  ) => {
+    if (e.key !== "Tab" && e.key !== "Enter") return;
+    if (parseDisplayNumber(value) > 0) return;
+    e.preventDefault();
+    setManualChartAlert("برای رفتن به فیلد بعدی، قیمت معتبر وارد کنید.");
+    targetInputRefs.current[index]?.focus();
   };
 
   const parseNum = parseDisplayNumber;
@@ -1907,13 +1927,13 @@ export function CreateSignalContent({
                           </label>
                           <button
                             onClick={handleAddTarget}
-                            className="text-xs font-medium text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors px-2 py-1 rounded-md hover:bg-emerald-400/10 bg-emerald-500/5 shadow-sm border border-emerald-500/20"
+                            className="text-xs font-medium text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors px-2 py-1 rounded-md hover:bg-emerald-400/10 bg-emerald-500/5 shadow-sm border border-emerald-500/20 cursor-pointer"
                           >
                             <Plus className="w-3 h-3" />
                             {mergedConfig.labels.addTarget}
                           </button>
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 gap-3">
                           {targetsDisplay.map((target, index) => (
                             <div
                               key={index}
@@ -1924,10 +1944,16 @@ export function CreateSignalContent({
                               </span>
                               <div className="flex relative">
                                 <Input
+                                  ref={(el) => {
+                                    targetInputRefs.current[index] = el;
+                                  }}
                                   inputMode="decimal"
                                   value={target}
                                   onChange={(e) =>
                                     handleUpdateTarget(index, e.target.value)
+                                  }
+                                  onKeyDown={(e) =>
+                                    handleTargetInputNavigation(e, index, target)
                                   }
                                   className={cn(
                                     styles.input,
@@ -1946,7 +1972,7 @@ export function CreateSignalContent({
                             </div>
                           ))}
                           {targetsDisplay.length === 0 && (
-                            <div className="col-span-2 text-center py-4 border border-dashed border-white/10 bg-white/[0.02] rounded-xl text-white/30 text-[11px] shadow-inner">
+                            <div className="col-span-1 text-center py-4 border border-dashed border-white/10 bg-white/[0.02] rounded-xl text-white/30 text-[11px] shadow-inner">
                               {mergedConfig.labels.noTargets}
                             </div>
                           )}
@@ -2270,7 +2296,7 @@ export function CreateSignalContent({
                   <Button
                     size="sm"
                     onClick={handleAddTarget}
-                    className="h-8 w-8 p-0 rounded-full bg-slate-600/50 hover:bg-slate-500/50 text-slate-400 hover:text-white transition-colors"
+                    className="h-8 w-8 p-0 rounded-full bg-slate-600/50 hover:bg-slate-500/50 text-slate-400 hover:text-white transition-colors cursor-pointer"
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
@@ -2280,9 +2306,15 @@ export function CreateSignalContent({
                     <div key={index} className="group flex items-center gap-3">
                       <div className="relative flex-1">
                         <Input
+                          ref={(el) => {
+                            targetInputRefs.current[index] = el;
+                          }}
                           value={target}
                           onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                             handleUpdateTarget(index, e.target.value)
+                          }
+                          onKeyDown={(e) =>
+                            handleTargetInputNavigation(e, index, target)
                           }
                           placeholder="0"
                           inputMode="decimal"

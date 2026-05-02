@@ -13,7 +13,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   CalendarIcon,
-  WalletIcon,
   QuestionCircleIcon,
   PhoneCallIcon,
   CopyAltIcon,
@@ -93,8 +92,11 @@ export function InviteFriendsContent() {
 
   const inviteLink = "https://panel.signals.studio/my-profile/";
   const inviteCode = "۶۳۴.۱۳۷";
-  const currentDate = "۱۱ دی ماه ۱۴۰۴";
-  const walletBalance = "۱۳۸.۰۰۰ تومان";
+  const currentDate = new Intl.DateTimeFormat("fa-IR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date());
   const invitedCount = "۲۸ نفر";
 
   const { data: transactionsData, isLoading } = useQuery({
@@ -155,19 +157,13 @@ export function InviteFriendsContent() {
 
   return (
     <div className="mt-5" dir="rtl">
-      {/* Date & Wallet Header */}
+      {/* Date Header */}
       <div className="flex flex-col-reverse md:flex-row items-stretch md:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-2 text-white">
           <CalendarIcon className=" text-white" />
           <span className="text-sm md:text-base">{currentDate}</span>
         </div>
         <div className="flex flex-row-reverse items-center gap-4">
-          <div className="flex items-center gap-2">
-            <WalletIcon className=" text-white" />
-            <span className="text-sm md:text-base font-medium text-white">
-              {walletBalance}
-            </span>
-          </div>
           <div className="flex items-center gap-2">
             <button
               type="button"
