@@ -168,15 +168,24 @@ export function LightweightChart({
   
   const toggleFullscreen = async () => {
     if (!rootRef.current) return;
-    
+
+    const canUseNativeFullscreen =
+      typeof rootRef.current.requestFullscreen === "function" &&
+      typeof document.exitFullscreen === "function";
+
+    if (!canUseNativeFullscreen) {
+      setIsFullscreen((prev) => !prev);
+      return;
+    }
+
     try {
       if (!document.fullscreenElement) {
         await rootRef.current.requestFullscreen();
       } else {
         await document.exitFullscreen();
       }
-    } catch (err) {
-      setIsFullscreen(!isFullscreen);
+    } catch {
+      setIsFullscreen((prev) => !prev);
     }
   };
 
@@ -190,6 +199,15 @@ export function LightweightChart({
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
     };
   }, []);
+
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isFullscreen]);
 
   useEffect(() => {
     selectionModeRef.current = selectionMode;

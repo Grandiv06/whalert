@@ -1047,11 +1047,13 @@ export function AccountSettingClient() {
     string | null | undefined
   >(undefined);
   const [avatarToasts, setAvatarToasts] = useState<AvatarToast[]>([]);
+  const [isMetaTraderTokenCopied, setIsMetaTraderTokenCopied] = useState(false);
   const [telegramDraft, setTelegramDraft] = useState<string | null>(null);
   const [telegramBaseOverride, setTelegramBaseOverride] = useState<
     string | null
   >(null);
   const avatarToastTimersRef = useRef<Map<number, number>>(new Map());
+  const metaTraderCopiedTimerRef = useRef<number | null>(null);
   const metaTraderTokenInputRef = useRef<HTMLInputElement>(null);
   const { data: metaTraderTokenData } = useQuery({
     queryKey: ["currentUserMt5Token"],
@@ -1092,7 +1094,22 @@ export function AccountSettingClient() {
         window.clearTimeout(timer);
       }
       timers.clear();
+      if (metaTraderCopiedTimerRef.current) {
+        window.clearTimeout(metaTraderCopiedTimerRef.current);
+        metaTraderCopiedTimerRef.current = null;
+      }
     };
+  }, []);
+
+  const markMetaTraderTokenCopied = useCallback(() => {
+    setIsMetaTraderTokenCopied(true);
+    if (metaTraderCopiedTimerRef.current) {
+      window.clearTimeout(metaTraderCopiedTimerRef.current);
+    }
+    metaTraderCopiedTimerRef.current = window.setTimeout(() => {
+      setIsMetaTraderTokenCopied(false);
+      metaTraderCopiedTimerRef.current = null;
+    }, 10000);
   }, []);
 
   const handleAvatarError = useCallback(
@@ -1106,6 +1123,7 @@ export function AccountSettingClient() {
   );
 
   const handleCopyMetaTraderToken = useCallback(async () => {
+    if (isMetaTraderTokenCopied) return;
     if (!metaTraderToken) return;
     try {
       if (navigator.clipboard?.writeText) {
@@ -1113,6 +1131,7 @@ export function AccountSettingClient() {
       } else {
         throw new Error("Clipboard API unavailable");
       }
+      markMetaTraderTokenCopied();
       pushAvatarToast("توکن متاتریدر کپی شد.", "success");
     } catch {
       const input = metaTraderTokenInputRef.current;
@@ -1130,13 +1149,19 @@ export function AccountSettingClient() {
         if (!copied) {
           throw new Error("execCommand copy failed");
         }
+        markMetaTraderTokenCopied();
         pushAvatarToast("توکن متاتریدر کپی شد.", "success");
       } catch {
         input.setAttribute("readonly", "true");
         pushAvatarToast("کپی توکن ناموفق بود. لطفاً دستی کپی کنید.", "error");
       }
     }
-  }, [metaTraderToken, pushAvatarToast]);
+  }, [
+    isMetaTraderTokenCopied,
+    markMetaTraderTokenCopied,
+    metaTraderToken,
+    pushAvatarToast,
+  ]);
 
   const handleDownloadMetaTraderFile = useCallback(async () => {
     try {
@@ -1689,7 +1714,7 @@ export function AccountSettingClient() {
                         className="h-10 w-full md:w-auto px-4 rounded-xl border border-[#A87FF3]/40 bg-gradient-to-br from-[#542C85] to-[#7C4DCC] text-white shadow-[0_0_20px_-6px_rgba(124,77,204,0.9)] transition-all duration-200 hover:scale-[1.02] hover:brightness-110 cursor-pointer"
                         onClick={handleCopyMetaTraderToken}
                       >
-                        کپی توکن
+                        {isMetaTraderTokenCopied ? "کپی شد" : "کپی توکن"}
                       </Button>
                       <Button
                         type="button"
