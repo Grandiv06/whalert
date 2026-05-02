@@ -157,7 +157,7 @@
   --font-sans:
     IRANYekan, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
     Helvetica, Arial, "Noto Sans", sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
