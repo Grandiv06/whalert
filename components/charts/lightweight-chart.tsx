@@ -100,6 +100,7 @@ export function LightweightChart({
   const [canScrollTp, setCanScrollTp] = useState(false);
   const [tpAtStart, setTpAtStart] = useState(true);
   const [tpAtEnd, setTpAtEnd] = useState(true);
+  const [isCompactChart, setIsCompactChart] = useState(false);
   const [isNativeFullscreen, setIsNativeFullscreen] = useState(false);
   const [isFallbackFullscreen, setIsFallbackFullscreen] = useState(false);
   const [fallbackFullscreenHeight, setFallbackFullscreenHeight] = useState(0);
@@ -175,6 +176,17 @@ export function LightweightChart({
     const percent = open === 0 ? 0 : (value / open) * 100;
     return { value, percent };
   }, [latestCandle]);
+
+  useEffect(() => {
+    const updateCompactState = () => {
+      const viewportWidth = window.innerWidth;
+      const rootWidth = rootRef.current?.clientWidth ?? viewportWidth;
+      setIsCompactChart(viewportWidth < 430 || rootWidth < 390);
+    };
+    updateCompactState();
+    window.addEventListener("resize", updateCompactState);
+    return () => window.removeEventListener("resize", updateCompactState);
+  }, []);
 
   useEffect(() => {
     dataRef.current = data;
@@ -456,7 +468,7 @@ export function LightweightChart({
       linesRef.current = [];
       setHoveredCandle(null);
     };
-  }, [isDark]);
+  }, [isDark, isFullscreen, useCssFullscreenFallback]);
 
   useEffect(() => {
     if (!seriesRef.current) return;
@@ -480,7 +492,11 @@ export function LightweightChart({
         lineWidth: 2,
         lineStyle: LineStyle.Solid,
         axisLabelVisible: true,
-        title: side === "SHORT" ? "Entry Short" : "Entry Long",
+        title: isCompactChart
+          ? "Entry"
+          : side === "SHORT"
+            ? "Entry Short"
+            : "Entry Long",
       });
       linesRef.current.push(line);
     }
@@ -492,7 +508,7 @@ export function LightweightChart({
         lineWidth: 2,
         lineStyle: LineStyle.Solid,
         axisLabelVisible: true,
-        title: "Stop Loss",
+        title: isCompactChart ? "SL" : "Stop Loss",
       });
       linesRef.current.push(line);
     }
@@ -507,7 +523,7 @@ export function LightweightChart({
         lineWidth: isSelectedTp ? 2 : 2,
         lineStyle: isSelectedTp ? LineStyle.Dashed : LineStyle.Solid,
         axisLabelVisible: true,
-        title: `TP${i + 1}`,
+        title: isCompactChart ? `T${i + 1}` : `TP${i + 1}`,
       });
       linesRef.current.push(line);
     });
@@ -517,6 +533,9 @@ export function LightweightChart({
     normalizedTakeProfits,
     selectedTpIndex,
     side,
+    isCompactChart,
+    isFullscreen,
+    useCssFullscreenFallback,
     normalizedEntryColor,
     normalizedTpColor,
     normalizedSlColor,
