@@ -99,9 +99,15 @@ export function LightweightChart({
   const [tpAtStart, setTpAtStart] = useState(true);
   const [tpAtEnd, setTpAtEnd] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [fallbackFullscreenHeight, setFallbackFullscreenHeight] = useState(0);
   const { theme } = useTheme();
 
   const isDark = theme !== "light";
+  const isIPhone = useMemo(() => {
+    if (typeof navigator === "undefined") return false;
+    return /iPhone|iPod/i.test(navigator.userAgent);
+  }, []);
+  const useCssFullscreenFallback = isFullscreen && isIPhone;
   const latestCandle = useMemo(
     () => (data.length > 0 ? data[data.length - 1] : null),
     [data],
@@ -173,7 +179,7 @@ export function LightweightChart({
       typeof rootRef.current.requestFullscreen === "function" &&
       typeof document.exitFullscreen === "function";
 
-    if (!canUseNativeFullscreen) {
+    if (isIPhone || !canUseNativeFullscreen) {
       setIsFullscreen((prev) => !prev);
       return;
     }
@@ -208,6 +214,24 @@ export function LightweightChart({
       document.body.style.overflow = previousOverflow;
     };
   }, [isFullscreen]);
+
+  useEffect(() => {
+    if (!useCssFullscreenFallback) return;
+
+    const updateHeight = () => {
+      const nextHeight = window.visualViewport?.height ?? window.innerHeight;
+      setFallbackFullscreenHeight(Math.round(nextHeight));
+    };
+
+    updateHeight();
+    window.addEventListener("resize", updateHeight);
+    window.visualViewport?.addEventListener("resize", updateHeight);
+
+    return () => {
+      window.removeEventListener("resize", updateHeight);
+      window.visualViewport?.removeEventListener("resize", updateHeight);
+    };
+  }, [useCssFullscreenFallback]);
 
   useEffect(() => {
     selectionModeRef.current = selectionMode;
@@ -482,7 +506,15 @@ export function LightweightChart({
   };
 
   return (
-    <div ref={rootRef} className={`w-full h-full relative ${isFullscreen ? "fixed inset-0 z-[9999] bg-[#05070F]" : ""}`}>
+    <div
+      ref={rootRef}
+      className={`w-full h-full relative ${isFullscreen ? "fixed inset-0 z-[9999] bg-[#05070F]" : ""}`}
+      style={
+        useCssFullscreenFallback && fallbackFullscreenHeight > 0
+          ? { height: `${fallbackFullscreenHeight}px` }
+          : undefined
+      }
+    >
       <div
         className={`w-full h-full relative overflow-hidden rounded-xl ${
           isFullscreen ? "rounded-none" : ""
