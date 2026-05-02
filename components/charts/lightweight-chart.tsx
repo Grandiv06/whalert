@@ -98,6 +98,9 @@ export function LightweightChart({
   const [tpAtStart, setTpAtStart] = useState(true);
   const [tpAtEnd, setTpAtEnd] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const [mobileGuideY, setMobileGuideY] = useState<number | null>(null);
+  const [mobilePreviewPrice, setMobilePreviewPrice] = useState<number | null>(null);
   const { theme } = useTheme();
 
   const isDark = theme !== "light";
@@ -180,6 +183,17 @@ export function LightweightChart({
   };
 
   useEffect(() => {
+    const updateViewport = () => {
+      setIsMobileViewport(window.innerWidth < 768);
+    };
+    updateViewport();
+    window.addEventListener("resize", updateViewport);
+    return () => {
+      window.removeEventListener("resize", updateViewport);
+    };
+  }, []);
+
+  useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
     };
@@ -194,6 +208,25 @@ export function LightweightChart({
     selectionModeRef.current = selectionMode;
     onSelectPriceRef.current = onSelectPrice;
   }, [selectionMode, onSelectPrice]);
+
+  useEffect(() => {
+    if (!selectionMode || !isMobileViewport) {
+      setMobileGuideY(null);
+      setMobilePreviewPrice(null);
+      return;
+    }
+    const container = chartContainerRef.current;
+    const series = seriesRef.current;
+    if (!container || !series) return;
+    const nextY = Math.round(container.clientHeight * 0.5);
+    const nextPrice = series.coordinateToPrice(nextY);
+    setMobileGuideY(nextY);
+    setMobilePreviewPrice(
+      typeof nextPrice === "number" && Number.isFinite(nextPrice) && nextPrice > 0
+        ? nextPrice
+        : null,
+    );
+  }, [selectionMode, isMobileViewport, data.length]);
 
   useEffect(() => {
     const el = tpScrollRef.current;
@@ -442,6 +475,29 @@ export function LightweightChart({
     chartRef.current?.timeScale().fitContent();
   };
 
+  const updateMobileGuideFromClientY = (clientY: number) => {
+    const container = chartContainerRef.current;
+    const series = seriesRef.current;
+    if (!container || !series) return;
+    const rect = container.getBoundingClientRect();
+    const y = Math.max(0, Math.min(rect.height, clientY - rect.top));
+    const price = series.coordinateToPrice(y);
+    setMobileGuideY(y);
+    if (typeof price === "number" && Number.isFinite(price) && price > 0) {
+      setMobilePreviewPrice(price);
+    }
+  };
+
+  const confirmMobileSelection = () => {
+    const activeMode = selectionModeRef.current;
+    const onSelect = onSelectPriceRef.current;
+    if (!activeMode || !onSelect || !mobilePreviewPrice || mobilePreviewPrice <= 0) return;
+    onSelect({
+      mode: activeMode,
+      price: mobilePreviewPrice,
+    });
+  };
+
   return (
     <div ref={rootRef} className={`w-full h-full relative ${isFullscreen ? "fixed inset-0 z-[9999] bg-[#05070F]" : ""}`}>
       <div
@@ -663,6 +719,41 @@ export function LightweightChart({
         <div className="absolute right-[4.5rem] bottom-8 z-20 pointer-events-none">
           <div className="rounded-lg border border-[#A87FF3]/40 bg-[#542C85]/20 px-3 py-1.5 text-[11px] text-[#E9DDFF]">
             {selectionModeLabel} فعال است. روی چارت کلیک کنید.
+          </div>
+        </div>
+      )}
+
+      {selectionMode && isMobileViewport && mobileGuideY !== null && (
+        <div className="absolute inset-0 z-20 pointer-events-none">
+          <div
+            className="absolute left-0 right-0 border-t border-dashed border-[#A87FF3]/90"
+            style={{ top: mobileGuideY }}
+          />
+          <div
+            className="absolute -translate-y-1/2 pointer-events-auto"
+            style={{ top: mobileGuideY, right: 8 }}
+          >
+            <button
+              type="button"
+              onTouchStart={(e) => {
+                const touch = e.touches[0];
+                if (!touch) return;
+                updateMobileGuideFromClientY(touch.clientY);
+              }}
+              onTouchMove={(e) => {
+                const touch = e.touches[0];
+                if (!touch) return;
+                updateMobileGuideFromClientY(touch.clientY);
+              }}
+              onClick={confirmMobileSelection}
+              className="h-7 px-2 inline-flex items-center rounded-md border border-[#A87FF3]/60 bg-[#542C85]/85 text-[10px] text-white shadow-lg cursor-pointer"
+            >
+              {mobilePreviewPrice
+                ? Number(mobilePreviewPrice).toLocaleString("en-US", {
+                    maximumFractionDigits: 2,
+                  })
+                : "--"}
+            </button>
           </div>
         </div>
       )}
