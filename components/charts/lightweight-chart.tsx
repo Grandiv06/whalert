@@ -88,6 +88,7 @@ export function LightweightChart({
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+  const dataRef = useRef<ChartDataElement[]>(data);
   const linesRef = useRef<IPriceLine[]>([]);
   const selectionModeRef = useRef<ChartSelectionMode | null>(selectionMode);
   const onSelectPriceRef = useRef<LightweightChartProps["onSelectPrice"]>(onSelectPrice);
@@ -174,6 +175,10 @@ export function LightweightChart({
     const percent = open === 0 ? 0 : (value / open) * 100;
     return { value, percent };
   }, [latestCandle]);
+
+  useEffect(() => {
+    dataRef.current = data;
+  }, [data]);
   
   const toggleFullscreen = async () => {
     if (!rootRef.current) return;
@@ -384,6 +389,11 @@ export function LightweightChart({
       wickDownColor: "#ef4444",
     });
     seriesRef.current = candlestickSeries;
+    // Keep chart populated immediately after mount/remount (mobile fullscreen switches).
+    if (dataRef.current.length > 0) {
+      candlestickSeries.setData(dataRef.current);
+      chart.timeScale().fitContent();
+    }
 
     const handleCrosshairMove = (param: MouseEventParams<Time>) => {
       const barData = param.seriesData.get(candlestickSeries);
