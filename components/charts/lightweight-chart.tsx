@@ -90,6 +90,7 @@ export function LightweightChart({
   const linesRef = useRef<IPriceLine[]>([]);
   const selectionModeRef = useRef<ChartSelectionMode | null>(selectionMode);
   const onSelectPriceRef = useRef<LightweightChartProps["onSelectPrice"]>(onSelectPrice);
+  const lastCrosshairPriceRef = useRef<number | null>(null);
   const tpScrollRef = useRef<HTMLDivElement | null>(null);
   const tpAutoScrollDelayRef = useRef<number | null>(null);
   const tpAutoScrollFrameRef = useRef<number | null>(null);
@@ -331,6 +332,13 @@ export function LightweightChart({
 
     const handleCrosshairMove = (param: MouseEventParams<Time>) => {
       const barData = param.seriesData.get(candlestickSeries);
+      if (param.point) {
+        const crosshairPrice = candlestickSeries.coordinateToPrice(param.point.y);
+        lastCrosshairPriceRef.current =
+          typeof crosshairPrice === "number" && Number.isFinite(crosshairPrice) && crosshairPrice > 0
+            ? crosshairPrice
+            : null;
+      }
       if (!barData || !("open" in barData)) {
         setHoveredCandle(null);
         return;
@@ -357,13 +365,26 @@ export function LightweightChart({
         price: clickedPrice,
       });
     };
+
+    const handleTouchEnd = () => {
+      const activeMode = selectionModeRef.current;
+      const onSelect = onSelectPriceRef.current;
+      const touchPrice = lastCrosshairPriceRef.current;
+      if (!activeMode || !onSelect || touchPrice == null) return;
+      onSelect({
+        mode: activeMode,
+        price: touchPrice,
+      });
+    };
     chart.subscribeCrosshairMove(handleCrosshairMove);
     chart.subscribeClick(handleChartClick);
+    container.addEventListener("touchend", handleTouchEnd, { passive: true });
 
     return () => {
       resizeObserver.disconnect();
       chart.unsubscribeCrosshairMove(handleCrosshairMove);
       chart.unsubscribeClick(handleChartClick);
+      container.removeEventListener("touchend", handleTouchEnd);
       chart.remove();
       chartRef.current = null;
       seriesRef.current = null;
