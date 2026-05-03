@@ -723,6 +723,22 @@ export function CreateSignalContent({
   ] = useState(false);
   const [toasts, setToasts] = useState<SignalToast[]>([]);
 
+  // Auto-focus new target input when added
+  useEffect(() => {
+    const lastIndex = targetsDisplay.length - 1;
+    if (lastIndex >= 0) {
+      const lastInput = targetInputRefs.current[lastIndex];
+      // Only focus if the value is empty (implies it was just added)
+      if (lastInput && targetsDisplay[lastIndex] === "") {
+        const timer = setTimeout(() => {
+          lastInput.focus();
+          lastInput.select();
+        }, 50);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [targetsDisplay.length]);
+
   const pushToast = (message: string, kind: ToastKind) => {
     const id = Date.now() + Math.floor(Math.random() * 1000);
     setToasts((prev) => [...prev, { id, kind, message }].slice(-4));
@@ -1600,7 +1616,7 @@ export function CreateSignalContent({
     "w-full p-1.5 md:p-2 flex flex-col border-[#542C85]/40 backdrop-blur-md transition-all duration-500",
     effectiveManualLayoutMode === "default" &&
       (isMobileViewport
-        ? "h-[46vh] min-h-[320px] max-h-[430px] shadow-[0_0_24px_-14px_rgba(84,44,133,0.45)] bg-[#02000B]/35"
+        ? "h-[52vh] min-h-[360px] max-h-[500px] shadow-[0_0_24px_-14px_rgba(84,44,133,0.45)] bg-[#02000B]/35"
         : "h-[550px] shadow-[0_0_30px_-10px_rgba(84,44,133,0.3)] bg-[#02000B]/30"),
     effectiveManualLayoutMode === "focus" &&
       "h-full shadow-[0_0_50px_-10px_rgba(84,44,133,0.5)] bg-gradient-to-br from-[#02000B]/80 to-[#542C85]/10 border-[#542C85]/60",
@@ -1822,11 +1838,7 @@ export function CreateSignalContent({
                       )}
                     >
                       <div
-                        className={cn(
-                          effectiveManualLayoutMode === "focus"
-                            ? "grid grid-cols-1 sm:grid-cols-2 gap-4"
-                            : "space-y-6",
-                        )}
+                        className="grid grid-cols-2 gap-4"
                       >
                         <div>
                           <label className="text-xs font-medium text-white/70 mb-2 flex items-center gap-1.5">
@@ -1861,37 +1873,15 @@ export function CreateSignalContent({
                           effectiveManualLayoutMode !== "focus" && "mt-6",
                         )}
                       >
-                        <div className="mb-2 flex items-center justify-between">
+                        <div className="mb-2">
                           <label className="text-xs font-medium text-white/70">
                             {mergedConfig.labels.side}
                           </label>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button
-                                type="button"
-                                className="h-6 px-2 rounded-md border border-white/15 bg-white/5 text-[10px] text-white/75 hover:text-white hover:bg-white/10 transition-colors"
-                              >
-                                راهنما
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent
-                              side="top"
-                              align="end"
-                              className="max-w-[260px] rounded-xl border border-white/15 bg-[#120721]/95 text-white/90 shadow-[0_8px_32px_rgba(0,0,0,0.45)] backdrop-blur-md p-3"
-                            >
-                              <div className="space-y-2 text-xs leading-6">
-                                <p className="font-semibold text-emerald-300">LONG</p>
-                                <p>ترتیب صحیح: `SL &lt; Entry &lt; TP`</p>
-                                <p className="font-semibold text-rose-300 pt-1">SHORT</p>
-                                <p>ترتیب صحیح: `TP &lt; Entry &lt; SL`</p>
-                              </div>
-                            </TooltipContent>
-                          </Tooltip>
                         </div>
                         <div className="flex bg-black/40 rounded-xl p-1.5 border border-white/5 shadow-inner">
                           <button
                             className={cn(
-                              "flex-1 py-2.5 text-sm font-bold rounded-lg transition-all duration-300",
+                              "flex-1 py-2.5 text-sm font-bold rounded-lg transition-all duration-300 cursor-pointer",
                               signalData.position === "LONG"
                                 ? "bg-emerald-500 shadow-[0_0_20px_-5px_rgba(16,185,129,0.5)] text-white"
                                 : "text-white/40 hover:bg-white/5 hover:text-white/70",
@@ -1902,7 +1892,7 @@ export function CreateSignalContent({
                           </button>
                           <button
                             className={cn(
-                              "flex-1 py-2.5 text-sm font-bold rounded-lg transition-all duration-300",
+                              "flex-1 py-2.5 text-sm font-bold rounded-lg transition-all duration-300 cursor-pointer",
                               signalData.position === "SHORT"
                                 ? "bg-rose-500 shadow-[0_0_20px_-5px_rgba(244,63,94,0.5)] text-white"
                                 : "text-white/40 hover:bg-white/5 hover:text-white/70",
@@ -1911,51 +1901,6 @@ export function CreateSignalContent({
                           >
                             {mergedConfig.labels.short}
                           </button>
-                        </div>
-                      </div>
-                      <div
-                        className={cn(
-                          "flex flex-col",
-                          effectiveManualLayoutMode !== "focus" && "mt-6",
-                          effectiveManualLayoutMode === "focus" &&
-                            "flex-1 min-h-[110px]",
-                        )}
-                      >
-                        <label className="text-xs font-medium text-white/70 mb-2 flex items-center gap-1.5">
-                          <FileText className="w-3.5 h-3.5 text-white/40" />
-                          {mergedConfig.labels.description}
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button
-                                type="button"
-                                className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-[#A87FF3]/55 bg-gradient-to-br from-[#542C85] to-[#7C4DCC] text-[9px] font-black leading-none text-white shadow-[0_0_10px_-3px_rgba(124,77,204,0.85)] transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A87FF3]/45"
-                                aria-label={mergedConfig.labels.descriptionTooltipAriaLabel}
-                              >
-                                !
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent
-                              side="top"
-                              align="start"
-                              className="max-w-xs text-right leading-6"
-                            >
-                              {mergedConfig.labels.descriptionTooltip}
-                            </TooltipContent>
-                          </Tooltip>
-                        </label>
-                        <textarea
-                          className="w-full flex-1 min-h-[80px] p-4 rounded-xl border border-white/5 bg-black/20 shadow-inner text-sm text-white resize-none focus:border-[#A87FF3]/50 focus:ring-1 focus:ring-[#A87FF3]/50 focus:bg-white/[0.03] outline-none transition-all placeholder:text-white/20 scrollbar-thin scrollbar-thumb-white/10"
-                          placeholder={mergedConfig.labels.descriptionPlaceholder}
-                          value={description}
-                          maxLength={DESCRIPTION_MAX_LENGTH}
-                          onChange={(e) =>
-                            setDescription(
-                              normalizeDescription(e.target.value),
-                            )
-                          }
-                        />
-                        <div className="mt-2 text-xs text-white/45 text-left" dir="ltr">
-                          {descriptionLength}/{DESCRIPTION_MAX_LENGTH}
                         </div>
                       </div>
                     </div>
@@ -2055,7 +2000,7 @@ export function CreateSignalContent({
                                 />
                                 <button
                                   onClick={() => handleRemoveTarget(index)}
-                                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-rose-400 opacity-0 group-hover:opacity-100 transition-all bg-black/60 hover:bg-rose-500/20 rounded-md backdrop-blur-md"
+                                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-rose-400 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all bg-black/60 hover:bg-rose-500/20 rounded-md backdrop-blur-md"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
@@ -2109,6 +2054,28 @@ export function CreateSignalContent({
                             <AlertTriangle className="w-3 h-3" /> {slFieldError}
                           </span>
                         )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 space-y-4">
+                    <div
+                      className={cn(
+                        "flex flex-col",
+                        effectiveManualLayoutMode === "focus" && "min-h-[110px]",
+                      )}
+                    >
+                      <textarea
+                        className="w-full flex-1 min-h-[80px] p-4 rounded-xl border border-white/5 bg-black/20 shadow-inner text-sm text-white resize-none focus:border-[#A87FF3]/50 focus:ring-1 focus:ring-[#A87FF3]/50 focus:bg-white/[0.03] outline-none transition-all placeholder:text-white/20 scrollbar-thin scrollbar-thumb-white/10"
+                        placeholder={mergedConfig.labels.descriptionPlaceholder}
+                        value={description}
+                        maxLength={DESCRIPTION_MAX_LENGTH}
+                        onChange={(e) =>
+                          setDescription(normalizeDescription(e.target.value))
+                        }
+                      />
+                      <div className="mt-2 text-xs text-white/45 text-left" dir="ltr">
+                        {descriptionLength}/{DESCRIPTION_MAX_LENGTH}
                       </div>
                     </div>
                   </div>
