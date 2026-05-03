@@ -917,6 +917,7 @@ export function CreateSignalContent({
   useEffect(() => {
     if (creationMode === "manual") return;
     setManualChartSelectionMode(null);
+    setSelectedManualTpIndex(null);
     setManualChartAlert("");
   }, [creationMode]);
 
@@ -1185,7 +1186,13 @@ export function CreateSignalContent({
   const handleToggleManualChartSelection = () => {
     setPublishError("");
     setManualChartAlert("");
-    setManualChartSelectionMode((prevMode) => (prevMode ? null : "entry"));
+    setManualChartSelectionMode((prevMode) => {
+      const nextMode = prevMode ? null : "entry";
+      if (nextMode === null) {
+        setSelectedManualTpIndex(null);
+      }
+      return nextMode;
+    });
   };
 
   const applyManualPositionChange = (change: PendingManualPositionChange) => {
