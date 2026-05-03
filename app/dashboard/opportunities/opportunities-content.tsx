@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import {
   Area,
   AreaChart,
@@ -377,8 +378,8 @@ export function OpportunitiesContent() {
           <div className="pointer-events-none absolute -top-20 -left-16 h-44 w-44 rounded-full bg-[#7C4DCC]/25 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-14 -right-10 h-36 w-36 rounded-full bg-[#3A7BFF]/20 blur-3xl" />
 
-          <div className="relative flex flex-col-reverse gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
+          <div className="relative flex flex-col gap-3.5 md:flex-row md:items-center md:justify-between">
+            <div className="text-right">
               <p className="text-xs md:text-sm text-[#CDB8F5]/85">جزئیات پروایدر</p>
               <h1 className="text-2xl md:text-3xl font-extrabold text-white mt-1 tracking-tight">
                 {providerDisplayName}
@@ -388,10 +389,19 @@ export function OpportunitiesContent() {
             <button
               type="button"
               onClick={() => router.push("/dashboard/analysis")}
-              className="inline-flex items-center gap-2 self-end md:self-auto rounded-xl border border-white/15 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/20 hover:border-white/25 transition-all cursor-pointer"
+              className="group absolute top-1/2 -translate-y-1/2 left-0 md:static md:mt-3 md:translate-y-0 inline-flex h-9 w-9 md:h-auto md:w-auto items-center justify-center md:justify-start gap-2 rounded-full md:rounded-xl border border-white/25 bg-white/[0.08] px-0 md:px-3.5 py-0 md:py-2 text-white/90 hover:text-white hover:bg-white/[0.14] hover:border-white/40 transition-colors cursor-pointer"
+              aria-label="بازگشت به لیست تحلیل‌ها"
+              title="بازگشت به لیست تحلیل‌ها"
             >
-              <span aria-hidden="true">→</span>
-              بازگشت به لیست تحلیل‌ها
+              <span
+                aria-hidden="true"
+                className="inline-flex h-5 w-5 md:h-6 md:w-6 items-center justify-center rounded-full md:rounded-md text-white/95"
+              >
+                <ArrowLeft className="h-3.5 w-3.5 md:h-4 md:w-4" />
+              </span>
+              <span className="hidden md:inline text-sm font-semibold">
+                بازگشت به لیست تحلیل‌ها
+              </span>
             </button>
           </div>
         </div>

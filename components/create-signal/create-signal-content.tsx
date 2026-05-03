@@ -44,18 +44,11 @@ import {
   type ChartSelectionMode,
   type ChartTimeframeOption,
 } from "@/components/charts/lightweight-chart";
+import { useDebounce } from "@/hooks/useDebounce";
 
 type AbpWrapper<T> = { result?: T };
 
 type LeaveModalRequest = { type: "navigate"; target: string } | { type: "back" };
-
-type AiOutputDto = {
-  direction: "LONG" | "SHORT";
-  entryPoint: number;
-  stopLoss: number;
-  takeProfits: number[];
-  description?: string;
-};
 
 type FetchDataFromImageFromUrlResultDto = {
   analysis?: {
@@ -1027,12 +1020,10 @@ export function CreateSignalContent({
 
   const handleAddTarget = () => {
     const lastTargetValue = targetsDisplay[targetsDisplay.length - 1];
-    const hasInvalidLastTarget =
-      targetsDisplay.length > 0 && parseDisplayNumber(lastTargetValue ?? "") <= 0;
-    if (hasInvalidLastTarget) {
-      setManualChartAlert("ابتدا قیمت معتبرِ هدف فعلی را وارد کنید.");
-      return;
-    }
+    const hasInvalidLastTarget = targetsDisplay.length > 0 && parseDisplayNumber(lastTargetValue ?? "") <= 0;
+    
+    if (hasInvalidLastTarget) return;
+
     setManualChartAlert("");
     setPublishError("");
     setTargetsDisplay([...targetsDisplay, ""]);
@@ -1058,10 +1049,7 @@ export function CreateSignalContent({
     value: string,
   ) => {
     if (e.key !== "Tab" && e.key !== "Enter") return;
-    if (parseDisplayNumber(value) > 0) return;
-    e.preventDefault();
-    setManualChartAlert("برای رفتن به فیلد بعدی، قیمت معتبر وارد کنید.");
-    targetInputRefs.current[index]?.focus();
+    // Removed mandatory price check to allow free navigation
   };
 
   const parseNum = parseDisplayNumber;
@@ -1082,8 +1070,66 @@ export function CreateSignalContent({
     messages: mergedConfig.messages,
   });
   const manualAlertMessage = manualChartAlert;
+  const validation = mergedConfig.validation;
+  const hasValidEntry =
+    Number.isFinite(entryParsed) && entryParsed > validation.minEntryPrice;
+  const isLongPosition = signalData.position === "LONG";
+  const hasEntryForLevelRules = Number.isFinite(entryParsed) && entryParsed > 0;
+  const entryViolatesTargets =
+    hasEntryForLevelRules &&
+    orderedValidTargets.some((target) =>
+      isLongPosition ? entryParsed >= target : entryParsed <= target,
+    );
+  const entryViolatesStopLoss =
+    hasEntryForLevelRules &&
+    stopParsed > 0 &&
+    (isLongPosition ? entryParsed <= stopParsed : entryParsed >= stopParsed);
+  const chartEntryPoint =
+    hasValidEntry && !entryViolatesTargets && !entryViolatesStopLoss
+      ? entryParsed
+      : 0;
+  const chartTakeProfits = hasEntryForLevelRules
+    ? orderedValidTargets.filter((target) =>
+        isLongPosition ? target > entryParsed : target < entryParsed,
+      )
+    : orderedValidTargets;
+  const chartStopLoss =
+    hasEntryForLevelRules &&
+    stopParsed > 0 &&
+    (isLongPosition ? stopParsed < entryParsed : stopParsed > entryParsed)
+      ? stopParsed
+      : 0;
   const hasManualConfiguredLevels =
     entryParsed > 0 || stopParsed > 0 || validTargets.length > 0;
+
+  // Debounced values for validation feedback (wait for user to stop typing)
+  const debouncedEntryDisplay = useDebounce(entryPointDisplay, 500);
+  const debouncedTargetsDisplay = useDebounce(targetsDisplay, 500);
+  const debouncedStopLossDisplay = useDebounce(stopLossDisplay, 500);
+
+  const debouncedEntryParsed = parseNum(debouncedEntryDisplay);
+  const debouncedTargetsParsed = debouncedTargetsDisplay.map(parseNum);
+  const debouncedStopParsed = parseNum(debouncedStopLossDisplay);
+  const debouncedHasEntry = Number.isFinite(debouncedEntryParsed) && debouncedEntryParsed > 0;
+
+  // Individual Field Errors for UI feedback (using debounced values)
+  const entryFieldError = !hasValidEntry && debouncedEntryDisplay !== "" && debouncedEntryDisplay !== "0" 
+    ? mergedConfig.messages.invalidEntryPrice 
+    : "";
+
+  const tpFieldErrors = debouncedTargetsParsed.map((tp, idx) => {
+    if (tp <= 0) return "";
+    if (!debouncedHasEntry) return "";
+    const isInvalid = isLongPosition ? tp <= debouncedEntryParsed : tp >= debouncedEntryParsed;
+    return isInvalid 
+      ? (isLongPosition ? mergedConfig.messages.invalidTpLong : mergedConfig.messages.invalidTpShort)
+      : "";
+  });
+
+  const slFieldError = (debouncedStopParsed > 0 && debouncedHasEntry) && 
+    (isLongPosition ? debouncedStopParsed >= debouncedEntryParsed : debouncedStopParsed <= debouncedEntryParsed)
+    ? (isLongPosition ? mergedConfig.messages.invalidSlLong : mergedConfig.messages.invalidSlShort)
+    : "";
 
   useEffect(() => {
     const shouldWarnBeforeUnload =
@@ -1103,11 +1149,6 @@ export function CreateSignalContent({
     setManualDirty(creationMode === "manual" && hasManualConfiguredLevels);
     return () => setManualDirty(false);
   }, [creationMode, hasManualConfiguredLevels, setManualDirty]);
-
-  const validation = mergedConfig.validation;
-
-  const hasValidEntry =
-    Number.isFinite(entryParsed) && entryParsed > validation.minEntryPrice;
 
   const hasValidTargets =
     !validation.requireTakeProfit || validTargets.length > 0;
@@ -1359,6 +1400,36 @@ export function CreateSignalContent({
     setIsSymbolChangeConfirmOpen(false);
   };
 
+  const canSetEntry = (nextEntry: number) => {
+    if (!Number.isFinite(nextEntry) || nextEntry <= 0) return true;
+    const isLong = signalData.position === "LONG";
+    const hasInvalidTarget = orderedValidTargets.some((target) =>
+      isLong ? target <= nextEntry : target >= nextEntry,
+    );
+    if (hasInvalidTarget) {
+      setManualChartAlert(
+        isLong
+          ? mergedConfig.messages.invalidTpLong
+          : mergedConfig.messages.invalidTpShort,
+      );
+      return false;
+    }
+    if (stopParsed > 0) {
+      const invalidStop = isLong
+        ? stopParsed >= nextEntry
+        : stopParsed <= nextEntry;
+      if (invalidStop) {
+        setManualChartAlert(
+          isLong
+            ? mergedConfig.messages.invalidSlLong
+            : mergedConfig.messages.invalidSlShort,
+        );
+        return false;
+      }
+    }
+    return true;
+  };
+
   const handleManualChartPriceSelect = ({
     mode,
     price,
@@ -1371,6 +1442,7 @@ export function CreateSignalContent({
 
     const isLong = signalData.position === "LONG";
     if (mode === "entry") {
+      if (!canSetEntry(selectedPrice)) return;
       setEntryPointDisplay(String(selectedPrice));
       setManualChartAlert("");
       setPublishError("");
@@ -1451,44 +1523,6 @@ export function CreateSignalContent({
     if (selectedManualTpIndex < orderedValidTargets.length) return;
     setSelectedManualTpIndex(null);
   }, [selectedManualTpIndex, orderedValidTargets.length]);
-
-  const handlePublish = async () => {
-    if (isPublishDisabled || isPublishing) return;
-    setIsPublishing(true);
-    setPublishError("");
-    try {
-      const imageBase64 = signalData.chartImage.startsWith("data:")
-        ? signalData.chartImage.replace(/^data:image\/\w+;base64,/, "")
-        : signalData.chartImage;
-
-      const analysis: AiOutputDto = {
-        direction: signalData.position,
-        entryPoint: entryParsed,
-        stopLoss: stopParsed,
-        takeProfits: orderedValidTargets,
-        description: description || undefined,
-      };
-
-      await services.submitSignalFromImageAnalysis({
-        analysis,
-        imageBase64,
-      } as FetchDataFromImageFromUrlResultDto);
-
-      pushToast(mergedConfig.messages.submitSuccessAi, "success");
-      setStep("input");
-      setTradingViewLink("");
-      setSignalData(createDefaultSignalData(mergedConfig));
-      setAnalyzing(false);
-    } catch (err) {
-      setPublishError(
-        err instanceof Error
-          ? err.message
-          : mergedConfig.messages.submitErrorAi,
-      );
-    } finally {
-      setIsPublishing(false);
-    }
-  };
 
   const handleOpenManualPublishConfirm = () => {
     const preview = buildManualPublishPreview();
@@ -1571,6 +1605,14 @@ export function CreateSignalContent({
     effectiveManualLayoutMode === "focus" &&
       "h-full shadow-[0_0_50px_-10px_rgba(84,44,133,0.5)] bg-gradient-to-br from-[#02000B]/80 to-[#542C85]/10 border-[#542C85]/60",
   );
+  const mobileModeManualLabel = mergedConfig.labels.modeManual.replace(
+    /\s*\([^)]*\)\s*/g,
+    "",
+  );
+  const mobileModeAiLabel = mergedConfig.labels.modeAi.replace(
+    /\s*\([^)]*\)\s*/g,
+    "",
+  );
 
   return (
     <div
@@ -1592,7 +1634,7 @@ export function CreateSignalContent({
           )}
           onClick={() => setCreationMode("manual")}
         >
-          {mergedConfig.labels.modeManual}
+          {isMobileViewport ? mobileModeManualLabel : mergedConfig.labels.modeManual}
         </button>
         <button
           className={cn(
@@ -1603,7 +1645,7 @@ export function CreateSignalContent({
           )}
           onClick={() => setCreationMode("ai")}
         >
-          {mergedConfig.labels.modeAi}
+          {isMobileViewport ? mobileModeAiLabel : mergedConfig.labels.modeAi}
         </button>
       </div>
 
@@ -1713,9 +1755,9 @@ export function CreateSignalContent({
                   onSelectTpIndex={setSelectedManualTpIndex}
                   onRemoveTpIndex={handleRemoveSelectedTp}
                   loading={isManualChartLoading}
-                  entryPoint={entryParsed}
-                  stopLoss={stopParsed}
-                  takeProfits={orderedValidTargets}
+                  entryPoint={chartEntryPoint}
+                  stopLoss={chartStopLoss}
+                  takeProfits={chartTakeProfits}
                   side={signalData.position}
                   selectionMode={manualChartSelectionMode}
                   onSelectPrice={handleManualChartPriceSelect}
@@ -1819,9 +1861,33 @@ export function CreateSignalContent({
                           effectiveManualLayoutMode !== "focus" && "mt-6",
                         )}
                       >
-                        <label className="text-xs font-medium text-white/70 mb-2 block">
-                          {mergedConfig.labels.side}
-                        </label>
+                        <div className="mb-2 flex items-center justify-between">
+                          <label className="text-xs font-medium text-white/70">
+                            {mergedConfig.labels.side}
+                          </label>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                type="button"
+                                className="h-6 px-2 rounded-md border border-white/15 bg-white/5 text-[10px] text-white/75 hover:text-white hover:bg-white/10 transition-colors"
+                              >
+                                راهنما
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent
+                              side="top"
+                              align="end"
+                              className="max-w-[260px] rounded-xl border border-white/15 bg-[#120721]/95 text-white/90 shadow-[0_8px_32px_rgba(0,0,0,0.45)] backdrop-blur-md p-3"
+                            >
+                              <div className="space-y-2 text-xs leading-6">
+                                <p className="font-semibold text-emerald-300">LONG</p>
+                                <p>ترتیب صحیح: `SL &lt; Entry &lt; TP`</p>
+                                <p className="font-semibold text-rose-300 pt-1">SHORT</p>
+                                <p>ترتیب صحیح: `TP &lt; Entry &lt; SL`</p>
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
                         <div className="flex bg-black/40 rounded-xl p-1.5 border border-white/5 shadow-inner">
                           <button
                             className={cn(
@@ -1917,19 +1983,24 @@ export function CreateSignalContent({
                             )
                           }
                           onChange={(e) => {
-                            setEntryPointDisplay(
-                              cleanNumericString(e.target.value),
-                            );
+                            const cleaned = cleanNumericString(e.target.value);
+                            setEntryPointDisplay(cleaned);
                             setManualChartAlert("");
                             setPublishError("");
                           }}
                           className={cn(
                             styles.input,
                             "h-11 bg-white/5 focus-visible:bg-white/10 font-mono text-left placeholder:text-white/20 border-white/10 shadow-inner",
+                            entryFieldError && "border-rose-500/50 focus-visible:border-rose-500 shadow-[0_0_15px_-3px_rgba(244,63,94,0.3)]"
                           )}
                           dir="ltr"
                           placeholder="مثال: 2350.5"
                         />
+                        {entryFieldError && (
+                          <span className="text-[10px] text-rose-400 mt-1.5 flex items-center gap-1 animate-in fade-in slide-in-from-top-1 duration-300">
+                            <AlertTriangle className="w-3 h-3" /> {entryFieldError}
+                          </span>
+                        )}
                       </div>
 
                       <div className="relative z-10">
@@ -1940,7 +2011,13 @@ export function CreateSignalContent({
                           </label>
                           <button
                             onClick={handleAddTarget}
-                            className="text-xs font-medium text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors px-2 py-1 rounded-md hover:bg-emerald-400/10 bg-emerald-500/5 shadow-sm border border-emerald-500/20 cursor-pointer"
+                            disabled={targetsDisplay.length > 0 && parseDisplayNumber(targetsDisplay[targetsDisplay.length - 1] ?? "") <= 0}
+                            className={cn(
+                              "text-xs font-medium flex items-center gap-1 transition-all px-2 py-1 rounded-md shadow-sm border cursor-pointer",
+                              targetsDisplay.length > 0 && parseDisplayNumber(targetsDisplay[targetsDisplay.length - 1] ?? "") <= 0
+                                ? "opacity-40 grayscale cursor-not-allowed border-white/5 text-white/40"
+                                : "text-emerald-400 hover:text-emerald-300 hover:bg-emerald-400/10 bg-emerald-500/5 border-emerald-500/20"
+                            )}
                           >
                             <Plus className="w-3 h-3" />
                             {mergedConfig.labels.addTarget}
@@ -1971,6 +2048,7 @@ export function CreateSignalContent({
                                   className={cn(
                                     styles.input,
                                     "h-10 bg-emerald-500/5 focus-visible:bg-emerald-500/10 font-mono text-left text-sm border-emerald-500/20 focus-visible:border-emerald-500 focus-visible:ring-emerald-500/20 transition-all text-emerald-100 placeholder:text-emerald-500/30 shadow-inner",
+                                    tpFieldErrors[index] && "border-rose-500/50 focus-visible:border-rose-500 shadow-[0_0_15px_-3px_rgba(244,63,94,0.3)] bg-rose-500/5"
                                   )}
                                   dir="ltr"
                                   placeholder="مثال: 2370.0"
@@ -1982,6 +2060,11 @@ export function CreateSignalContent({
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
                               </div>
+                              {tpFieldErrors[index] && (
+                                <span className="text-[10px] text-rose-400 mt-1 flex items-center gap-1 animate-in fade-in slide-in-from-top-1 duration-300">
+                                  <AlertTriangle className="w-2.5 h-2.5" /> {tpFieldErrors[index]}
+                                </span>
+                              )}
                             </div>
                           ))}
                           {targetsDisplay.length === 0 && (
@@ -2016,10 +2099,16 @@ export function CreateSignalContent({
                           className={cn(
                             styles.input,
                             "border-rose-500/20 focus-visible:border-rose-500 focus-visible:ring-rose-500/20 text-rose-100 font-mono text-left h-11 placeholder:text-rose-500/30 bg-rose-500/5 focus-visible:bg-rose-500/10 shadow-inner",
+                            slFieldError && "border-rose-500/60 focus-visible:border-rose-500 shadow-[0_0_15px_-3px_rgba(244,63,94,0.4)] bg-rose-500/10"
                           )}
                           dir="ltr"
                           placeholder="مثال: 2320.0"
                         />
+                        {slFieldError && (
+                          <span className="text-[10px] text-rose-400 mt-1.5 flex items-center gap-1 animate-in fade-in slide-in-from-top-1 duration-300">
+                            <AlertTriangle className="w-3 h-3" /> {slFieldError}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -2384,9 +2473,12 @@ export function CreateSignalContent({
                           setEntryPointDisplay,
                         )
                       }
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setEntryPointDisplay(e.target.value)
-                      }
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        const cleaned = cleanNumericString(e.target.value);
+                        setEntryPointDisplay(cleaned);
+                        setManualChartAlert("");
+                        setPublishError("");
+                      }}
                       inputMode="decimal"
                       className={cn(
                         styles.input,
@@ -2425,9 +2517,10 @@ export function CreateSignalContent({
                           setStopLossDisplay,
                         )
                       }
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setStopLossDisplay(e.target.value)
-                      }
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        setStopLossDisplay(cleanNumericString(e.target.value));
+                        setPublishError("");
+                      }}
                       inputMode="decimal"
                       className={cn(
                         styles.input,
@@ -2453,7 +2546,7 @@ export function CreateSignalContent({
               <Button
                 className={cn("w-full", styles.buttonPrimary)}
                 disabled={isPublishDisabled || isPublishing}
-                onClick={handlePublish}
+                onClick={handleOpenManualPublishConfirm}
               >
                 {isPublishing ? mergedConfig.labels.publishing : mergedConfig.labels.submit}
               </Button>
@@ -2520,19 +2613,25 @@ export function CreateSignalContent({
           if (!open) setPendingManualSymbol(null);
         }}
       >
-        <AlertDialogContent className="bg-[#1A1A2E] border-white/10" dir="rtl">
+        <AlertDialogContent
+          className="w-[calc(100%-2rem)] max-w-md rounded-2xl border-white/10 bg-[radial-gradient(120%_120%_at_80%_0%,rgba(124,77,204,0.28),rgba(26,26,46,0.94)_45%,rgba(12,8,25,0.98)_100%)] backdrop-blur-xl sm:w-full"
+          dir="rtl"
+        >
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">
+            <AlertDialogTitle className="text-white flex items-center gap-2">
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-amber-500/20 text-amber-300">
+                <AlertTriangle className="h-4 w-4" />
+              </span>
               {mergedConfig.labels.confirmSymbolChangeTitle}
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-white/70">
+            <AlertDialogDescription className="text-white/75 leading-7">
               {mergedConfig.labels.confirmSymbolChangeDescription}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-3">
             <button
               onClick={handleConfirmManualSymbolChange}
-              className="inline-flex h-11 items-center justify-center rounded-lg px-6 py-2.5 text-sm font-semibold transition-all duration-200 bg-[#542C85] hover:bg-purple-700 text-white cursor-pointer"
+              className="inline-flex h-11 items-center justify-center rounded-xl px-6 py-2.5 text-sm font-semibold transition-all duration-200 bg-gradient-to-r from-[#6B3FA5] to-[#542C85] hover:brightness-110 text-white shadow-[0_0_24px_-8px_rgba(124,77,204,0.95)] cursor-pointer"
             >
               {mergedConfig.labels.yes}
             </button>
