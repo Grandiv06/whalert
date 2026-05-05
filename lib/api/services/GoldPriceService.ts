@@ -2,6 +2,8 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { GoldPriceCandleDto } from '../models/GoldPriceCandleDto';
+import type { GoldPriceSeries } from '../models/GoldPriceSeries';
 import type { GoldPriceSnapshotDto } from '../models/GoldPriceSnapshotDto';
 import type { UpdateGoldPriceInputDto } from '../models/UpdateGoldPriceInputDto';
 import type { UpdateGoldPriceResultDto } from '../models/UpdateGoldPriceResultDto';
@@ -22,6 +24,34 @@ export class GoldPriceService {
             url: '/api/services/app/GoldPrice/UpdateGoldPrice',
             body: requestBody,
             mediaType: 'application/json',
+        });
+    }
+    /**
+     * @param series
+     * @param intervalMinutes
+     * @param fromUtc
+     * @param toUtc
+     * @param tenantId
+     * @returns GoldPriceCandleDto Success
+     * @throws ApiError
+     */
+    public static apiServicesAppGoldpriceGetgoldpricecandlesGet(
+        series: GoldPriceSeries,
+        intervalMinutes?: number,
+        fromUtc?: string,
+        toUtc?: string,
+        tenantId?: number,
+    ): CancelablePromise<Array<GoldPriceCandleDto>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/services/app/GoldPrice/GetGoldPriceCandles',
+            query: {
+                'Series': series,
+                'IntervalMinutes': intervalMinutes,
+                'FromUtc': fromUtc,
+                'ToUtc': toUtc,
+                'TenantId': tenantId,
+            },
         });
     }
     /**

@@ -7,5 +7,6 @@ export type UpdateGoldPriceInputDto = {
     xauUsd?: number;
     goldGram24k?: number;
     mozaneh?: number;
+    forceSave?: boolean;
 };
 

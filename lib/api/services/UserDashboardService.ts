@@ -2,6 +2,8 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { AddMockDataForApiTestInput } from '../models/AddMockDataForApiTestInput';
+import type { AddMockDataForApiTestOutput } from '../models/AddMockDataForApiTestOutput';
 import type { ChartTimePeriodInput } from '../models/ChartTimePeriodInput';
 import type { DashboardPageInputDto } from '../models/DashboardPageInputDto';
 import type { DashboardPageResultDto } from '../models/DashboardPageResultDto';
@@ -367,6 +369,21 @@ export class UserDashboardService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/services/app/UserDashboard/GetMySubscriptionPlanDetails',
+        });
+    }
+    /**
+     * @param requestBody
+     * @returns AddMockDataForApiTestOutput Success
+     * @throws ApiError
+     */
+    public static apiServicesAppUserdashboardAddmockdataforapitestPost(
+        requestBody?: AddMockDataForApiTestInput,
+    ): CancelablePromise<AddMockDataForApiTestOutput> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/services/app/UserDashboard/AddMockDataForApiTest',
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
 }
