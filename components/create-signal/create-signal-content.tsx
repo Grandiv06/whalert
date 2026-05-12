@@ -74,8 +74,8 @@ export type CreateSignalServices = {
   getDynamicPrice: (
     symbol: string,
     timeframe: string,
-    fromIso: string,
-    toIso: string,
+    fromIso?: string,
+    toIso?: string,
   ) => PromiseLike<{
     response?:
       | Array<{

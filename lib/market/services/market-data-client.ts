@@ -152,7 +152,7 @@ export async function getLatestPrice(
   if (symbol === "XAUUSD" || symbol === "MAZAANE") {
     try {
       const snapshot = await GoldPriceService.apiServicesAppGoldpriceGetlatestgoldpriceGet();
-      const price = symbol === "XAUUSD" ? (snapshot.ouncePrice ?? 0) : (snapshot.mesghalPrice ?? 0);
+      const price = symbol === "XAUUSD" ? (snapshot.xauUsd ?? 0) : (snapshot.mozaneh ?? 0);
       return {
         symbol,
         source: "binance",
