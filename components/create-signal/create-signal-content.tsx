@@ -1877,7 +1877,7 @@ export function CreateSignalContent({
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setIsTimeframeSheetOpen(true)}
-                        className="h-10 px-3 flex items-center gap-1.5 rounded-xl bg-white/5 border border-white/10 text-white/80 text-xs font-bold transition-active active:scale-95"
+                        className="h-10 px-3 flex items-center gap-1.5 rounded-xl bg-white/5 border border-white/10 text-white/80 text-xs font-bold transition-active active:scale-95 font-mono ltr"
                       >
                         <Clock className="w-4 h-4 text-[#A87FF3]" />
                         {manualTimeframe.toUpperCase()}
@@ -1903,7 +1903,7 @@ export function CreateSignalContent({
                           key={i}
                           onClick={() => setSelectedManualTpIndex(i)}
                           className={cn(
-                            "h-10 min-w-[44px] px-3 rounded-lg font-bold text-xs transition-all",
+                            "h-10 min-w-[44px] px-3 rounded-lg font-bold text-xs transition-all font-mono ltr",
                             selectedManualTpIndex === i
                               ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20"
                               : "bg-white/5 text-white/40 border border-white/5"
@@ -1926,6 +1926,16 @@ export function CreateSignalContent({
                         </button>
                       )}
                     </div>
+
+                    {selectedManualTpIndex !== null && (
+                      <button
+                        onClick={() => handleRemoveSelectedTp(selectedManualTpIndex)}
+                        className="h-10 w-10 shrink-0 flex items-center justify-center rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 transition-active active:scale-95 ml-1"
+                        title="حذف حد سود"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 )}
 
@@ -2915,8 +2925,8 @@ export function CreateSignalContent({
                         : "bg-white/5 border-white/10 text-white/50"
                     )}
                   >
-                    <span className="text-lg font-bold">{tf.label}</span>
-                    <span className="text-[10px] opacity-60">{tf.fullLabel}</span>
+                    <span className="text-lg font-bold font-mono ltr">{tf.label}</span>
+                    <span className="text-[10px] opacity-60 font-mono ltr">{tf.fullLabel}</span>
                   </button>
                 ))}
               </div>
