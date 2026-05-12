@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import {
   Table,
   TableBody,
@@ -15,7 +16,6 @@ import {
   CalendarIcon,
   QuestionCircleIcon,
   PhoneCallIcon,
-  CopyAltIcon,
 } from "@/components/icons/dashboard-icons";
 import useDevice from "@/hooks/useDevice";
 import { useQuery } from "@tanstack/react-query";
@@ -186,17 +186,44 @@ export function InviteFriendsContent() {
       {/* Three Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
         {isMobile ? (
-          <div className="grid grid-cols-1 gap-3.5 w-full items-stretch">
+          <div className="grid grid-cols-2 gap-3.5 w-full">
             <Card
-              className="w-full min-h-[152px] flex flex-col bg-[#02000B]/30 border-white/5"
+              className="w-full min-h-[160px] flex flex-col bg-[#02000B]/60 border-white/5 rounded-[24px]"
               dir="rtl"
             >
-              <CardContent className="p-4 flex flex-col flex-1">
-                <h3 className="text-xs font-medium text-white/70 mb-1">
+              <CardContent className="p-4 flex flex-col items-center justify-between flex-1">
+                <h3 className="text-[11px] font-medium text-white/70 mb-2">
+                  کد دعوت شما
+                </h3>
+                <p className="text-[24px] font-bold text-white text-center mb-3 tracking-tight leading-none">
+                  {inviteCode}
+                </p>
+                <button
+                  type="button"
+                  onClick={handleCopyCode}
+                  className="w-full h-10 px-2 rounded-xl border border-[#6F3FB2] text-white text-[12px] font-medium hover:bg-[#542C85]/20 transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Image
+                    src="/icons/copy-alt.svg"
+                    alt="کپی"
+                    width={20}
+                    height={20}
+                    className="w-5 h-5 shrink-0"
+                  />
+                  {copiedCode ? "کپی شد!" : "کپی کردن"}
+                </button>
+              </CardContent>
+            </Card>
+            <Card
+              className="w-full min-h-[160px] flex flex-col bg-[#02000B]/60 border-white/5 rounded-[24px]"
+              dir="rtl"
+            >
+              <CardContent className="p-4 flex flex-col items-center justify-between flex-1">
+                <h3 className="text-[11px] font-medium text-white/70 mb-2">
                   لینک دعوت شما
                 </h3>
                 <p
-                  className="text-sm text-white break-all leading-6 flex-1 mt-1"
+                  className="text-[10px] text-white/90 break-all leading-tight text-center mb-3"
                   dir="ltr"
                 >
                   {inviteLink}
@@ -204,51 +231,36 @@ export function InviteFriendsContent() {
                 <button
                   type="button"
                   onClick={handleCopyLink}
-                  className="mt-3 w-full h-11 px-4 rounded-xl border border-[#6F3FB2] text-white text-sm font-medium hover:bg-[#542C85]/20 transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full h-10 px-2 rounded-xl border border-[#6F3FB2] text-white text-[12px] font-medium hover:bg-[#542C85]/20 transition-colors flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <CopyAltIcon />
+                  <Image
+                    src="/icons/copy-alt.svg"
+                    alt="کپی"
+                    width={20}
+                    height={20}
+                    className="w-5 h-5 shrink-0"
+                  />
                   {copiedLink ? "کپی شد!" : "کپی کردن"}
                 </button>
               </CardContent>
             </Card>
             <Card
-              className="w-full min-h-[152px] flex flex-col bg-[#02000B]/30 border-white/5"
+              className="col-span-2 w-full bg-[#02000B]/60 border-white/5 rounded-[24px]"
               dir="rtl"
             >
-              <CardContent className="p-4 flex flex-col flex-1">
-                <h3 className="text-xs font-medium text-white/70 mb-1">
-                  کد دعوت شما
-                </h3>
-                <p className="text-[28px] font-bold text-white flex-1 mt-1 tracking-tight leading-none">
-                  {inviteCode}
-                </p>
-                <button
-                  type="button"
-                  onClick={handleCopyCode}
-                  className="mt-3 w-full h-11 px-4 rounded-xl border border-[#6F3FB2] text-white text-sm font-medium hover:bg-[#542C85]/20 transition-colors flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <CopyAltIcon />
-                  {copiedCode ? "کپی شد!" : "کپی کردن"}
-                </button>
-              </CardContent>
-            </Card>
-            <Card
-              className="w-full bg-[#02000B]/30 border-white/5"
-              dir="rtl"
-            >
-              <CardContent className="p-4 flex items-center justify-between gap-3">
+              <CardContent className="p-6 flex items-center justify-between gap-3">
                 <div className="text-right">
-                  <h3 className="text-xs font-medium text-white/70">
-                    تعداد دوستان دعوت شده
+                  <h3 className="text-[14px] font-medium text-white/70">
+                    کد دعوت شما
                   </h3>
-                  <p className="text-[30px] font-bold text-white mt-1 leading-none">
+                  <p className="text-[32px] font-bold text-white mt-1 leading-none">
                     {invitedCount}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={handleViewList}
-                  className="h-11 px-6 rounded-xl border border-[#6F3FB2] text-white text-sm font-medium hover:bg-[#542C85]/20 transition-colors cursor-pointer whitespace-nowrap"
+                  className="h-10 px-6 rounded-xl border border-[#6F3FB2] text-white text-[12px] font-medium hover:bg-[#542C85]/20 transition-colors cursor-pointer whitespace-nowrap"
                 >
                   مشاهده لیست
                 </button>
@@ -269,7 +281,13 @@ export function InviteFriendsContent() {
                 onClick={handleCopyCode}
                 className="mt-auto w-full py-3 px-4 rounded-xl border-2 border-[#542C85] text-white text-sm font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2 cursor-pointer"
               >
-                <CopyAltIcon />
+                <Image
+                  src="/icons/copy-alt.svg"
+                  alt="کپی"
+                  width={20}
+                  height={20}
+                  className="w-5 h-5 shrink-0"
+                />
                 {copiedCode ? "کپی شد!" : "کپی کردن"}
               </button>
             </div>
@@ -288,7 +306,13 @@ export function InviteFriendsContent() {
                 onClick={handleCopyLink}
                 className="mt-auto w-full py-3 px-4 rounded-xl border-2 border-[#542C85] text-white text-sm font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2 cursor-pointer"
               >
-                <CopyAltIcon />
+                <Image
+                  src="/icons/copy-alt.svg"
+                  alt="کپی"
+                  width={20}
+                  height={20}
+                  className="w-5 h-5 shrink-0"
+                />
                 {copiedLink ? "کپی شد!" : "کپی کردن"}
               </button>
             </div>

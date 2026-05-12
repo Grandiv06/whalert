@@ -175,7 +175,7 @@ export function ProfileCard({
                       <AlertDialogAction
                         onClick={handleUnfollow}
                         disabled={isUnfollowPending}
-                        className="bg-[#542C85] hover:bg-[#6B3A9E] cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
+                        className="bg-[#542C85] text-white hover:bg-[#6B3A9E] cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
                       >
                         {isUnfollowPending ? (
                           <span className="inline-flex items-center gap-2">

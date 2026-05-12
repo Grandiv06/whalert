@@ -809,12 +809,14 @@ function AccountUserInfoFields({
         style={{ direction: "rtl" }}
       >
         {loadingUserInfo ? (
-          <div className="flex items-start gap-6 flex-row">
+          <div className="flex flex-col items-center gap-4 text-center sm:flex-row-reverse sm:items-start sm:gap-6 sm:text-right" dir="rtl">
             <Skeleton className="w-28 h-28 rounded-full shrink-0" />
-            <div className="flex-1 space-y-3">
-              <Skeleton className="h-7 w-40" />
-              <Skeleton className="h-4 w-full max-w-md" />
-              <Skeleton className="h-9 w-28" />
+            <div className="flex-1 min-w-0 space-y-3 w-full">
+              <Skeleton className="h-7 w-32 mx-auto sm:mr-0 sm:ml-auto" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-[90%] mx-auto sm:mr-0 sm:ml-auto" />
+              </div>
             </div>
           </div>
         ) : (
@@ -844,35 +846,65 @@ function AccountUserInfoFields({
         style={{ direction: "rtl" }}
       >
         <div className="flex items-center gap-3 mb-6">
-          <div
-            className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-              theme === "dark" ? "bg-purple-500/20" : "bg-purple-100"
-            }`}
-          >
-            <User
-              size={20}
-              className={
-                theme === "dark" ? "text-purple-400" : "text-purple-600"
-              }
-            />
-          </div>
-          <h3
-            className={`text-lg font-bold ${
-              theme === "dark" ? "text-white" : "text-gray-900"
-            }`}
-          >
-            اطلاعات شخصی
-          </h3>
+          {loadingUserInfo ? (
+            <>
+              <Skeleton className="w-10 h-10 rounded-lg shrink-0" />
+              <Skeleton className="h-6 w-32" />
+            </>
+          ) : (
+            <>
+              <div
+                className={`w-12 h-12 rounded-xl flex items-center justify-center border transition-all shrink-0 ${
+                  theme === "dark"
+                    ? "bg-purple-500/10 border-purple-500/20"
+                    : "bg-purple-50 border-purple-100"
+                }`}
+              >
+                <User
+                  size={24}
+                  className={
+                    theme === "dark" ? "text-purple-400" : "text-purple-600"
+                  }
+                />
+              </div>
+              <h3
+                className={`text-lg font-bold ${
+                  theme === "dark" ? "text-white" : "text-gray-900"
+                }`}
+              >
+                اطلاعات شخصی
+              </h3>
+            </>
+          )}
         </div>
 
         {loadingUserInfo ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="space-y-2">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-11 w-full" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6" dir="rtl">
+            <div className="space-y-2">
+              <div className="flex justify-end">
+                <Skeleton className="h-4 w-12" />
               </div>
-            ))}
+              <Skeleton className="h-11 w-full rounded-xl" />
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-end">
+                <Skeleton className="h-4 w-20" />
+              </div>
+              <Skeleton className="h-11 w-full rounded-xl" />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <Skeleton className="h-4 w-24 rounded-full" />
+                <Skeleton className="h-4 w-16" />
+              </div>
+              <Skeleton className="h-11 w-full rounded-xl" />
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-end">
+                <Skeleton className="h-4 w-12" />
+              </div>
+              <Skeleton className="h-11 w-full rounded-xl" />
+            </div>
           </div>
         ) : profileError ? null : (
           <div
@@ -1519,12 +1551,16 @@ export function AccountSettingClient() {
                           ? "bg-white/5 border-white/10"
                           : "bg-white border-gray-200 shadow-sm"
                       }`}
+                      dir="rtl"
                     >
-                      <div className="flex items-start gap-6 flex-row">
+                      <div className="flex flex-col items-center gap-4 text-center sm:flex-row-reverse sm:items-start sm:gap-6 sm:text-right">
                         <Skeleton className="w-28 h-28 rounded-full shrink-0" />
-                        <div className="flex-1 space-y-3">
-                          <Skeleton className="h-7 w-40" />
-                          <Skeleton className="h-4 w-full max-w-md" />
+                        <div className="flex-1 min-w-0 space-y-3 w-full">
+                          <Skeleton className="h-7 w-32 mx-auto sm:mr-0 sm:ml-auto" />
+                          <div className="space-y-2">
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-[90%] mx-auto sm:mr-0 sm:ml-auto" />
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1534,18 +1570,43 @@ export function AccountSettingClient() {
                           ? "bg-white/5 border-white/10"
                           : "bg-white border-gray-200 shadow-sm"
                       }`}
+                      dir="rtl"
                     >
-                      <Skeleton className="h-6 w-36 mb-6" />
+                      <div className="flex items-center gap-3 mb-6">
+                        <Skeleton className="w-10 h-10 rounded-lg shrink-0" />
+                        <Skeleton className="h-6 w-32" />
+                      </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {[1, 2, 3, 4].map((i) => (
-                          <div key={i} className="space-y-2">
-                            <Skeleton className="h-4 w-24" />
-                            <Skeleton className="h-11 w-full" />
+                        <div className="space-y-2">
+                          <div className="flex justify-end">
+                            <Skeleton className="h-4 w-12" />
                           </div>
-                        ))}
+                          <Skeleton className="h-11 w-full rounded-xl" />
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex justify-end">
+                            <Skeleton className="h-4 w-20" />
+                          </div>
+                          <Skeleton className="h-11 w-full rounded-xl" />
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <Skeleton className="h-4 w-24 rounded-full" />
+                            <Skeleton className="h-4 w-16" />
+                          </div>
+                          <Skeleton className="h-11 w-full rounded-xl" />
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex justify-end">
+                            <Skeleton className="h-4 w-12" />
+                          </div>
+                          <Skeleton className="h-11 w-full rounded-xl" />
+                        </div>
                       </div>
                     </div>
-                    <Skeleton className="h-12 w-40 rounded-lg" />
+                    <div className="flex justify-start pt-2" dir="rtl">
+                      <Skeleton className="h-12 w-40 rounded-lg" />
+                    </div>
                   </div>
                 )}
 
@@ -1589,8 +1650,10 @@ export function AccountSettingClient() {
                   <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div className="flex items-center gap-3 text-right">
                       <div
-                        className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                          theme === "dark" ? "bg-blue-500/20" : "bg-blue-100"
+                        className={`w-12 h-12 rounded-xl flex items-center justify-center border transition-all shrink-0 ${
+                          theme === "dark" 
+                            ? "bg-blue-500/10 border-blue-500/20" 
+                            : "bg-blue-50 border-blue-100"
                         }`}
                       >
                         <Send
@@ -1679,8 +1742,10 @@ export function AccountSettingClient() {
                   <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div className="flex items-center gap-3 text-right">
                       <div
-                        className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                          theme === "dark" ? "bg-teal-500/20" : "bg-teal-100"
+                        className={`w-12 h-12 rounded-xl flex items-center justify-center border transition-all shrink-0 ${
+                          theme === "dark" 
+                            ? "bg-teal-500/10 border-teal-500/20" 
+                            : "bg-teal-50 border-teal-100"
                         }`}
                       >
                         <Activity

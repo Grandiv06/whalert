@@ -2786,10 +2786,10 @@ export function CreateSignalContent({
         }}
       >
         <AlertDialogContent
-          className="bg-gradient-to-br from-[#120721] via-[#1B0D33] to-[#0B1020] border-[#8D5AE2]/40 text-white shadow-[0_0_80px_-20px_rgba(141,90,226,0.7)] max-w-xl"
+          className="bg-gradient-to-br from-[#120721] via-[#1B0D33] to-[#0B1020] border-[#8D5AE2]/40 text-white shadow-[0_0_80px_-20px_rgba(141,90,226,0.7)] w-[94vw] md:max-w-xl max-h-[92vh] overflow-hidden p-0 flex flex-col"
           dir="rtl"
         >
-          <AlertDialogHeader>
+          <AlertDialogHeader className="p-6 pb-2">
             <AlertDialogTitle className="text-xl font-bold flex items-center gap-2 text-white">
               <CheckCircle2 className="w-5 h-5 text-emerald-400" />
               {mergedConfig.labels.publishTitle}
@@ -2799,67 +2799,63 @@ export function CreateSignalContent({
             </AlertDialogDescription>
           </AlertDialogHeader>
 
-          {manualPublishPreview && (
-            <div className="rounded-2xl border border-white/10 bg-black/25 p-4 space-y-3">
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="rounded-xl bg-white/5 border border-white/10 p-3">
-                  <span className="text-white/50">{mergedConfig.labels.symbol}</span>
-                  <p className="font-bold mt-1">
-                    {manualPublishPreview.symbol}
-                  </p>
+          <div className="flex-1 overflow-y-auto p-6 py-2 custom-scrollbar">
+            {manualPublishPreview && (
+            <div className="space-y-4">
+              {/* Summary Badges */}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-[11px] font-bold text-white/90">
+                  {manualPublishPreview.symbol}
                 </div>
-                <div className="rounded-xl bg-white/5 border border-white/10 p-3">
-                  <span className="text-white/50">{mergedConfig.labels.timeframe}</span>
-                  <p className="font-bold font-mono mt-1 ltr text-left">
-                    {toEnglishDigits(manualPublishPreview.timeframe)}
-                  </p>
+                <div className={cn(
+                  "px-3 py-1.5 rounded-full border text-[11px] font-bold",
+                  manualPublishPreview.side === "LONG" 
+                    ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" 
+                    : "bg-rose-500/10 border-rose-500/20 text-rose-400"
+                )}>
+                  {manualPublishPreview.side === "LONG" ? mergedConfig.labels.long : mergedConfig.labels.short}
                 </div>
-                <div className="rounded-xl bg-white/5 border border-white/10 p-3">
-                  <span className="text-white/50">{mergedConfig.labels.side}</span>
-                  <p
-                    className={cn(
-                      "font-bold mt-1",
-                      manualPublishPreview.side === "LONG"
-                        ? "text-emerald-400"
-                        : "text-rose-400",
-                    )}
-                  >
-                    {manualPublishPreview.side === "LONG"
-                      ? mergedConfig.labels.long
-                      : mergedConfig.labels.short}
-                  </p>
+                <div className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-[11px] font-bold text-white/70 font-mono ltr">
+                  {toEnglishDigits(manualPublishPreview.timeframe)}
                 </div>
-                <div className="rounded-xl bg-white/5 border border-white/10 p-3">
-                  <span className="text-white/50">Entry</span>
-                  <p className="font-bold font-mono mt-1 ltr text-left">
-                    {formatLevelPrice(manualPublishPreview.entry)}
-                  </p>
-                </div>
-                <div className="rounded-xl bg-white/5 border border-white/10 p-3">
-                  <span className="text-white/50">SL</span>
-                  <p className="font-bold font-mono mt-1 text-rose-300 ltr text-left">
-                    {formatLevelPrice(manualPublishPreview.stopLoss)}
-                  </p>
-                </div>
-                <div className="rounded-xl bg-white/5 border border-white/10 p-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-white/50">TP</span>
-                    {manualPublishPreview.takeProfits.length > 1 && (
-                      <span className="text-[11px] font-medium text-white/40 font-mono">
-                        {manualPublishPreview.takeProfits.length} :TP
-                      </span>
-                    )}
+              </div>
+
+              {/* Main Levels Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Entry & SL */}
+                <div className="space-y-3">
+                  <div className="rounded-2xl bg-[#38bdf8]/5 border border-[#38bdf8]/20 p-4 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-[#38bdf8]/10 blur-3xl -mr-12 -mt-12" />
+                    <span className="text-[10px] uppercase tracking-wider text-[#38bdf8]/70 font-bold">Entry Price</span>
+                    <p className="text-2xl font-bold font-mono mt-1 text-white ltr text-left">
+                      {formatLevelPrice(manualPublishPreview.entry)}
+                    </p>
                   </div>
-                  <div className="mt-2 space-y-1.5 max-h-28 overflow-y-auto pr-1 [scrollbar-width:thin] [scrollbar-color:rgba(168,127,243,0.55)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-violet-300/45 [&::-webkit-scrollbar-thumb:hover]:bg-blue-300/65">
+                  <div className="rounded-2xl bg-rose-500/5 border border-rose-500/20 p-4 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/10 blur-3xl -mr-12 -mt-12" />
+                    <span className="text-[10px] uppercase tracking-wider text-rose-400/70 font-bold">Stop Loss</span>
+                    <p className="text-2xl font-bold font-mono mt-1 text-rose-400 ltr text-left">
+                      {formatLevelPrice(manualPublishPreview.stopLoss)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Take Profits */}
+                <div className="rounded-2xl bg-emerald-500/5 border border-emerald-500/20 p-4 flex flex-col min-h-[160px]">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[10px] uppercase tracking-wider text-emerald-400/70 font-bold">Take Profits</span>
+                    <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-[10px] font-bold text-emerald-400 font-mono">
+                      {manualPublishPreview.takeProfits.length} Targets
+                    </span>
+                  </div>
+                  <div className="space-y-2 flex-1 overflow-y-auto pr-1 [scrollbar-width:thin] [scrollbar-color:rgba(16,185,129,0.3)_transparent] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-emerald-500/30 [&::-webkit-scrollbar-thumb]:rounded-full">
                     {manualPublishPreview.takeProfits.map((tp, index) => (
                       <div
                         key={`${tp}-${index}`}
-                        className="flex items-center justify-between gap-3 rounded-lg border border-emerald-400/20 bg-emerald-500/5 px-2.5 py-1.5"
+                        className="flex items-center justify-between rounded-xl bg-white/5 px-3 py-2 border border-white/5"
                       >
-                        <span className="text-[11px] font-bold text-emerald-200/90">
-                          TP{index + 1}
-                        </span>
-                        <span className="font-bold font-mono text-emerald-300 ltr text-left">
+                        <span className="text-[11px] font-bold text-white/50 font-mono">T{index + 1}</span>
+                        <span className="font-bold font-mono text-emerald-400 ltr">
                           {formatLevelPrice(tp)}
                         </span>
                       </div>
@@ -2867,34 +2863,42 @@ export function CreateSignalContent({
                   </div>
                 </div>
               </div>
+
               {manualPublishPreview.description && (
-                <div className="rounded-xl bg-white/5 border border-white/10 p-3 text-sm leading-7 overflow-hidden">
-                  <span className="text-white/50">{mergedConfig.labels.descriptionTitle}</span>
-                  <p className="mt-1 text-white/90 whitespace-pre-wrap break-all [overflow-wrap:anywhere] max-h-24 overflow-y-auto pr-1 [scrollbar-width:thin] [scrollbar-color:rgba(168,127,243,0.55)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-violet-300/45 [&::-webkit-scrollbar-thumb:hover]:bg-blue-300/65">
+                <div className="rounded-2xl bg-white/5 border border-white/10 p-4">
+                  <div className="flex items-center gap-2 mb-2 text-white/50">
+                    <FileText className="w-3.5 h-3.5" />
+                    <span className="text-[10px] uppercase tracking-wider font-bold">
+                      {mergedConfig.labels.descriptionTitle}
+                    </span>
+                  </div>
+                  <p className="text-sm text-white/80 leading-relaxed whitespace-pre-wrap break-all max-h-32 overflow-y-auto pr-2 [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.1)_transparent] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full">
                     {manualPublishPreview.description}
                   </p>
                 </div>
               )}
             </div>
-          )}
+            )}
+          </div>
 
-          <AlertDialogFooter className="gap-3">
-            <button
-              onClick={handlePublishManual}
-              disabled={isPublishing}
-              className="inline-flex h-12 items-center justify-center rounded-xl px-6 py-2.5 text-sm font-bold transition-all duration-200 bg-gradient-to-r from-emerald-500 to-emerald-400 text-black shadow-[0_0_25px_-6px_rgba(16,185,129,0.8)] hover:brightness-110 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {isPublishing ? mergedConfig.labels.publishing : mergedConfig.labels.confirmTitle}
-            </button>
+          <AlertDialogFooter className="p-6 pt-2 flex flex-col-reverse sm:flex-row gap-3 border-t border-white/5">
             <AlertDialogCancel
               onClick={() => {
                 setIsManualPublishConfirmOpen(false);
                 setManualPublishPreview(null);
               }}
-              className="h-12 border-white/20 bg-white/5 text-white hover:bg-white/10 cursor-pointer"
+              className="h-12 w-full sm:w-auto border-white/20 bg-white/5 text-white hover:bg-white/10 cursor-pointer rounded-xl m-0"
             >
               {mergedConfig.labels.cancel}
             </AlertDialogCancel>
+            <button
+              onClick={handlePublishManual}
+              disabled={isPublishing}
+              type="button"
+              className="inline-flex h-12 w-full sm:flex-1 items-center justify-center rounded-xl px-6 py-2.5 text-sm font-bold transition-all duration-200 bg-gradient-to-r from-emerald-500 to-emerald-400 text-black shadow-[0_0_25px_-6px_rgba(16,185,129,0.8)] hover:brightness-110 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {isPublishing ? mergedConfig.labels.publishing : mergedConfig.labels.confirmTitle}
+            </button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
