@@ -30,6 +30,13 @@ import {
   XCircle,
   LayoutGrid,
   PanelsTopLeft,
+  ChevronLeft,
+  Clock,
+  RefreshCw,
+  Settings,
+  MoreHorizontal,
+  Maximize2,
+  RotateCcw,
 } from "lucide-react";
 import { cn, toEnglishDigits, toPersianDigits, deepMerge } from "@/lib/utils";
 import { AISparkleLoader } from "@/components/ui/ai-sparkle-loader";
@@ -722,6 +729,9 @@ export function CreateSignalContent({
     setIsManualPositionChangeConfirmOpen,
   ] = useState(false);
   const [toasts, setToasts] = useState<SignalToast[]>([]);
+  const [isTimeframeSheetOpen, setIsTimeframeSheetOpen] = useState(false);
+  const [isMoreToolsSheetOpen, setIsMoreToolsSheetOpen] = useState(false);
+  const [fitContentTrigger, setFitContentTrigger] = useState(0);
 
   // Auto-focus new target input when added
   useEffect(() => {
@@ -846,55 +856,47 @@ export function CreateSignalContent({
       label: timeframeOption.label,
     }));
 
-  useEffect(() => {
-    let cancelled = false;
+  const fetchChartData = async (cancelledRef?: { current: boolean }) => {
+    setIsManualChartLoading(true);
+    setManualChartAlert("");
 
-    const fetchChartData = async () => {
-      setIsManualChartLoading(true);
-      setManualChartAlert("");
-
-      const toDate = new Date();
-      const tf = mergedConfig.availableTimeframes.find(
-        (t) => t.value === manualTimeframe,
+    try {
+      const response = await services.getDynamicPrice(
+        manualApiSymbol,
+        manualTimeframe,
+        undefined,
+        undefined,
       );
-      const lookbackDays = tf?.lookbackDays ?? 10;
-      const fromDate = new Date(
-        toDate.getTime() - lookbackDays * 24 * 60 * 60 * 1000,
-      );
-
-      try {
-        const response = await services.getDynamicPrice(
-          manualApiSymbol,
-          manualTimeframe,
-          undefined, // fromIso
-          undefined, // toIso
-        );
-        const normalized = normalizeApiCandles(response?.response);
-        if (!cancelled && normalized.length >= 20) {
-          setManualChartData(normalized);
-          return;
-        }
-        throw new Error("NO_CANDLES");
-      } catch {
-        if (cancelled) return;
-        const demo = buildDemoChartData(
-          manualSymbol,
-          manualTimeframe,
-          mergedConfig.availableTimeframes,
-          mergedConfig.availableSymbols,
-        );
-        setManualChartData(demo);
-      } finally {
-        if (!cancelled) {
-          setIsManualChartLoading(false);
-        }
+      const normalized = normalizeApiCandles(response?.response);
+      if (cancelledRef?.current) return;
+      
+      if (normalized.length >= 20) {
+        setManualChartData(normalized);
+        return;
       }
-    };
+      throw new Error("NO_CANDLES");
+    } catch {
+      if (cancelledRef?.current) return;
+      const demo = buildDemoChartData(
+        manualSymbol,
+        manualTimeframe,
+        mergedConfig.availableTimeframes,
+        mergedConfig.availableSymbols,
+      );
+      setManualChartData(demo);
+    } finally {
+      if (!cancelledRef?.current) {
+        setIsManualChartLoading(false);
+      }
+    }
+  };
 
-    fetchChartData();
+  useEffect(() => {
+    const cancelled = { current: false };
+    fetchChartData(cancelled);
 
     return () => {
-      cancelled = true;
+      cancelled.current = true;
     };
   }, [
     manualSymbol,
@@ -1287,6 +1289,21 @@ export function CreateSignalContent({
   const handleSelectManualChartMode = (mode: ChartSelectionMode) => {
     setPublishError("");
     setManualChartAlert("");
+
+    // Toggle off if clicking the same mode
+    if (manualChartSelectionMode === mode) {
+      setManualChartSelectionMode(null);
+      return;
+    }
+
+    if (mode && mode !== "entry" && entryParsed <= 0) {
+      setManualChartAlert(mergedConfig.messages.setEntryFirst);
+      if (isMobileViewport) {
+        pushToast(mergedConfig.messages.setEntryFirst, "error");
+      }
+      return;
+    }
+
     setManualChartSelectionMode(mode);
     if (mode !== "tp") {
       setSelectedManualTpIndex(null);
@@ -1469,11 +1486,17 @@ export function CreateSignalContent({
       setEntryPointDisplay(String(selectedPrice));
       setManualChartAlert("");
       setPublishError("");
+      if (isMobileViewport) {
+        // Removed toast per user request
+      }
       return;
     }
 
     if (entryParsed <= 0) {
       setManualChartAlert(mergedConfig.messages.setEntryFirst);
+      if (isMobileViewport) {
+        pushToast(mergedConfig.messages.setEntryFirst, "error");
+      }
       return;
     }
 
@@ -1521,6 +1544,9 @@ export function CreateSignalContent({
         );
         setSelectedManualTpIndex(movedToIndex >= 0 ? movedToIndex : null);
       }
+      if (isMobileViewport) {
+        // Removed toast per user request
+      }
       return;
     }
 
@@ -1539,6 +1565,9 @@ export function CreateSignalContent({
     setStopLossDisplay(String(selectedPrice));
     setManualChartAlert("");
     setPublishError("");
+    if (isMobileViewport) {
+      // Removed toast per user request
+    }
   };
 
   useEffect(() => {
@@ -1623,7 +1652,7 @@ export function CreateSignalContent({
     "w-full p-1.5 md:p-2 flex flex-col border-[#542C85]/40 backdrop-blur-md transition-all duration-500",
     effectiveManualLayoutMode === "default" &&
       (isMobileViewport
-        ? "h-[52vh] min-h-[360px] max-h-[500px] shadow-[0_0_24px_-14px_rgba(84,44,133,0.45)] bg-[#02000B]/35"
+        ? "h-[60vh] min-h-[400px] max-h-[600px] shadow-[0_0_24px_-14px_rgba(84,44,133,0.45)] bg-[#02000B]/35 p-0"
         : "h-[550px] shadow-[0_0_30px_-10px_rgba(84,44,133,0.3)] bg-[#02000B]/30"),
     effectiveManualLayoutMode === "focus" &&
       "h-full shadow-[0_0_50px_-10px_rgba(84,44,133,0.5)] bg-gradient-to-br from-[#02000B]/80 to-[#542C85]/10 border-[#542C85]/60",
@@ -1787,9 +1816,126 @@ export function CreateSignalContent({
                   entryColor={manualEntryColor}
                   tpColor={manualTpColor}
                   slColor={manualSlColor}
+                  hideToolbar={isMobileViewport}
+                  isMobile={isMobileViewport}
+                  fitContentTrigger={fitContentTrigger}
                 />
               </Card>
             </div>
+
+            {/* Mobile Chart Toolbar */}
+            {isMobileViewport && creationMode === "manual" && (
+              <div className="flex flex-col gap-3 mt-1 mb-4">
+                {manualChartSelectionMode === null ? (
+                  <button
+                    onClick={() => handleSelectManualChartMode("entry")}
+                    className="w-full h-14 rounded-2xl bg-gradient-to-r from-[#542C85] to-[#63359d] text-white font-bold shadow-lg shadow-[#542C85]/30 flex items-center justify-center gap-3 animate-in fade-in zoom-in-95 duration-500 group"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <TrendingUp className="w-4 h-4" />
+                    </div>
+                    <span>فعال‌سازی ثبت دستی روی چارت</span>
+                  </button>
+                ) : (
+                  <div className="flex items-center justify-between gap-2 bg-[#02000B]/40 border border-white/10 rounded-2xl p-1.5 backdrop-blur-xl animate-in slide-in-from-bottom-2 duration-300">
+                    <div className="flex items-center gap-1.5 p-1 bg-black/30 rounded-xl">
+                      <button
+                        onClick={() => handleSelectManualChartMode("entry")}
+                        className={cn(
+                          "h-10 px-3 rounded-lg text-xs font-bold transition-all",
+                          manualChartSelectionMode === "entry"
+                            ? "bg-sky-500 text-white shadow-lg shadow-sky-500/20"
+                            : "text-white/50 hover:text-white"
+                        )}
+                      >
+                        Entry
+                      </button>
+                      <button
+                        onClick={() => handleSelectManualChartMode("tp")}
+                        className={cn(
+                          "h-10 px-3 rounded-lg text-xs font-bold transition-all",
+                          manualChartSelectionMode === "tp"
+                            ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20"
+                            : "text-white/50 hover:text-white"
+                        )}
+                      >
+                        TP
+                      </button>
+                      <button
+                        onClick={() => handleSelectManualChartMode("sl")}
+                        className={cn(
+                          "h-10 px-3 rounded-lg text-xs font-bold transition-all",
+                          manualChartSelectionMode === "sl"
+                            ? "bg-rose-500 text-white shadow-lg shadow-rose-500/20"
+                            : "text-white/50 hover:text-white"
+                        )}
+                      >
+                        SL
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setIsTimeframeSheetOpen(true)}
+                        className="h-10 px-3 flex items-center gap-1.5 rounded-xl bg-white/5 border border-white/10 text-white/80 text-xs font-bold transition-active active:scale-95"
+                      >
+                        <Clock className="w-4 h-4 text-[#A87FF3]" />
+                        {manualTimeframe.toUpperCase()}
+                      </button>
+                      
+                      <button
+                        onClick={() => setManualChartSelectionMode(null)}
+                        className="h-10 w-10 flex items-center justify-center rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 transition-active active:scale-95"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* TP Index Selector (Mobile) */}
+                {manualChartSelectionMode === "tp" && (
+                  <div className="flex items-center gap-2 p-1.5 bg-emerald-500/5 border border-emerald-500/20 rounded-xl overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden animate-in slide-in-from-top-2 duration-300">
+                    <span className="text-[10px] font-bold text-emerald-400/70 px-2 shrink-0">Select TP:</span>
+                    <div className="flex items-center gap-1.5">
+                      {targetsDisplay.map((_, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setSelectedManualTpIndex(i)}
+                          className={cn(
+                            "h-10 min-w-[44px] px-3 rounded-lg font-bold text-xs transition-all",
+                            selectedManualTpIndex === i
+                              ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20"
+                              : "bg-white/5 text-white/40 border border-white/5"
+                          )}
+                        >
+                          T{i + 1}
+                        </button>
+                      ))}
+                      {targetsDisplay.length < 5 && (
+                        <button
+                          onClick={() => setSelectedManualTpIndex(null)}
+                          className={cn(
+                            "h-10 w-10 flex items-center justify-center rounded-lg border border-dashed transition-all",
+                            selectedManualTpIndex === null
+                              ? "bg-emerald-500 text-white border-emerald-500 shadow-lg shadow-emerald-500/20"
+                              : "border-white/20 text-white/30"
+                          )}
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {manualChartSelectionMode && (
+                  <div className="bg-[#542C85]/20 border border-[#542C85]/30 rounded-xl px-4 py-2 text-[11px] text-[#E9DDFF] text-center animate-in fade-in slide-in-from-top-1 duration-300">
+                    {manualChartSelectionMode === "entry" ? "نقطه ورود" : manualChartSelectionMode === "sl" ? "حد ضرر" : "حد سود"} فعال است. روی چارت کلیک کنید.
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className={manualFormWrapperClass}>
               <Card
@@ -2742,6 +2888,115 @@ export function CreateSignalContent({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Mobile Timeframe Sheet */}
+      {isMobileViewport && isTimeframeSheetOpen &&
+        createPortal(
+          <div className="fixed inset-0 z-[100] flex items-end justify-center animate-in fade-in duration-300">
+            <div 
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
+              onClick={() => setIsTimeframeSheetOpen(false)}
+            />
+            <div className="relative w-full max-w-md bg-[#05070F] border-t border-white/10 rounded-t-3xl p-6 pb-10 animate-in slide-in-from-bottom-full duration-300 shadow-[0_-8px_40px_rgba(0,0,0,0.5)]">
+              <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-6" />
+              <h3 className="text-lg font-bold text-white mb-6 text-center font-bold">انتخاب تایم‌فریم</h3>
+              <div className="grid grid-cols-3 gap-3">
+                {mergedConfig.availableTimeframes.map((tf) => (
+                  <button
+                    key={tf.value}
+                    onClick={() => {
+                      setManualTimeframe(tf.value);
+                      setIsTimeframeSheetOpen(false);
+                    }}
+                    className={cn(
+                      "flex flex-col items-center justify-center gap-1.5 h-20 rounded-2xl border transition-all",
+                      manualTimeframe === tf.value
+                        ? "bg-[#542C85] border-[#A87FF3] text-white"
+                        : "bg-white/5 border-white/10 text-white/50"
+                    )}
+                  >
+                    <span className="text-lg font-bold">{tf.label}</span>
+                    <span className="text-[10px] opacity-60">{tf.fullLabel}</span>
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => setIsTimeframeSheetOpen(false)}
+                className="w-full mt-6 h-14 rounded-2xl bg-white/5 text-white font-bold"
+              >
+                انصراف
+              </button>
+            </div>
+          </div>,
+          document.body
+        )
+      }
+
+      {/* Mobile More Tools Sheet */}
+      {isMobileViewport && isMoreToolsSheetOpen &&
+        createPortal(
+          <div className="fixed inset-0 z-[100] flex items-end justify-center animate-in fade-in duration-300">
+            <div 
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
+              onClick={() => setIsMoreToolsSheetOpen(false)}
+            />
+            <div className="relative w-full max-w-md bg-[#05070F] border-t border-white/10 rounded-t-3xl p-6 pb-10 animate-in slide-in-from-bottom-full duration-300 shadow-[0_-8px_40px_rgba(0,0,0,0.5)]">
+              <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-6" />
+              <h3 className="text-lg font-bold text-white mb-6 text-center">ابزارهای چارت</h3>
+              <div className="space-y-3">
+                <button
+                  onClick={() => {
+                    fetchChartData();
+                    setIsMoreToolsSheetOpen(false);
+                  }}
+                  className="w-full flex items-center justify-between px-5 h-16 rounded-2xl bg-white/5 border border-white/10 text-white"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-[#542C85]/20 flex items-center justify-center">
+                      <RefreshCw className="w-5 h-5 text-[#A87FF3]" />
+                    </div>
+                    <span className="font-bold">بروزرسانی چارت</span>
+                  </div>
+                  <ChevronLeft className="w-5 h-5 opacity-40" />
+                </button>
+
+                <button
+                  onClick={() => {
+                    setFitContentTrigger(prev => prev + 1);
+                    setIsMoreToolsSheetOpen(false);
+                  }}
+                  className="w-full flex items-center justify-between px-5 h-16 rounded-2xl bg-white/5 border border-white/10 text-white"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-[#542C85]/20 flex items-center justify-center">
+                      <RotateCcw className="w-5 h-5 text-[#A87FF3]" />
+                    </div>
+                    <span className="font-bold">بازنشانی دید چارت</span>
+                  </div>
+                  <ChevronLeft className="w-5 h-5 opacity-40" />
+                </button>
+
+                <button
+                  onClick={() => {
+                     setCreationMode("ai");
+                     setIsMoreToolsSheetOpen(false);
+                  }}
+                  className="w-full flex items-center justify-between px-5 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-rose-500/20 flex items-center justify-center">
+                      <X className="w-5 h-5" />
+                    </div>
+                    <span className="font-bold">خروج از حالت دستی</span>
+                  </div>
+                  <ChevronLeft className="w-5 h-5 opacity-40" />
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )
+      }
 
       {toasts.length > 0 &&
         createPortal(

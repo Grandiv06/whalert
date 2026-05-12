@@ -52,6 +52,9 @@ interface LightweightChartProps {
   entryColor?: string;
   tpColor?: string;
   slColor?: string;
+  hideToolbar?: boolean;
+  isMobile?: boolean;
+  fitContentTrigger?: number;
 }
 
 const DEFAULT_ENTRY_COLOR = "#38bdf8";
@@ -83,10 +86,19 @@ export function LightweightChart({
   entryColor = DEFAULT_ENTRY_COLOR,
   tpColor = DEFAULT_TP_COLOR,
   slColor = DEFAULT_SL_COLOR,
+  hideToolbar = false,
+  isMobile = false,
+  fitContentTrigger = 0,
 }: LightweightChartProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
+
+  useEffect(() => {
+    if (fitContentTrigger > 0) {
+      chartRef.current?.timeScale().fitContent();
+    }
+  }, [fitContentTrigger]);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const dataRef = useRef<ChartDataElement[]>(data);
   const linesRef = useRef<IPriceLine[]>([]);
@@ -492,11 +504,13 @@ export function LightweightChart({
         lineWidth: 2,
         lineStyle: LineStyle.Solid,
         axisLabelVisible: true,
-        title: isCompactChart
-          ? "Entry"
-          : side === "SHORT"
-            ? "Entry Short"
-            : "Entry Long",
+        title: isMobile
+          ? "E"
+          : isCompactChart
+            ? "Entry"
+            : side === "SHORT"
+              ? "Entry Short"
+              : "Entry Long",
       });
       linesRef.current.push(line);
     }
@@ -508,7 +522,7 @@ export function LightweightChart({
         lineWidth: 2,
         lineStyle: LineStyle.Solid,
         axisLabelVisible: true,
-        title: isCompactChart ? "SL" : "Stop Loss",
+        title: isMobile || isCompactChart ? "SL" : "Stop Loss",
       });
       linesRef.current.push(line);
     }
@@ -523,7 +537,7 @@ export function LightweightChart({
         lineWidth: isSelectedTp ? 2 : 2,
         lineStyle: isSelectedTp ? LineStyle.Dashed : LineStyle.Solid,
         axisLabelVisible: true,
-        title: isCompactChart ? `T${i + 1}` : `TP${i + 1}`,
+        title: isMobile || isCompactChart ? `T${i + 1}` : `TP${i + 1}`,
       });
       linesRef.current.push(line);
     });
@@ -554,10 +568,11 @@ export function LightweightChart({
         selectionMode ? "cursor-cell" : "cursor-crosshair"
       }`}
     >
-      <div
-        className="absolute inset-x-3 top-3 z-20 flex items-start gap-3 pointer-events-none"
-        dir="ltr"
-      >
+      {!hideToolbar && (
+        <div
+          className="absolute inset-x-3 top-3 z-20 flex items-start gap-3 pointer-events-none"
+          dir="ltr"
+        >
         <div className="flex flex-wrap items-center gap-2 pointer-events-auto">
           {manualModeLabel && (
             <button
@@ -737,6 +752,7 @@ export function LightweightChart({
           </button>
         </div>
       </div>
+    )}
 
       <div className="hidden md:block absolute left-2 bottom-8 z-20 bg-[#02000B]/96 border border-white/10 backdrop-blur-xl rounded-lg p-2.5 pointer-events-none shadow-[0_8px_24px_-12px_rgba(0,0,0,0.92)]">
         <div className="flex items-center gap-2 text-[11px] mb-1.5 text-white/70" dir="ltr">
