@@ -4,6 +4,7 @@ import {
   DEFAULT_TIMEFRAME,
 } from "@/lib/market/constants";
 import { generateMockCandles, getMockLatestPrice } from "@/lib/market/mock-data";
+import { GoldPriceService, GoldPriceSeries } from "@/lib/api/client";
 import type {
   CandlesApiResponse,
   MarketCandle,
@@ -68,6 +69,50 @@ export async function getHistoricalCandles(
   limit = DEFAULT_CANDLE_LIMIT,
   options: RequestOptions = {},
 ): Promise<CandlesApiResponse> {
+  if (symbol === "XAUUSD" || symbol === "MAZAANE") {
+    try {
+      const series = symbol === "XAUUSD" ? GoldPriceSeries._0 : GoldPriceSeries._1;
+      const timeframeMinutesMap: Record<string, number> = {
+        "1m": 1,
+        "5m": 5,
+        "15m": 15,
+        "1h": 60,
+        "4h": 240,
+        "1d": 1440,
+      };
+      const intervalMinutes = timeframeMinutesMap[timeframe] ?? 15;
+      
+      const candles = await GoldPriceService.apiServicesAppGoldpriceGetgoldpricecandlesGet(
+        series,
+        intervalMinutes,
+        undefined, // fromUtc
+        undefined, // toUtc
+      );
+
+      return {
+        symbol,
+        timeframe,
+        source: "binance", // Keeping label for now or could use "internal"
+        candles: (candles ?? []).map((c) => ({
+          time: (c.bucketStart ? Math.floor(new Date(c.bucketStart).getTime() / 1000) : 0) as UTCTimestamp,
+          open: c.open ?? 0,
+          high: c.high ?? 0,
+          low: c.low ?? 0,
+          close: c.close ?? 0,
+          volume: 0,
+        })),
+      };
+    } catch (error) {
+      return {
+        symbol,
+        timeframe,
+        source: "mock",
+        candles: generateMockCandles(symbol, timeframe, limit),
+        message: error instanceof Error ? error.message : "Internal API unavailable",
+      };
+    }
+  }
+
   const safeLimit = Math.min(Math.max(limit, 100), 1000);
   const params = new URLSearchParams({
     symbol,
@@ -104,6 +149,25 @@ export async function getLatestPrice(
   symbol: string,
   options: RequestOptions = {},
 ): Promise<PriceApiResponse> {
+  if (symbol === "XAUUSD" || symbol === "MAZAANE") {
+    try {
+      const snapshot = await GoldPriceService.apiServicesAppGoldpriceGetlatestgoldpriceGet();
+      const price = symbol === "XAUUSD" ? (snapshot.ouncePrice ?? 0) : (snapshot.mesghalPrice ?? 0);
+      return {
+        symbol,
+        source: "binance",
+        price,
+      };
+    } catch (error) {
+      return {
+        symbol,
+        source: "mock",
+        price: getMockLatestPrice(symbol),
+        message: error instanceof Error ? error.message : "Internal API unavailable",
+      };
+    }
+  }
+
   const params = new URLSearchParams({ symbol });
 
   try {

@@ -866,8 +866,8 @@ export function CreateSignalContent({
         const response = await services.getDynamicPrice(
           manualApiSymbol,
           manualTimeframe,
-          fromDate.toISOString(),
-          toDate.toISOString(),
+          undefined, // fromIso
+          undefined, // toIso
         );
         const normalized = normalizeApiCandles(response?.response);
         if (!cancelled && normalized.length >= 20) {
