@@ -2120,55 +2120,57 @@ export function CreateSignalContent({
                             {mergedConfig.labels.addTarget}
                           </button>
                         </div>
-                        <div className="grid grid-cols-1 gap-3">
-                          {targetsDisplay.map((target, index) => (
-                            <div
-                              key={index}
-                              className="flex flex-col gap-1 w-full relative group"
-                            >
-                              <span className="text-[10px] text-white/40 px-1 font-medium">
-                                هدف {index + 1}
-                              </span>
-                              <div className="flex relative">
-                                <Input
-                                  ref={(el) => {
-                                    targetInputRefs.current[index] = el;
-                                  }}
-                                  inputMode="decimal"
-                                  value={target}
-                                  onChange={(e) =>
-                                    handleUpdateTarget(index, e.target.value)
-                                  }
-                                  onKeyDown={(e) =>
-                                    handleTargetInputNavigation(e, index, target)
-                                  }
-                                  className={cn(
-                                    styles.input,
-                                    "h-10 bg-emerald-500/5 focus-visible:bg-emerald-500/10 font-mono text-left text-sm border-emerald-500/20 focus-visible:border-emerald-500 focus-visible:ring-emerald-500/20 transition-all text-emerald-100 placeholder:text-emerald-500/30 shadow-inner",
-                                    tpFieldErrors[index] && "border-rose-500/50 focus-visible:border-rose-500 shadow-[0_0_15px_-3px_rgba(244,63,94,0.3)] bg-rose-500/5"
-                                  )}
-                                  dir="ltr"
-                                  placeholder="مثال: 2370.0"
-                                />
-                                <button
-                                  onClick={() => handleRemoveTarget(index)}
-                                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-rose-400 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all bg-black/60 hover:bg-rose-500/20 rounded-md backdrop-blur-md"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                              {tpFieldErrors[index] && (
-                                <span className="text-[10px] text-rose-400 mt-1 flex items-center gap-1 animate-in fade-in slide-in-from-top-1 duration-300">
-                                  <AlertTriangle className="w-2.5 h-2.5" /> {tpFieldErrors[index]}
+                        <div className="max-h-[320px] overflow-y-auto pr-1 custom-scrollbar">
+                          <div className="grid grid-cols-1 gap-3">
+                            {targetsDisplay.map((target, index) => (
+                              <div
+                                key={index}
+                                className="flex flex-col gap-1 w-full relative group"
+                              >
+                                <span className="text-[10px] text-white/40 px-1 font-medium">
+                                  هدف {toPersianDigits(index + 1)}
                                 </span>
-                              )}
-                            </div>
-                          ))}
-                          {targetsDisplay.length === 0 && (
-                            <div className="col-span-1 text-center py-4 border border-dashed border-white/10 bg-white/[0.02] rounded-xl text-white/30 text-[11px] shadow-inner">
-                              {mergedConfig.labels.noTargets}
-                            </div>
-                          )}
+                                <div className="flex relative">
+                                  <Input
+                                    ref={(el) => {
+                                      targetInputRefs.current[index] = el;
+                                    }}
+                                    inputMode="decimal"
+                                    value={target}
+                                    onChange={(e) =>
+                                      handleUpdateTarget(index, e.target.value)
+                                    }
+                                    onKeyDown={(e) =>
+                                      handleTargetInputNavigation(e, index, target)
+                                    }
+                                    className={cn(
+                                      styles.input,
+                                      "h-10 bg-emerald-500/5 focus-visible:bg-emerald-500/10 font-mono text-left text-sm border-emerald-500/20 focus-visible:border-emerald-500 focus-visible:ring-emerald-500/20 transition-all text-emerald-100 placeholder:text-emerald-500/30 shadow-inner",
+                                      tpFieldErrors[index] && "border-rose-500/50 focus-visible:border-rose-500 shadow-[0_0_15px_-3px_rgba(244,63,94,0.3)] bg-rose-500/5"
+                                    )}
+                                    dir="ltr"
+                                    placeholder="مثال: 2370.0"
+                                  />
+                                  <button
+                                    onClick={() => handleRemoveTarget(index)}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-rose-400 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all bg-black/60 hover:bg-rose-500/20 rounded-md backdrop-blur-md"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                                {tpFieldErrors[index] && (
+                                  <span className="text-[10px] text-rose-400 mt-1 flex items-center gap-1 animate-in fade-in slide-in-from-top-1 duration-300">
+                                    <AlertTriangle className="w-2.5 h-2.5" /> {tpFieldErrors[index]}
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                            {targetsDisplay.length === 0 && (
+                              <div className="col-span-1 text-center py-4 border border-dashed border-white/10 bg-white/[0.02] rounded-xl text-white/30 text-[11px] shadow-inner">
+                                {mergedConfig.labels.noTargets}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
 
@@ -2830,20 +2832,20 @@ export function CreateSignalContent({
                 </div>
 
                 {/* Take Profits */}
-                <div className="rounded-2xl bg-emerald-500/5 border border-emerald-500/20 p-4 flex flex-col min-h-[160px]">
+                <div className="rounded-2xl bg-emerald-500/5 border border-emerald-500/20 p-4 flex flex-col h-[280px]">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-[10px] uppercase tracking-wider text-emerald-400/70 font-bold">Take Profits</span>
                     <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-[10px] font-bold text-emerald-400 font-mono">
                       {manualPublishPreview.takeProfits.length} Targets
                     </span>
                   </div>
-                  <div className="space-y-2 flex-1 overflow-y-auto pr-1 [scrollbar-width:thin] [scrollbar-color:rgba(16,185,129,0.3)_transparent] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-emerald-500/30 [&::-webkit-scrollbar-thumb]:rounded-full">
+                  <div className="space-y-2 flex-1 overflow-y-auto pr-1 custom-scrollbar scrollbar-emerald">
                     {manualPublishPreview.takeProfits.map((tp, index) => (
                       <div
                         key={`${tp}-${index}`}
                         className="flex items-center justify-between rounded-xl bg-white/5 px-3 py-2 border border-white/5"
                       >
-                        <span className="text-[11px] font-bold text-white/50 font-mono">T{index + 1}</span>
+                        <span className="text-[11px] font-bold text-white/50 font-mono">T{toPersianDigits(index + 1)}</span>
                         <span className="font-bold font-mono text-emerald-400 ltr">
                           {formatLevelPrice(tp)}
                         </span>
