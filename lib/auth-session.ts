@@ -6,6 +6,11 @@ const ACCESS_TOKEN_KEY = "accessToken";
 const REFRESH_TOKEN_KEY = "refreshToken";
 const ACCESS_TOKEN_REFRESH_LEEWAY_SECONDS = 30;
 
+export function getAccessToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(ACCESS_TOKEN_KEY);
+}
+
 let refreshPromise: Promise<string | null> | null = null;
 let interceptorsInitialized = false;
 

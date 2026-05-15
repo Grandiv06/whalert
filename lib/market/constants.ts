@@ -15,6 +15,8 @@ export const TIMEFRAME_OPTIONS: TimeframeOption[] = [
 ];
 
 export const SYMBOL_OPTIONS: MarketSymbolOption[] = [
+  { value: "XAUUSD", label: "XAU/USD (Gold)" },
+  { value: "MAZAANE", label: "Mozaneh (Gold)" },
   { value: "BTCUSDT", label: "BTC/USDT" },
   { value: "ETHUSDT", label: "ETH/USDT" },
   { value: "BNBUSDT", label: "BNB/USDT" },

@@ -92,7 +92,7 @@ export async function getHistoricalCandles(
       return {
         symbol,
         timeframe,
-        source: "binance", // Keeping label for now or could use "internal"
+        source: "Internal API",
         candles: (candles ?? []).map((c) => ({
           time: (c.bucketStart ? Math.floor(new Date(c.bucketStart).getTime() / 1000) : 0) as UTCTimestamp,
           open: c.open ?? 0,
@@ -155,7 +155,7 @@ export async function getLatestPrice(
       const price = symbol === "XAUUSD" ? (snapshot.xauUsd ?? 0) : (snapshot.mozaneh ?? 0);
       return {
         symbol,
-        source: "binance",
+        source: "Internal API",
         price,
       };
     } catch (error) {

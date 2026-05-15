@@ -17,8 +17,9 @@ import {
 
 const createSignalServices: CreateSignalServices = {
   getDynamicPrice: async (symbol, timeframe, fromIso, toIso) => {
-    if (symbol === "XAUUSD") {
+    if (symbol === "XAUUSD" || symbol === "MAZAANE") {
       const timeframeMinutesMap: Record<string, number> = {
+        "1m": 1,
         "5m": 5,
         "15m": 15,
         "30m": 30,
@@ -27,16 +28,28 @@ const createSignalServices: CreateSignalServices = {
         "1d": 1440,
       };
       const intervalMinutes = timeframeMinutesMap[timeframe] ?? 15;
+      const series = symbol === "XAUUSD" ? GoldPriceSeries._0 : GoldPriceSeries._1;
 
-      const candles = await GoldPriceService.apiServicesAppGoldpriceGetgoldpricecandlesGet(
-        GoldPriceSeries._0,
+      const candlesRaw = await GoldPriceService.apiServicesAppGoldpriceGetgoldpricecandlesGet(
+        series,
         intervalMinutes,
         fromIso,
         toIso,
       );
 
+      // Handle ABP wrapper if present
+      const candles = (Array.isArray(candlesRaw) ? candlesRaw : (candlesRaw as any)?.result) ?? [];
+      
+      console.log('App CreateSignal getDynamicPrice:', { 
+        symbol, 
+        timeframe, 
+        rawCount: (candlesRaw as any)?.length,
+        hasResult: !!(candlesRaw as any)?.result,
+        extractedCount: candles.length 
+      });
+
       return {
-        response: (candles ?? []).map((candle) => ({
+        response: candles.map((candle: any) => ({
           open: candle.open,
           high: candle.high,
           low: candle.low,

@@ -49,7 +49,7 @@ export function MarketAnalysisModule() {
   );
   const signal = useMemo(() => evaluateSignal(candles, indicators), [candles, indicators]);
 
-  const latestClose = lastClose ?? latestPrice;
+  const latestClose = latestPrice ?? lastClose;
 
   const priceChangePercent = useMemo(() => {
     if (latestClose == null || previousClose == null || previousClose === 0) return null;

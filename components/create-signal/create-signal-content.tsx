@@ -488,78 +488,52 @@ const normalizeApiCandles = (
   } | null> | null,
 ): ChartDataElement[] => {
   if (!rawCandles?.length) return [];
-  const normalized: ChartDataElement[] = [];
+  
+  const mapped = rawCandles
+    .map((candle) => {
+      if (!candle) return null;
+      const time = normalizeUnixSeconds(candle.openCandleTime);
+      if (
+        time === null ||
+        typeof candle.open !== "number" ||
+        typeof candle.high !== "number" ||
+        typeof candle.low !== "number" ||
+        typeof candle.close !== "number" ||
+        !Number.isFinite(candle.open) ||
+        !Number.isFinite(candle.high) ||
+        !Number.isFinite(candle.low) ||
+        !Number.isFinite(candle.close) ||
+        candle.open <= 0 ||
+        candle.high <= 0 ||
+        candle.low <= 0 ||
+        candle.close <= 0
+      ) {
+        return null;
+      }
+      return {
+        time: time as ChartDataElement["time"],
+        open: candle.open,
+        high: candle.high,
+        low: candle.low,
+        close: candle.close,
+      };
+    })
+    .filter((c): c is ChartDataElement => c !== null);
 
-  for (const candle of rawCandles) {
-    if (!candle) continue;
-    const open = candle.open;
-    const high = candle.high;
-    const low = candle.low;
-    const close = candle.close;
-    const time = normalizeUnixSeconds(candle.openCandleTime);
-    if (
-      typeof open !== "number" ||
-      typeof high !== "number" ||
-      typeof low !== "number" ||
-      typeof close !== "number" ||
-      !Number.isFinite(open) ||
-      !Number.isFinite(high) ||
-      !Number.isFinite(low) ||
-      !Number.isFinite(close) ||
-      !time
-    ) {
-      continue;
-    }
-    normalized.push({
-      time: time as ChartDataElement["time"],
-      open,
-      high,
-      low,
-      close,
-    });
-  }
+  // Remove duplicates and sort
+  const uniqueMap = new Map<number | string, ChartDataElement>();
+  mapped.forEach((c) => {
+    uniqueMap.set(c.time.toString(), c);
+  });
 
-  return normalized.sort((a, b) => Number(a.time) - Number(b.time));
+  return Array.from(uniqueMap.values()).sort((a, b) => {
+    const timeA = typeof a.time === "number" ? a.time : new Date(a.time).getTime() / 1000;
+    const timeB = typeof b.time === "number" ? b.time : new Date(b.time).getTime() / 1000;
+    return timeA - timeB;
+  });
 };
 
-const buildDemoChartData = (
-  symbol: string,
-  timeframe: string,
-  availableTimeframes: CreateSignalConfig["availableTimeframes"],
-  availableSymbols: CreateSignalConfig["availableSymbols"],
-): ChartDataElement[] => {
-  const tf = availableTimeframes?.find((t) => t.value === timeframe);
-  const stepSeconds = tf?.stepSeconds ?? 900;
-  const pointsCount = timeframe === "1d" ? 260 : timeframe === "4h" ? 320 : 420;
 
-  const symbolLabel = availableSymbols?.find((s) => s.value === symbol)?.label;
-  const baseStart = symbolLabel === "مظنه" ? 4800 : 2300;
-  const volatility = symbolLabel === "مظنه" ? 42 : 24;
-
-  let currentBase = baseStart;
-  let timestamp = Math.floor(Date.now() / 1000) - pointsCount * stepSeconds;
-  const demo: ChartDataElement[] = [];
-
-  for (let i = 0; i < pointsCount; i++) {
-    const trend = Math.sin(i / 14) * volatility * 0.3;
-    const noise = (Math.random() - 0.5) * volatility;
-    const open = currentBase + trend + noise;
-    const close = open + (Math.random() - 0.48) * volatility * 1.1;
-    const high = Math.max(open, close) + Math.random() * volatility * 0.45;
-    const low = Math.min(open, close) - Math.random() * volatility * 0.45;
-    demo.push({
-      time: timestamp as ChartDataElement["time"],
-      open,
-      high,
-      low,
-      close,
-    });
-    timestamp += stepSeconds;
-    currentBase = close;
-  }
-
-  return demo;
-};
 
 const styles = {
   input:
@@ -697,6 +671,7 @@ export function CreateSignalContent({
   const [manualChartData, setManualChartData] = useState<ChartDataElement[]>(
     [],
   );
+  const requestIdRef = useRef(0);
   const [isManualChartLoading, setIsManualChartLoading] = useState(false);
   const [manualChartSelectionMode, setManualChartSelectionMode] =
     useState<ChartSelectionMode | null>(null);
@@ -857,6 +832,7 @@ export function CreateSignalContent({
     }));
 
   const fetchChartData = async (cancelledRef?: { current: boolean }) => {
+    const requestId = ++requestIdRef.current;
     setIsManualChartLoading(true);
     setManualChartAlert("");
 
@@ -867,25 +843,37 @@ export function CreateSignalContent({
         undefined,
         undefined,
       );
-      const normalized = normalizeApiCandles(response?.response);
-      if (cancelledRef?.current) return;
       
-      if (normalized.length >= 20) {
-        setManualChartData(normalized);
+      if (requestId !== requestIdRef.current || (cancelledRef && cancelledRef.current)) {
         return;
       }
-      throw new Error("NO_CANDLES");
-    } catch {
-      if (cancelledRef?.current) return;
-      const demo = buildDemoChartData(
-        manualSymbol,
-        manualTimeframe,
-        mergedConfig.availableTimeframes,
-        mergedConfig.availableSymbols,
-      );
-      setManualChartData(demo);
+
+      const normalized = normalizeApiCandles(response?.response);
+      
+      if (normalized.length > 0) {
+        setManualChartData(normalized);
+        console.log('interval:', manualTimeframe);
+        console.log('raw candles length:', response?.response?.length);
+        console.log('first candle:', normalized[0]);
+        console.log('last candle:', normalized[normalized.length - 1]);
+        console.log('last price:', normalized[normalized.length - 1]?.close);
+        return;
+      }
+      
+      // If no candles, we keep old data or set empty, but NO random data
+      setManualChartData([]);
+      if (response?.response) {
+         setManualChartAlert("دیتایی برای این تایم‌فریم یافت نشد.");
+      }
+    } catch (err) {
+      if (requestId !== requestIdRef.current || (cancelledRef && cancelledRef.current)) {
+        return;
+      }
+      console.error("Failed to fetch chart data:", err);
+      setManualChartAlert("خطا در دریافت اطلاعات چارت.");
+      setManualChartData([]);
     } finally {
-      if (!cancelledRef?.current) {
+      if (requestId === requestIdRef.current && (!cancelledRef || !cancelledRef.current)) {
         setIsManualChartLoading(false);
       }
     }
@@ -1798,9 +1786,10 @@ export function CreateSignalContent({
                   manualModeLabel={mergedConfig.labels.manualModeLabel}
                   timeframeOptions={manualChartTimeframeOptions}
                   activeTimeframe={manualTimeframe}
-                  onTimeframeChange={(timeframeValue) =>
-                    setManualTimeframe(timeframeValue)
-                  }
+                  onTimeframeChange={(timeframeValue) => {
+                    if (timeframeValue === manualTimeframe) return;
+                    setManualTimeframe(timeframeValue);
+                  }}
                   onToggleSelectionMode={handleToggleManualChartSelection}
                   onSelectSelectionMode={handleSelectManualChartMode}
                   selectedTpIndex={selectedManualTpIndex}
