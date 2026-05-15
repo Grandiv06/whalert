@@ -10,7 +10,7 @@ function getEnv(key: string): string {
 
 /** Base URL for the backend API (no trailing slash). Used by generated API client. */
 export function getApiBaseUrl(): string {
-  return getEnv("NEXT_PUBLIC_API_BASE_URL") || "https://core.whalert.net";
+  return getEnv("NEXT_PUBLIC_API_BASE_URL") || "http://api.whalert.net";
 }
 
 /** OpenAPI spec URL for codegen (optional; defaults to API_BASE_URL + /swagger/v1/swagger.json). */

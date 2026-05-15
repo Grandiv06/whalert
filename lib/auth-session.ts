@@ -110,6 +110,9 @@ export async function refreshAccessToken(): Promise<string | null> {
         const refreshed = await requestRefreshToken(refreshToken);
         if (!refreshed.accessToken) {
           clearAuthSession();
+          if (isBrowser() && !window.location.pathname.startsWith("/auth/")) {
+            window.location.href = "/auth/sign-in";
+          }
           return null;
         }
 
@@ -120,6 +123,9 @@ export async function refreshAccessToken(): Promise<string | null> {
         return refreshed.accessToken;
       } catch {
         clearAuthSession();
+        if (isBrowser() && !window.location.pathname.startsWith("/auth/")) {
+          window.location.href = "/auth/sign-in";
+        }
         return null;
       }
     })().finally(() => {
@@ -166,12 +172,19 @@ export function initAuthSession(): void {
         originalRequest._retry ||
         requestUrl.includes("/api/TokenAuth/RefreshToken")
       ) {
+        if (status === 401 && isBrowser() && !window.location.pathname.startsWith("/auth/")) {
+          clearAuthSession();
+          window.location.href = "/auth/sign-in";
+        }
         return Promise.reject(error);
       }
 
       originalRequest._retry = true;
       const newToken = await refreshAccessToken();
       if (!newToken) {
+        if (isBrowser() && !window.location.pathname.startsWith("/auth/")) {
+          window.location.href = "/auth/sign-in";
+        }
         return Promise.reject(error);
       }
 
