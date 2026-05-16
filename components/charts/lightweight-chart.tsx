@@ -483,12 +483,19 @@ export function LightweightChart({
   }, [isDark, isFullscreen, useCssFullscreenFallback]);
 
   useEffect(() => {
-    if (!seriesRef.current) return;
+    if (!seriesRef.current || !chartRef.current) return;
+    
     seriesRef.current.setData(data);
+    
     if (data.length > 0) {
-      chartRef.current?.timeScale().fitContent();
+      requestAnimationFrame(() => {
+        seriesRef.current?.priceScale().applyOptions({
+          autoScale: true,
+        });
+        chartRef.current?.timeScale().fitContent();
+      });
     }
-  }, [data]);
+  }, [data, title]);
 
   useEffect(() => {
     if (!seriesRef.current) return;
