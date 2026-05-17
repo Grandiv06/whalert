@@ -15,6 +15,14 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { PositionCard } from "@/components/charts/position-card";
 import {
   SearchIcon,
@@ -52,6 +60,7 @@ interface PositionData {
   entry: string;
   stopLoss: string;
   takeProfit: string;
+  tPs: Array<string | number>;
 }
 
 const MobileSkeleton = () => (
@@ -104,13 +113,16 @@ export function SuggestedContent() {
   const [analysisStatus, setAnalysisStatus] = useState<AnalysisStatus>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [comingSoonOpen, setComingSoonOpen] = useState(false);
 
   const handleExecute = (id: number) => {
     console.log("Execute position:", id);
+    setComingSoonOpen(true);
   };
 
   const handleShowChart = (id: number) => {
     console.log("Show chart for position:", id);
+    setComingSoonOpen(true);
   };
 
   const { data, isLoading } = useQuery({
@@ -194,6 +206,7 @@ export function SuggestedContent() {
         position.tPs && position.tPs.length > 0
           ? position.tPs[0].toString()
           : "-",
+      tPs: (position.tPs ?? []) as Array<string | number>,
     };
   };
 
@@ -269,6 +282,7 @@ export function SuggestedContent() {
                   <PositionCard
                     key={index}
                     {...position}
+                    tPs={position.tPs}
                     onExecute={() => handleExecute(position.id)}
                     onShowChart={() => handleShowChart(position.id)}
                   />
@@ -376,19 +390,53 @@ export function SuggestedContent() {
                               {position.stopLoss}
                             </TableCell>
                             <TableCell className="text-center h-[72px] px-6 py-8">
-                              <div className="flex items-center gap-2 justify-center w-full">
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <div className="cursor-pointer hover:opacity-80 transition-colors">
-                                      <ExclamationCircleIcon className="text-white/70 hover:text-white" />
-                                    </div>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>{position.takeProfit}</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                                {position.takeProfit}
-                              </div>
+                              {position.tPs && position.tPs.length > 1 ? (
+                                <div className="flex items-center justify-center w-full">
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <button
+                                        type="button"
+                                        className="group flex items-center gap-1.5 rounded-xl border border-[#9C73DE]/45 bg-[#3A2068]/55 px-3 py-1.5 text-xs font-bold text-[#EDE3FF] shadow-[0_6px_18px_rgba(40,18,74,0.35)] transition-all hover:scale-[1.02] hover:border-[#B996F2]/65 hover:bg-[#4A2A7E]/65 cursor-pointer"
+                                      >
+                                        <span className="tracking-wide">{position.takeProfit}</span>
+                                        <span
+                                          dir="ltr"
+                                          className="inline-flex h-[16px] w-[16px] min-w-[16px] max-w-[16px] max-h-[16px] items-center justify-center rounded-full border border-[#CBAFFF]/55 bg-[#5A3493] font-mono text-[8px] font-extrabold leading-[1] text-center text-[#EFE7FF] shadow-sm select-none transition-colors group-hover:bg-[#6740A4] pt-[0.5px]"
+                                        >
+                                          +{position.tPs.length - 1}
+                                        </span>
+                                      </button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-52 rounded-2xl border border-[#C4A0FF]/30 bg-[#090516]/95 p-3.5 text-right text-white shadow-[0_18px_40px_rgba(8,3,22,0.75)] backdrop-blur-sm z-[99999]" align="center" side="bottom" dir="rtl">
+                                      <div className="flex flex-col gap-2.5">
+                                        <p className="mb-0.5 border-b border-white/10 pb-1.5 text-xs font-semibold text-[#C9AEFF]">حد سودهای هدف</p>
+                                        <div className="flex flex-col gap-1.5 text-xs">
+                                          {position.tPs.map((tpVal: string | number, tpIdx: number) => (
+                                            <div key={tpIdx} className="flex items-center justify-between gap-3 rounded-lg border border-white/8 bg-white/[0.03] px-2.5 py-1.5">
+                                              <span className="text-white/65">TP {(tpIdx + 1).toLocaleString("fa-IR")}</span>
+                                              <span className="font-extrabold text-emerald-300">{tpVal.toString()}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </PopoverContent>
+                                  </Popover>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2 justify-center w-full">
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <div className="cursor-pointer hover:opacity-80 transition-colors">
+                                        <ExclamationCircleIcon className="text-white/70 hover:text-white" />
+                                      </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>{position.takeProfit}</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                  {position.takeProfit}
+                                </div>
+                              )}
                             </TableCell>
                             <TableCell className="text-center h-[72px] px-6 py-8">
                               <button
@@ -430,6 +478,18 @@ export function SuggestedContent() {
           </div>
         )}
       </div>
+      <Dialog open={comingSoonOpen} onOpenChange={setComingSoonOpen}>
+        <DialogContent className="max-w-sm border-[#8F64D9]/40 bg-[#140728] text-white" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-[#EBDDFF]">
+              قابلیت در حال توسعه
+            </DialogTitle>
+            <DialogDescription className="text-sm text-white/80 leading-7">
+              این قابلیت به‌زودی اضافه می‌شود.
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

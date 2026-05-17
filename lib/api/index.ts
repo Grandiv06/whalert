@@ -97,6 +97,7 @@ export type { DashboardPageResultDto } from './models/DashboardPageResultDto';
 export type { DateFieldOutput } from './models/DateFieldOutput';
 export type { DateRangeFieldOutput } from './models/DateRangeFieldOutput';
 export type { DateWithTextFieldOutput } from './models/DateWithTextFieldOutput';
+export type { DeclareMySignalOutcomeInput } from './models/DeclareMySignalOutcomeInput';
 export type { DeclareSignalOutcomeInput } from './models/DeclareSignalOutcomeInput';
 export type { DelegatedImpersonateInput } from './models/DelegatedImpersonateInput';
 export type { DynamicEntityPropertyDto } from './models/DynamicEntityPropertyDto';

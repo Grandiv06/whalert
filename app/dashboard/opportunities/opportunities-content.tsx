@@ -1,8 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Fragment, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, FileText, ChevronDown, CheckCircle2, XCircle } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 import {
   Area,
   AreaChart,
@@ -23,6 +34,11 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
+import {
   Table,
   TableBody,
   TableCell,
@@ -37,8 +53,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import {
-} from "@/components/icons/dashboard-icons";
+import { ExclamationCircleIcon } from "@/components/icons/dashboard-icons";
 import useDevice from "@/hooks/useDevice";
 import { useQuery } from "@tanstack/react-query";
 import { normalizePersianText } from "@/lib/utils";
@@ -47,6 +62,9 @@ import {
   ShowPositionsDto,
   MarketType,
   SignalSide,
+  SignalProviderService,
+  SignalOutcomeStatus,
+  SignalOutcomeSource,
 } from "@/lib/api/client";
 
 type AbpWrapper<T> = { result?: T };
@@ -140,7 +158,7 @@ function DesktopSkeleton() {
           key={i}
           className="dark:bg-transparent bg-white dark:hover:bg-white/5 hover:bg-gray-50"
         >
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((j) => (
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((j) => (
             <TableCell key={j} className="text-center h-[72px] px-6 py-8">
               <Skeleton className="h-4 w-16 mx-auto" />
             </TableCell>
@@ -154,6 +172,14 @@ function DesktopSkeleton() {
 export function OpportunitiesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [expandedRows, setExpandedRows] = useState<Record<number, boolean>>({});
+
+  const toggleRow = (id: number) => {
+    setExpandedRows((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
   const device = useDevice();
   const isMobile = device === "mobile";
   const [currentPage, setCurrentPage] = useState(1);
@@ -171,7 +197,45 @@ export function OpportunitiesContent() {
       ? `کاربر ${selectedProviderId.toLocaleString("fa-IR")}`
       : "");
 
-  const { data: positionsData, isLoading } = useQuery({
+  // States for outcome submission
+  const [isSubmittingOutcome, setIsSubmittingOutcome] = useState<Record<number, boolean>>({});
+  const [confirmSignal, setConfirmSignal] = useState<{
+    tradingSignalId: number;
+    outcomeStatus: SignalOutcomeStatus;
+    symbol: string;
+  } | null>(null);
+
+  // Toast notification states
+  const [toasts, setToasts] = useState<Array<{ id: number; message: string; kind: "success" | "error"; createdAt: number; durationMs: number }>>([]);
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+    return () => setIsMounted(false);
+  }, []);
+
+  useEffect(() => {
+    if (toasts.length === 0) return;
+    const timer = window.setInterval(() => {
+      const current = Date.now();
+      setNowMs(current);
+      setToasts((prev) =>
+        prev.filter((t) => current - t.createdAt < t.durationMs)
+      );
+    }, 200);
+    return () => window.clearInterval(timer);
+  }, [toasts.length]);
+
+  const pushToast = (message: string, kind: "success" | "error") => {
+    const id = Date.now() + Math.floor(Math.random() * 1000);
+    setToasts((prev) => [
+      ...prev,
+      { id, message, kind, createdAt: Date.now(), durationMs: 4000 },
+    ].slice(-3));
+  };
+
+  const { data: positionsData, isLoading, refetch } = useQuery({
     queryKey: ["showPositions", currentPage, pageSize, selectedProviderId],
     queryFn: async () => {
       const res =
@@ -337,6 +401,42 @@ export function OpportunitiesContent() {
       label: item.label,
     })) ?? [];
 
+  const handleDeclareOutcome = async (tradingSignalId: number, outcomeStatus: SignalOutcomeStatus) => {
+    if (!tradingSignalId) return;
+    setIsSubmittingOutcome((prev) => ({ ...prev, [tradingSignalId]: true }));
+    try {
+      await SignalProviderService.apiServicesAppSignalproviderDeclaresignaloutcomePost({
+        tradingSignalId,
+        outcomeStatus,
+      });
+      pushToast("وضعیت سیگنال با موفقیت ثبت شد.", "success");
+      refetch();
+    } catch (err) {
+      pushToast("ثبت وضعیت سیگنال ناموفق بود. لطفاً دوباره تلاش کنید.", "error");
+    } finally {
+      setIsSubmittingOutcome((prev) => ({ ...prev, [tradingSignalId]: false }));
+    }
+  };
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const globalAbp = (window as any).abp;
+      if (globalAbp && globalAbp.event) {
+        const handleNotification = (userNotification: any) => {
+          if (userNotification?.notification?.notificationName === 'App.SignalOutcomeDeclared') {
+            const message = userNotification.notification.data?.message || "یک وضعیت جدید برای سیگنال اعلام شد.";
+            pushToast(message, "success");
+            refetch();
+          }
+        };
+        globalAbp.event.on('abp.notifications.received', handleNotification);
+        return () => {
+          globalAbp.event.off('abp.notifications.received', handleNotification);
+        };
+      }
+    }
+  }, [refetch]);
+
   const items = (positionsData?.items ?? []) as ShowPositionsDto[];
   const totalCount = positionsData?.totalCount ?? 0;
   const totalPages = Math.ceil(totalCount / pageSize) || 0;
@@ -366,6 +466,13 @@ export function OpportunitiesContent() {
       position.tPs && position.tPs.length > 0
         ? position.tPs[0].toString()
         : "-",
+    tPs: position.tPs || [],
+    description: position.description ? normalizePersianText(position.description) : null,
+    tradingSignalId: position.tradingSignalId,
+    outcomeStatus: position.outcomeStatus,
+    outcomeSource: position.outcomeSource,
+    outcomeDeclaredAt: position.outcomeDeclaredAt,
+    canDeclareOutcome: position.canDeclareOutcome,
   });
 
   return (
@@ -630,15 +737,126 @@ export function OpportunitiesContent() {
                             ورود : {pos.entry}
                           </p>
                         </div>
-                        <div className="flex justify-between items-center">
-                          <p className="text-xs font-medium text-white/80">
+                        <div className="flex justify-between items-center gap-4">
+                          <p className="text-xs font-medium text-white/80 whitespace-nowrap shrink-0">
                             حدضرر : {pos.stopLoss}
                           </p>
-                          <p className="text-xs font-medium text-white/80">
-                            حدسود : {pos.takeProfit}
-                          </p>
+                          <div className="flex items-center gap-1.5 text-xs font-medium text-white/80 whitespace-nowrap flex-nowrap shrink-0">
+                            <span>حدسود :</span>
+                            {pos.tPs && pos.tPs.length > 1 ? (
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <button
+                                    type="button"
+                                    className="group flex items-center gap-1.5 rounded-xl border border-[#9C73DE]/45 bg-[#3A2068]/55 px-2.5 py-1 text-[11px] font-bold text-[#EDE3FF] shadow-[0_6px_18px_rgba(40,18,74,0.35)] transition-all hover:scale-[1.02] hover:border-[#B996F2]/65 hover:bg-[#4A2A7E]/65 cursor-pointer"
+                                  >
+                                    <span className="tracking-wide">{pos.takeProfit}</span>
+                                    <span
+                                      dir="ltr"
+                                      className="inline-flex h-[16px] w-[16px] min-w-[16px] max-w-[16px] max-h-[16px] items-center justify-center rounded-full border border-[#CBAFFF]/55 bg-[#5A3493] font-mono text-[8px] font-extrabold leading-[1] text-center text-[#EFE7FF] shadow-sm select-none transition-colors group-hover:bg-[#6740A4] pt-[0.5px]"
+                                    >
+                                      +{pos.tPs.length - 1}
+                                    </span>
+                                  </button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-52 rounded-2xl border border-[#C4A0FF]/30 bg-[#090516]/95 p-3 text-right text-white shadow-[0_18px_40px_rgba(8,3,22,0.75)] backdrop-blur-sm z-[99999]" align="start" side="bottom" dir="rtl">
+                                  <div className="flex flex-col gap-2.5">
+                                    <p className="mb-0.5 border-b border-white/10 pb-1.5 text-xs font-semibold text-[#C9AEFF]">حد سودهای هدف</p>
+                                    <div className="flex flex-col gap-1.5 text-xs">
+                                      {pos.tPs.map((tpVal: string | number, tpIdx: number) => (
+                                        <div key={tpIdx} className="flex items-center justify-between gap-3 rounded-lg border border-white/8 bg-white/[0.03] px-2.5 py-1.5">
+                                          <span className="text-white/65">TP {(tpIdx + 1).toLocaleString("fa-IR")}</span>
+                                          <span className="font-extrabold text-emerald-300">{tpVal.toString()}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                            ) : (
+                              <span>{pos.takeProfit}</span>
+                            )}
+                          </div>
                         </div>
+                        {pos.outcomeStatus !== undefined && pos.outcomeStatus !== 0 ? (
+                          <div className="flex justify-between items-center">
+                            <p className="text-xs font-medium text-white/80">
+                              وضعیت :
+                            </p>
+                            {pos.outcomeStatus === 1 ? (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">
+                                🎯 به TP رسید {pos.outcomeSource === 2 ? "(خودکار)" : "(دستی)"}
+                              </span>
+                            ) : pos.outcomeStatus === 2 ? (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/20">
+                                🛑 به SL رسید {pos.outcomeSource === 2 ? "(خودکار)" : "(دستی)"}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-white/50 bg-white/5 px-2 py-0.5 rounded-full border border-white/10">
+                                ⚠️ لغو شده
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="flex justify-between items-center">
+                            <p className="text-xs font-medium text-white/80">
+                              وضعیت :
+                            </p>
+                            {pos.canDeclareOutcome && pos.tradingSignalId ? (
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  disabled={isSubmittingOutcome[pos.tradingSignalId]}
+                                  onClick={() => setConfirmSignal({ tradingSignalId: pos.tradingSignalId!, outcomeStatus: 1, symbol: pos.symbol })}
+                                  className="text-[10px] text-green-400 hover:text-green-300 font-bold bg-green-500/10 hover:bg-green-500/20 px-2.5 py-1 rounded border border-green-500/30 transition-all cursor-pointer disabled:opacity-50"
+                                >
+                                  ثبت TP
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={isSubmittingOutcome[pos.tradingSignalId]}
+                                  onClick={() => setConfirmSignal({ tradingSignalId: pos.tradingSignalId!, outcomeStatus: 2, symbol: pos.symbol })}
+                                  className="text-[10px] text-rose-400 hover:text-rose-300 font-bold bg-rose-500/10 hover:bg-rose-500/20 px-2.5 py-1 rounded border border-rose-500/30 transition-all cursor-pointer disabled:opacity-50"
+                                >
+                                  ثبت SL
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20">
+                                <span className="h-1 w-1 rounded-full bg-purple-400 animate-pulse" />
+                                در انتظار نتیجه
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
+                      {pos.description && (
+                        <>
+                          <div className="h-px bg-white/10 my-3" />
+                          <button
+                            type="button"
+                            onClick={() => toggleRow(pos.id)}
+                            className="w-full flex items-center justify-between text-xs text-[#A87FF3] hover:text-[#c4a6fc] font-semibold bg-[#A87FF3]/10 hover:bg-[#A87FF3]/20 px-3 py-2 rounded-lg border border-[#A87FF3]/25 transition-all cursor-pointer"
+                          >
+                            <span className="flex items-center gap-1.5">
+                              <FileText className="h-3.5 w-3.5" />
+                              توضیحات موقعیت
+                            </span>
+                            <ChevronDown
+                              className={`h-4 w-4 transition-transform duration-200 ${
+                                expandedRows[pos.id] ? "rotate-180" : ""
+                              }`}
+                            />
+                          </button>
+                          {expandedRows[pos.id] && (
+                            <div className="mt-2 bg-white/5 p-3 rounded-lg border border-white/5 text-right transition-all">
+                              <p className="text-xs text-white/85 whitespace-pre-wrap leading-relaxed">
+                                {pos.description}
+                              </p>
+                            </div>
+                          )}
+                        </>
+                      )}
                     </CardContent>
                   </Card>
                 );
@@ -677,6 +895,12 @@ export function OpportunitiesContent() {
                     <TableHead className="text-center text-white h-12">
                       حد سود
                     </TableHead>
+                    <TableHead className="text-center text-white h-12">
+                      وضعیت
+                    </TableHead>
+                    <TableHead className="text-center text-white h-12">
+                      توضیحات
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -685,7 +909,7 @@ export function OpportunitiesContent() {
                     <TableRow className="dark:bg-transparent bg-white dark:hover:bg-white/5 hover:bg-gray-50">
                       <TableCell
                         className="text-center text-muted-foreground dark:text-white/70 h-[72px] px-6 py-8"
-                        colSpan={9}
+                        colSpan={11}
                       >
                         هیچ داده‌ای یافت نشد.
                       </TableCell>
@@ -695,46 +919,153 @@ export function OpportunitiesContent() {
                     items.map((item: ShowPositionsDto, index: number) => {
                       const pos = mapPosition(item, index);
                       return (
-                        <TableRow
-                          key={pos.id}
-                          className="dark:bg-transparent bg-white dark:hover:bg-white/5 hover:bg-gray-50"
-                        >
-                          <TableCell className="text-center h-[72px] px-6 py-8">
-                            {pos.row}
-                          </TableCell>
-                          <TableCell className="text-center h-[72px] px-6 py-8">
-                            {pos.time}
-                          </TableCell>
-                          <TableCell className="text-center max-w-[150px] truncate h-[72px] px-6 py-8">
-                            {pos.analysisModel}
-                          </TableCell>
-                          <TableCell className="text-center h-[72px] px-6 py-8">
-                            {pos.market}
-                          </TableCell>
-                          <TableCell className="text-center h-[72px] px-6 py-8">
-                            {pos.symbol}
-                          </TableCell>
-                          <TableCell className="text-center h-[72px] px-6 py-8">
-                            <span
-                              className={
-                                pos.direction === "BUY"
-                                  ? "text-green-600 dark:text-green-400 font-semibold"
-                                  : "text-red-600 dark:text-red-400 font-semibold"
-                              }
-                            >
-                              {pos.direction}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-center h-[72px] px-6 py-8">
-                            {pos.entry}
-                          </TableCell>
-                          <TableCell className="text-center h-[72px] px-6 py-8">
-                            {pos.stopLoss}
-                          </TableCell>
-                          <TableCell className="text-center h-[72px] px-6 py-8">
-                            {pos.takeProfit}
-                          </TableCell>
-                        </TableRow>
+                        <Fragment key={pos.id}>
+                          <TableRow
+                            className="dark:bg-transparent bg-white dark:hover:bg-white/5 hover:bg-gray-50 border-b border-white/5"
+                          >
+                            <TableCell className="text-center h-[72px] px-6 py-8">
+                              {pos.row}
+                            </TableCell>
+                            <TableCell className="text-center h-[72px] px-6 py-8">
+                              {pos.time}
+                            </TableCell>
+                            <TableCell className="text-center max-w-[150px] truncate h-[72px] px-6 py-8">
+                              {pos.analysisModel}
+                            </TableCell>
+                            <TableCell className="text-center h-[72px] px-6 py-8">
+                              {pos.market}
+                            </TableCell>
+                            <TableCell className="text-center h-[72px] px-6 py-8">
+                              {pos.symbol}
+                            </TableCell>
+                            <TableCell className="text-center h-[72px] px-6 py-8">
+                              <span
+                                className={
+                                  pos.direction === "BUY"
+                                    ? "text-green-600 dark:text-green-400 font-semibold"
+                                    : "text-red-600 dark:text-red-400 font-semibold"
+                                }
+                              >
+                                {pos.direction}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-center h-[72px] px-6 py-8">
+                              {pos.entry}
+                            </TableCell>
+                            <TableCell className="text-center h-[72px] px-6 py-8">
+                              {pos.stopLoss}
+                            </TableCell>
+                            <TableCell className="text-center h-[72px] px-6 py-8">
+                              {pos.tPs && pos.tPs.length > 1 ? (
+                                <div className="flex items-center justify-center w-full">
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <button
+                                        type="button"
+                                        className="group flex items-center gap-1.5 rounded-xl border border-[#9C73DE]/45 bg-[#3A2068]/55 px-3 py-1.5 text-xs font-bold text-[#EDE3FF] shadow-[0_6px_18px_rgba(40,18,74,0.35)] transition-all hover:scale-[1.02] hover:border-[#B996F2]/65 hover:bg-[#4A2A7E]/65 cursor-pointer"
+                                      >
+                                        <span className="tracking-wide">{pos.takeProfit}</span>
+                                        <span
+                                          dir="ltr"
+                                          className="inline-flex h-[16px] w-[16px] min-w-[16px] max-w-[16px] max-h-[16px] items-center justify-center rounded-full border border-[#CBAFFF]/55 bg-[#5A3493] font-mono text-[8px] font-extrabold leading-[1] text-center text-[#EFE7FF] shadow-sm select-none transition-colors group-hover:bg-[#6740A4] pt-[0.5px]"
+                                        >
+                                          +{pos.tPs.length - 1}
+                                        </span>
+                                      </button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-52 rounded-2xl border border-[#C4A0FF]/30 bg-[#090516]/95 p-3.5 text-right text-white shadow-[0_18px_40px_rgba(8,3,22,0.75)] backdrop-blur-sm z-[99999]" align="center" side="bottom" dir="rtl">
+                                      <div className="flex flex-col gap-2.5">
+                                        <p className="mb-0.5 border-b border-white/10 pb-1.5 text-xs font-semibold text-[#C9AEFF]">حد سودهای هدف</p>
+                                        <div className="flex flex-col gap-1.5 text-xs">
+                                          {pos.tPs.map((tpVal: string | number, tpIdx: number) => (
+                                            <div key={tpIdx} className="flex items-center justify-between gap-3 rounded-lg border border-white/8 bg-white/[0.03] px-2.5 py-1.5">
+                                              <span className="text-white/65">TP {(tpIdx + 1).toLocaleString("fa-IR")}</span>
+                                              <span className="font-extrabold text-emerald-300">{tpVal.toString()}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </PopoverContent>
+                                  </Popover>
+                                </div>
+                              ) : (
+                                <span>{pos.takeProfit}</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-center h-[72px] px-6 py-8">
+                              {pos.outcomeStatus !== undefined && pos.outcomeStatus !== 0 ? (
+                                pos.outcomeStatus === 1 ? (
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-green-400 bg-green-500/10 px-2.5 py-1 rounded-full border border-green-500/20">
+                                    🎯 به TP رسید {pos.outcomeSource === 2 ? "(خودکار)" : "(دستی)"}
+                                  </span>
+                                ) : pos.outcomeStatus === 2 ? (
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-400 bg-rose-500/10 px-2.5 py-1 rounded-full border border-rose-500/20">
+                                    🛑 به SL رسید {pos.outcomeSource === 2 ? "(خودکار)" : "(دستی)"}
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-white/50 bg-white/5 px-2.5 py-1 rounded-full border border-white/10">
+                                    ⚠️ لغو شده
+                                  </span>
+                                )
+                              ) : (
+                                pos.canDeclareOutcome && pos.tradingSignalId ? (
+                                  <div className="flex items-center justify-center gap-1.5">
+                                    <button
+                                      type="button"
+                                      disabled={isSubmittingOutcome[pos.tradingSignalId]}
+                                      onClick={() => setConfirmSignal({ tradingSignalId: pos.tradingSignalId!, outcomeStatus: 1, symbol: pos.symbol })}
+                                      className="inline-flex items-center justify-center text-[10px] text-green-400 hover:text-green-300 font-bold bg-green-500/10 hover:bg-green-500/20 px-2.5 py-1 rounded border border-green-500/30 transition-all cursor-pointer disabled:opacity-50"
+                                    >
+                                      ثبت TP
+                                    </button>
+                                    <button
+                                      type="button"
+                                      disabled={isSubmittingOutcome[pos.tradingSignalId]}
+                                      onClick={() => setConfirmSignal({ tradingSignalId: pos.tradingSignalId!, outcomeStatus: 2, symbol: pos.symbol })}
+                                      className="inline-flex items-center justify-center text-[10px] text-rose-400 hover:text-rose-300 font-bold bg-rose-500/10 hover:bg-rose-500/20 px-2.5 py-1 rounded border border-rose-500/30 transition-all cursor-pointer disabled:opacity-50"
+                                    >
+                                      ثبت SL
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-purple-400 bg-purple-500/10 px-2.5 py-1 rounded-full border border-purple-500/20">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-purple-400 animate-pulse" />
+                                    در انتظار نتیجه
+                                  </span>
+                                )
+                              )}
+                            </TableCell>
+                            <TableCell className="text-center h-[72px] px-6 py-8">
+                              {pos.description ? (
+                                <button
+                                  type="button"
+                                  onClick={() => toggleRow(pos.id)}
+                                  className="inline-flex items-center gap-1.5 text-xs text-[#A87FF3] hover:text-[#c4a6fc] font-semibold bg-[#A87FF3]/10 hover:bg-[#A87FF3]/20 px-2.5 py-1.5 rounded-lg border border-[#A87FF3]/25 transition-all cursor-pointer"
+                                >
+                                  <FileText className="h-3.5 w-3.5" />
+                                  <span>{expandedRows[pos.id] ? "بستن" : "مشاهده"}</span>
+                                </button>
+                              ) : (
+                                <span className="text-white/30">-</span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                          {expandedRows[pos.id] && pos.description && (
+                            <TableRow className="bg-[#1A1036]/10 dark:hover:bg-[#1A1036]/10 hover:bg-gray-50/5 border-b border-white/5 transition-all">
+                              <TableCell colSpan={11} className="p-4 text-right">
+                                <div className="text-sm text-white/80 bg-[#02000B]/50 p-4 rounded-xl border border-white/5 shadow-inner">
+                                  <div className="font-bold text-xs text-[#A87FF3] mb-1.5 flex items-center gap-1.5">
+                                    <FileText className="h-3.5 w-3.5" />
+                                    توضیحات موقعیت:
+                                  </div>
+                                  <p className="whitespace-pre-wrap leading-relaxed text-white/90 font-medium">
+                                    {pos.description}
+                                  </p>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </Fragment>
                       );
                     })}
                 </TableBody>
@@ -760,6 +1091,94 @@ export function OpportunitiesContent() {
           </div>
         )}
       </div>
+
+      {isMounted && toasts.length > 0 &&
+        createPortal(
+          <div className="fixed bottom-6 right-6 z-[99999] flex w-[min(92vw,360px)] flex-col gap-2" dir="rtl">
+            {toasts.map((toast) => {
+              const elapsed = nowMs - toast.createdAt;
+              const remainingMs = Math.max(0, toast.durationMs - elapsed);
+              const remainingSec = Math.max(0, Math.ceil(remainingMs / 1000));
+              const progressPercent = Math.max(0, (remainingMs / toast.durationMs) * 100);
+
+              return (
+                <div
+                  key={toast.id}
+                  className={`relative overflow-hidden rounded-xl border px-3 py-2.5 text-sm shadow-lg backdrop-blur-md ${
+                    toast.kind === "success"
+                      ? "border-[#A87FF3]/40 bg-[#542C85]/25 text-white"
+                      : "border-[#A87FF3]/30 bg-[#2F1A4D]/60 text-white/90"
+                  }`}
+                >
+                  <div className="flex items-start gap-2">
+                    {toast.kind === "success" ? (
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-400" />
+                    ) : (
+                      <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
+                    )}
+                    <div className="min-w-0 flex-1 text-right">
+                      <p className="leading-6">{toast.message}</p>
+                    </div>
+                    <span className="shrink-0 rounded-md bg-black/25 px-1.5 py-0.5 text-[11px] font-medium">
+                      {remainingSec}s
+                    </span>
+                  </div>
+                  <div className="mt-2 h-1 w-full rounded-full bg-white/10">
+                    <div
+                      className={`h-full rounded-full transition-[width] duration-200 ${
+                        toast.kind === "success" ? "bg-[#A87FF3]" : "bg-[#7C4DCC]"
+                      }`}
+                      style={{ width: `${progressPercent}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>,
+          document.body,
+        )}
+
+      <AlertDialog open={confirmSignal !== null} onOpenChange={(open) => { if (!open) setConfirmSignal(null); }}>
+        <AlertDialogContent className="bg-[#0b071e]/95 border border-white/10 text-white backdrop-blur-md rounded-2xl max-w-md p-6">
+          <AlertDialogHeader className="text-right flex flex-col space-y-2">
+            <AlertDialogTitle className="text-lg font-bold text-white flex items-center gap-2">
+              <span className="text-[#A87FF3] text-xl">⚠️</span>
+              تایید نهایی ثبت وضعیت سیگنال
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-white/70 text-sm leading-relaxed mt-2" dir="rtl">
+              آیا از ثبت وضعیت سیگنال <span className="font-bold text-white text-base underline underline-offset-4 decoration-[#A87FF3]/60">{confirmSignal?.symbol}</span> به عنوان{" "}
+              <span className={`font-bold text-xs px-2 py-0.5 rounded ${confirmSignal?.outcomeStatus === 1 ? 'text-green-400 bg-green-500/10' : 'text-rose-400 bg-rose-500/10'}`}>
+                {confirmSignal?.outcomeStatus === 1 ? '🎯 به TP رسید (سود)' : '🛑 به SL رسید (ضرر)'}
+              </span>{" "}
+              اطمینان دارید؟
+              <br />
+              <span className="text-rose-400 font-semibold block mt-3 text-xs bg-rose-500/10 p-2.5 rounded-lg border border-rose-500/20">
+                🚨 توجه: این عملیات قطعی و غیر قابل بازگشت است.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex justify-end gap-3 mt-6" dir="rtl">
+            <AlertDialogCancel className="bg-white/5 border border-white/10 hover:bg-white/10 text-white rounded-lg px-4 py-2 text-sm transition-all cursor-pointer">
+              انصراف
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (confirmSignal) {
+                  handleDeclareOutcome(confirmSignal.tradingSignalId, confirmSignal.outcomeStatus);
+                  setConfirmSignal(null);
+                }
+              }}
+              className={`rounded-lg px-4 py-2 text-sm font-bold text-white transition-all cursor-pointer ${
+                confirmSignal?.outcomeStatus === 1
+                  ? "bg-green-500 hover:bg-green-600 shadow-[0_0_12px_rgba(34,197,94,0.3)]"
+                  : "bg-rose-500 hover:bg-rose-600 shadow-[0_0_12px_rgba(244,63,94,0.3)]"
+              }`}
+            >
+              بله، ثبت شود
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

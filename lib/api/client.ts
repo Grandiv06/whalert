@@ -7,7 +7,7 @@ import { getApiBaseUrl } from "@/config/env";
 import { initAuthSession, getAccessToken } from "@/lib/auth-session";
 
 OpenAPI.BASE = getApiBaseUrl();
-OpenAPI.TOKEN = getAccessToken;
+OpenAPI.TOKEN = async () => getAccessToken() || "";
 OpenAPI.HEADERS = async (options) => {
   const headers: Record<string, string> = {};
   if (options.url.includes("SubscriptionDashboard/")) {

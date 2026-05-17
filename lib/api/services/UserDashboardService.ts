@@ -7,6 +7,7 @@ import type { AddMockDataForApiTestOutput } from '../models/AddMockDataForApiTes
 import type { ChartTimePeriodInput } from '../models/ChartTimePeriodInput';
 import type { DashboardPageInputDto } from '../models/DashboardPageInputDto';
 import type { DashboardPageResultDto } from '../models/DashboardPageResultDto';
+import type { DeclareMySignalOutcomeInput } from '../models/DeclareMySignalOutcomeInput';
 import type { EditUserProfileInput } from '../models/EditUserProfileInput';
 import type { EditUserProfileOutput } from '../models/EditUserProfileOutput';
 import type { FetchDataFromImageFromUrlResultDto } from '../models/FetchDataFromImageFromUrlResultDto';
@@ -107,6 +108,21 @@ export class UserDashboardService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/services/app/UserDashboard/ShowPositions',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @param requestBody
+     * @returns any Success
+     * @throws ApiError
+     */
+    public static apiServicesAppUserdashboardDeclaremysignaloutcomePost(
+        requestBody?: DeclareMySignalOutcomeInput,
+    ): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/services/app/UserDashboard/DeclareMySignalOutcome',
             body: requestBody,
             mediaType: 'application/json',
         });
