@@ -2,6 +2,8 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { SignalOutcomeSource } from './SignalOutcomeSource';
+import type { SignalOutcomeStatus } from './SignalOutcomeStatus';
 import type { SignalSide } from './SignalSide';
 import type { SignalStatus } from './SignalStatus';
 import type { SignalVisibility } from './SignalVisibility';
@@ -19,6 +21,10 @@ export type TradingSignalDto = {
     signalStatus?: SignalStatus;
     signalVisibility?: SignalVisibility;
     expiresAt?: string;
+    outcomeStatus?: SignalOutcomeStatus;
+    outcomeSource?: SignalOutcomeSource;
+    outcomeDeclaredByUserId?: number | null;
+    outcomeDeclaredAt?: string | null;
     marketId?: number | null;
     signalProviderId?: number | null;
 };

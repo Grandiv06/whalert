@@ -99,33 +99,6 @@ function extractApiMessage(body: unknown): string | undefined {
   return undefined;
 }
 
-function normalizeTelegramId(value: string): string {
-  const persian = "۰۱۲۳۴۵۶۷۸۹";
-  const arabic = "٠١٢٣٤٥٦٧٨٩";
-  let out = value;
-  for (let i = 0; i < 10; i++) {
-    out = out.replaceAll(persian[i]!, String(i));
-    out = out.replaceAll(arabic[i]!, String(i));
-  }
-  return out.replace(/\s+/g, "").replace(/^@+/, "").trim();
-}
-
-const TELEGRAM_ID_ALLOWED_CHARS_REGEX = /^[A-Za-z0-9_]+$/;
-
-function getTelegramIdValidationError(value: string): string | null {
-  const normalized = normalizeTelegramId(value);
-  if (!normalized) return null;
-  if (!TELEGRAM_ID_ALLOWED_CHARS_REGEX.test(normalized)) {
-    return "آیدی تلگرام فقط می‌تواند شامل حروف انگلیسی، عدد و _ باشد.";
-  }
-  if (/^\d+$/.test(normalized)) {
-    return "آیدی تلگرام نمی‌تواند فقط عدد باشد.";
-  }
-  if (/^\d/.test(normalized)) {
-    return "آیدی تلگرام نباید با عدد شروع شود.";
-  }
-  return null;
-}
 
 type SaveProfileVariables = {
   name: string;
@@ -140,6 +113,14 @@ type AvatarToast = {
   kind: AvatarToastKind;
   message: string;
 };
+
+type TelegramConnectResponse = {
+  url: string;
+  botUsername: string;
+  expiresAtUtc: string;
+};
+
+type TelegramStatus = "idle" | "loading" | "waiting" | "connected" | "expired" | "error";
 
 type CropSourceImage = {
   src: string;
@@ -1080,10 +1061,9 @@ export function AccountSettingClient() {
   >(undefined);
   const [avatarToasts, setAvatarToasts] = useState<AvatarToast[]>([]);
   const [isMetaTraderTokenCopied, setIsMetaTraderTokenCopied] = useState(false);
-  const [telegramDraft, setTelegramDraft] = useState<string | null>(null);
-  const [telegramBaseOverride, setTelegramBaseOverride] = useState<
-    string | null
-  >(null);
+  const [telegramStatus, setTelegramStatus] = useState<TelegramStatus>("idle");
+  const [telegramConnectLink, setTelegramConnectLink] = useState<TelegramConnectResponse | null>(null);
+  const [pollingActive, setPollingActive] = useState(false);
   const avatarToastTimersRef = useRef<Map<number, number>>(new Map());
   const metaTraderCopiedTimerRef = useRef<number | null>(null);
   const metaTraderTokenInputRef = useRef<HTMLInputElement>(null);
@@ -1245,6 +1225,68 @@ export function AccountSettingClient() {
     },
   });
 
+  useEffect(() => {
+    if (profile?.telegramId) {
+      setTelegramStatus("connected");
+    } else if (telegramStatus === "connected") {
+      setTelegramStatus("idle");
+    }
+  }, [profile?.telegramId, telegramStatus]);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (telegramStatus === "waiting" && pollingActive) {
+      interval = setInterval(async () => {
+        try {
+          const { data: updatedProfile } = await refetchProfile();
+          if (updatedProfile?.telegramId) {
+            setTelegramStatus("connected");
+            setPollingActive(false);
+            pushAvatarToast("تلگرام با موفقیت متصل شد.", "success");
+            return;
+          }
+
+          if (telegramConnectLink?.expiresAtUtc) {
+            const expiresAt = new Date(telegramConnectLink.expiresAtUtc).getTime();
+            const now = new Date().getTime();
+            if (now > expiresAt) {
+              setTelegramStatus("expired");
+              setPollingActive(false);
+            }
+          }
+        } catch (err) {
+          console.error("Polling profile failed:", err);
+        }
+      }, 3000);
+    }
+    return () => clearInterval(interval);
+  }, [telegramStatus, pollingActive, refetchProfile, telegramConnectLink, pushAvatarToast]);
+
+  const handleConnectTelegram = useCallback(async () => {
+    setTelegramStatus("loading");
+    setTelegramConnectLink(null);
+    setPollingActive(false);
+    try {
+      const res =
+        await UserDashboardService.apiServicesAppUserdashboardGettelegramconnectlinkGet();
+      const link = unwrapAbp<TelegramConnectResponse>(res);
+
+      if (!link?.url) {
+        throw new Error("Telegram connect link is missing.");
+      }
+
+      setTelegramConnectLink(link);
+      window.open(link.url, "_blank", "noopener,noreferrer");
+      setTelegramStatus("waiting");
+      setPollingActive(true);
+    } catch (error) {
+      console.error("GetTelegramConnectLink failed:", error);
+      setTelegramStatus("error");
+      setPollingActive(false);
+      pushAvatarToast("دریافت لینک اتصال به تلگرام ناموفق بود.", "error");
+    }
+  }, [pushAvatarToast]);
+
   const { data: pictureOut, isLoading: pictureLoading } = useQuery({
     queryKey: ["profilePicture"],
     queryFn: async () => {
@@ -1262,14 +1304,6 @@ export function AccountSettingClient() {
     profilePictureIdOverride !== undefined
       ? profilePictureIdOverride
       : (currentLoginInfo?.user?.profilePictureId ?? null);
-  const profileWithTelegram = profile as
-    | (CurrentUserProfileEditDto & { telegramId?: string | null })
-    | undefined;
-  const baseTelegramId = normalizeTelegramId(
-    telegramBaseOverride ?? profileWithTelegram?.telegramId ?? "",
-  );
-  const telegramInputValue = telegramDraft ?? baseTelegramId;
-  const telegramValidationError = getTelegramIdValidationError(telegramInputValue);
 
   const syncProfilePictureId = useCallback(async () => {
     const freshLoginInfo = await queryClient.fetchQuery({
@@ -1380,56 +1414,6 @@ export function AccountSettingClient() {
     },
   });
 
-  const telegramSaveMutation = useMutation({
-    mutationFn: async (rawTelegramId: string) => {
-      if (!profile) {
-        throw new Error("اطلاعات کاربر در دسترس نیست.");
-      }
-      const validationError = getTelegramIdValidationError(rawTelegramId);
-      if (validationError) {
-        throw new Error(validationError);
-      }
-      const phone = normalizePhoneInput(profile.phoneNumber ?? "");
-      const body = {
-        name: profile.name ?? "",
-        surname: profile.surname ?? "",
-        phoneNumber: phone.length > 0 ? phone : null,
-        telegramId: normalizeTelegramId(rawTelegramId)
-          ? `@${normalizeTelegramId(rawTelegramId)}`
-          : null,
-        profilePictureId,
-      };
-      const res =
-        await UserDashboardService.apiServicesAppUserdashboardEditinguserprofilePost(
-          body,
-        );
-      return unwrapAbp<EditUserProfileOutput>(res);
-    },
-    onSuccess: (out) => {
-      const savedTelegram = normalizeTelegramId(
-        out.telegramId ?? telegramInputValue,
-      );
-      setTelegramBaseOverride(savedTelegram);
-      setTelegramDraft(null);
-      pushAvatarToast("آیدی تلگرام با موفقیت ذخیره شد.", "success");
-      queryClient.invalidateQueries({
-        queryKey: ["currentUserProfileForEdit"],
-      });
-    },
-    onError: (err: unknown) => {
-      let message = "ذخیره آیدی تلگرام با خطا مواجه شد.";
-      if (err instanceof ApiError) {
-        message = extractApiMessage(err.body) ?? err.message ?? message;
-      } else if (err instanceof Error) {
-        message = err.message || message;
-      }
-      pushAvatarToast(message, "error");
-    },
-  });
-  const hasTelegramChanges =
-    normalizeTelegramId(telegramInputValue) !==
-    normalizeTelegramId(baseTelegramId);
-  const canSaveTelegram = hasTelegramChanges && !telegramValidationError;
 
   const avatarSrc = profileImageSrc(pictureOut?.profilePicture ?? undefined);
   const avatarPending =
@@ -1647,85 +1631,118 @@ export function AccountSettingClient() {
                   dir="rtl"
                   style={{ direction: "rtl" }}
                 >
-                  <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                    <div className="flex items-center gap-3 text-right">
+                  <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+                    <div className="flex items-center gap-4 text-right">
                       <div
-                        className={`w-12 h-12 rounded-xl flex items-center justify-center border transition-all shrink-0 ${
-                          theme === "dark" 
-                            ? "bg-blue-500/10 border-blue-500/20" 
+                        className={`w-14 h-14 rounded-2xl flex items-center justify-center border transition-all shrink-0 ${
+                          telegramStatus === "connected"
+                            ? theme === "dark"
+                              ? "bg-green-500/10 border-green-500/20 shadow-[0_0_15px_rgba(34,197,94,0.1)]"
+                              : "bg-green-50 border-green-100"
+                            : theme === "dark"
+                            ? "bg-blue-500/10 border-blue-500/20"
                             : "bg-blue-50 border-blue-100"
                         }`}
                       >
-                        <Send
-                          size={24}
-                          className={
-                            theme === "dark" ? "text-blue-400" : "text-blue-600"
-                          }
-                        />
+                        {telegramStatus === "connected" ? (
+                          <CheckCircle2
+                            size={28}
+                            className={
+                              theme === "dark" ? "text-green-400" : "text-green-600"
+                            }
+                          />
+                        ) : (
+                          <Send
+                            size={28}
+                            className={
+                              theme === "dark" ? "text-blue-400" : "text-blue-600"
+                            }
+                          />
+                        )}
                       </div>
                       <div>
                         <h3
-                          className={`text-lg font-bold mb-1 ${
+                          className={`text-xl font-bold mb-1 ${
                             theme === "dark" ? "text-white" : "text-gray-900"
                           }`}
                         >
                           تلگرام
                         </h3>
-                        <p
-                          className={`text-sm ${
+                        <div
+                          className={`text-sm leading-relaxed ${
                             theme === "dark" ? "text-gray-400" : "text-gray-600"
                           }`}
                         >
-                          برای دریافت سیگنال‌ها آیدی تلگرام خود را بدون @ وارد کنید
-                        </p>
+                          {telegramStatus === "connected" ? (
+                            <div className="flex items-center gap-2 text-green-500 font-medium">
+                              <span>تلگرام متصل شد</span>
+                              {profile?.telegramId && (
+                                <span dir="ltr" className="opacity-70 text-xs">({profile.telegramId})</span>
+                              )}
+                            </div>
+                          ) : telegramStatus === "loading" ? (
+                            "در حال ایجاد لینک اتصال به تلگرام..."
+                          ) : telegramStatus === "waiting" ? (
+                            <div className="space-y-1">
+                              <p className="text-blue-400">در انتظار زدن دکمه Start در تلگرام...</p>
+                              {telegramConnectLink && (
+                                <button 
+                                  onClick={() => window.open(telegramConnectLink.url, "_blank")}
+                                  className="text-xs underline hover:text-blue-300"
+                                >
+                                  لینک باز نشد؟ دوباره کلیک کنید
+                                </button>
+                              )}
+                            </div>
+                          ) : telegramStatus === "expired" ? (
+                            <span className="text-red-400">لینک اتصال منقضی شده است. لطفا دوباره تلاش کنید.</span>
+                          ) : telegramStatus === "error" ? (
+                            <span className="text-red-400">خطا در برقراری ارتباط. لطفا دوباره تلاش کنید.</span>
+                          ) : (
+                            "برای دریافت سیگنال‌ها در تلگرام، حساب خود را متصل کنید"
+                          )}
+                        </div>
                       </div>
                     </div>
-                    {(canSaveTelegram || telegramSaveMutation.isPending) && (
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        className="w-full md:w-auto cursor-pointer"
-                        onClick={() =>
-                          telegramSaveMutation.mutate(
-                            normalizeTelegramId(telegramInputValue),
-                          )
-                        }
-                        disabled={telegramSaveMutation.isPending || !!telegramValidationError}
-                      >
-                        {telegramSaveMutation.isPending
-                          ? "در حال ذخیره..."
-                          : "ذخیره آیدی"}
-                      </Button>
-                    )}
-                  </div>
-                  <div className="space-y-2 w-full md:w-1/2 md:mr-auto">
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
-                        @
-                      </span>
-                      <Input
-                        placeholder="آیدی تلگرام شما"
-                        value={telegramInputValue}
-                        onChange={(e) =>
-                          setTelegramDraft(normalizeTelegramId(e.target.value))
-                        }
-                        inputMode="text"
-                        pattern="[A-Za-z0-9_]*"
-                        autoCapitalize="off"
-                        autoCorrect="off"
-                        spellCheck={false}
-                        dir="ltr"
-                        style={{ direction: "ltr", textAlign: "left" }}
-                        className={
-                          theme === "dark"
-                            ? "h-11 rounded-xl border-white/15 bg-black/20 pl-8 text-left text-white placeholder:text-gray-500 focus:border-purple-500/60 focus:ring-purple-500/20"
-                            : "h-11 rounded-xl border-gray-200/80 bg-white pl-8 text-left text-gray-900 placeholder:text-gray-400 focus:border-teal-500/60 focus:ring-teal-500/20"
-                        }
-                      />
+
+                    <div className="flex shrink-0">
+                      {telegramStatus === "connected" ? (
+                        <div className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 ${
+                          theme === "dark" ? "bg-green-500/10 text-green-400" : "bg-green-50 text-green-700"
+                        }`}>
+                          <CheckCircle2 size={16} />
+                          متصل
+                        </div>
+                      ) : (
+                        <Button
+                          variant={telegramStatus === "expired" || telegramStatus === "error" ? "destructive" : "default"}
+                          size="lg"
+                          className={`w-full md:w-auto font-bold px-8 h-12 rounded-xl transition-all ${
+                            telegramStatus === "waiting" 
+                              ? "bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-600/20" 
+                              : "shadow-lg"
+                          }`}
+                          onClick={handleConnectTelegram}
+                          disabled={telegramStatus === "loading" || telegramStatus === "waiting"}
+                        >
+                          {telegramStatus === "loading" ? (
+                            <>
+                              <Loader2 className="ml-2 h-5 w-5 animate-spin" />
+                              در حال پردازش...
+                            </>
+                          ) : telegramStatus === "waiting" ? (
+                            <>
+                              <Activity className="ml-2 h-5 w-5 animate-pulse" />
+                              در انتظار تایید...
+                            </>
+                          ) : telegramStatus === "expired" || telegramStatus === "error" ? (
+                            "تلاش مجدد"
+                          ) : (
+                            "اتصال به تلگرام"
+                          )}
+                        </Button>
+                      )}
                     </div>
-                    {telegramValidationError && (
-                      <p className="text-xs text-red-400">{telegramValidationError}</p>
-                    )}
                   </div>
                 </div>
 

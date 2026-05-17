@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { DeclareSignalOutcomeInput } from '../models/DeclareSignalOutcomeInput';
 import type { NewSignalInput } from '../models/NewSignalInput';
 import type { PagedResultDtoOfGetProvidedOutPut } from '../models/PagedResultDtoOfGetProvidedOutPut';
 import type { CancelablePromise } from '../core/CancelablePromise';
@@ -38,6 +39,21 @@ export class SignalProviderService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/services/app/SignalProvider/AddNewSignal',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @param requestBody
+     * @returns any Success
+     * @throws ApiError
+     */
+    public static apiServicesAppSignalproviderDeclaresignaloutcomePost(
+        requestBody?: DeclareSignalOutcomeInput,
+    ): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/services/app/SignalProvider/DeclareSignalOutcome',
             body: requestBody,
             mediaType: 'application/json',
         });

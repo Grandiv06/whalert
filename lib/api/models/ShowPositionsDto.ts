@@ -8,6 +8,7 @@ export type ShowPositionsDto = {
     symbol?: string | null;
     market?: MarketType;
     displayName?: string | null;
+    description?: string | null;
     side?: SignalSide;
     date?: string;
     datePersian?: string | null;

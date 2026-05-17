@@ -34,11 +34,38 @@ import type { SettingInput } from '../models/SettingInput';
 import type { ShowPositionInputDto } from '../models/ShowPositionInputDto';
 import type { SignalProviderInfoInput } from '../models/SignalProviderInfoInput';
 import type { SubmitSignalFromUserInputDto } from '../models/SubmitSignalFromUserInputDto';
+import type { TelegramConnectLinkOutput } from '../models/TelegramConnectLinkOutput';
 import type { UserSubscriptionPlanDetailsDto } from '../models/UserSubscriptionPlanDetailsDto';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 export class UserDashboardService {
+    /**
+     * @param id
+     * @returns boolean Success
+     * @throws ApiError
+     */
+    public static apiServicesAppUserdashboardTesttelegramforiliaPost(
+        id?: string,
+    ): CancelablePromise<boolean> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/services/app/UserDashboard/TestTelegramforIlia',
+            query: {
+                'id': id,
+            },
+        });
+    }
+    /**
+     * @returns TelegramConnectLinkOutput Success
+     * @throws ApiError
+     */
+    public static apiServicesAppUserdashboardGettelegramconnectlinkGet(): CancelablePromise<TelegramConnectLinkOutput> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/services/app/UserDashboard/GetTelegramConnectLink',
+        });
+    }
     /**
      * @param requestBody
      * @returns FollowedOfferStatusResultDto Success

@@ -5,6 +5,10 @@ import { Providers } from "./providers";
 export const metadata: Metadata = {
   title: "والرت | پلتفرم سیگنال معاملاتی",
   description: "پلتفرمی پیشرو برای ارائه سیگنال‌های معاملاتی",
+  icons: {
+    icon: "/icon.svg?v=1",
+    apple: "/icon.svg?v=1",
+  },
 };
 
 export default function RootLayout({
