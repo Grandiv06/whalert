@@ -527,8 +527,22 @@ const normalizeApiCandles = (
   });
 
   return Array.from(uniqueMap.values()).sort((a, b) => {
-    const timeA = typeof a.time === "number" ? a.time : new Date(a.time).getTime() / 1000;
-    const timeB = typeof b.time === "number" ? b.time : new Date(b.time).getTime() / 1000;
+    const toTimestampSeconds = (time: ChartDataElement["time"]) => {
+      if (typeof time === "number") return time;
+      if (typeof time === "string") return new Date(time).getTime() / 1000;
+      if (
+        typeof time === "object" &&
+        time !== null &&
+        "year" in time &&
+        "month" in time &&
+        "day" in time
+      ) {
+        return Date.UTC(time.year, time.month - 1, time.day) / 1000;
+      }
+      return 0;
+    };
+    const timeA = toTimestampSeconds(a.time);
+    const timeB = toTimestampSeconds(b.time);
     return timeA - timeB;
   });
 };
@@ -2844,8 +2858,11 @@ export function CreateSignalContent({
                       <div
                         key={`${tp}-${index}`}
                         className="flex items-center justify-between rounded-xl bg-white/5 px-3 py-2 border border-white/5"
+                        dir="ltr"
                       >
-                        <span className="text-[11px] font-bold text-white/50 font-mono">T{toPersianDigits(index + 1)}</span>
+                        <span className="text-[11px] font-semibold tracking-wide text-white/55 font-mono">
+                          t{index + 1}
+                        </span>
                         <span className="font-bold font-mono text-emerald-400 ltr">
                           {formatLevelPrice(tp)}
                         </span>

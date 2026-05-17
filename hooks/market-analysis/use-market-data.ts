@@ -19,8 +19,8 @@ interface UseMarketDataArgs {
 interface MarketDataState {
   candles: MarketCandle[];
   latestPrice: number | null;
-  candlesSource: "binance" | "mock";
-  priceSource: "binance" | "mock";
+  candlesSource: "binance" | "mock" | "internal";
+  priceSource: "binance" | "mock" | "internal";
   isLoading: boolean;
   isRefreshing: boolean;
   error: string | null;

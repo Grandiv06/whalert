@@ -82,8 +82,8 @@ export function PositionCard({
                     <p className="mb-0.5 border-b border-white/10 pb-1.5 text-xs font-semibold text-[#C9AEFF]">حد سودهای هدف</p>
                     <div className="flex flex-col gap-1.5 text-xs">
                       {tPs.map((tpVal: string | number, tpIdx: number) => (
-                        <div key={tpIdx} className="flex items-center justify-between gap-3 rounded-lg border border-white/8 bg-white/[0.03] px-2.5 py-1.5">
-                          <span className="text-white/65">TP {(tpIdx + 1).toLocaleString("fa-IR")}</span>
+                        <div key={tpIdx} className="flex items-center justify-between gap-3 rounded-lg border border-white/8 bg-white/[0.03] px-2.5 py-1.5" dir="ltr">
+                          <span className="text-[11px] font-semibold tracking-wide text-white/55">t{tpIdx + 1}</span>
                           <span className="font-extrabold text-emerald-300">{tpVal.toString()}</span>
                         </div>
                       ))}

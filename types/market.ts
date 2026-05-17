@@ -71,14 +71,14 @@ export interface IndicatorSnapshot {
 export interface CandlesApiResponse {
   symbol: string;
   timeframe: MarketTimeframe;
-  source: "binance" | "mock";
+  source: "binance" | "mock" | "internal";
   candles: MarketCandle[];
   message?: string;
 }
 
 export interface PriceApiResponse {
   symbol: string;
-  source: "binance" | "mock";
+  source: "binance" | "mock" | "internal";
   price: number;
   message?: string;
 }
