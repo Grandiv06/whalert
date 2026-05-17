@@ -139,8 +139,8 @@ type DragState = {
 
 const CROP_VIEW_SIZE = 300;
 const DEFAULT_META_TRADER_TOKEN = "MT-Token-xxxxx";
-const META_TRADER_LATEST_MANIFEST_URL = "https://dl.whalert.net/public/latest.json";
-const META_TRADER_PUBLIC_BASE_URL = "https://dl.whalert.net/public/";
+const META_TRADER_LATEST_MANIFEST_URL = "http://dl.whalert.net/public/latest.json";
+const META_TRADER_PUBLIC_BASE_URL = "http://dl.whalert.net/public/";
 const CROP_CIRCLE_SIZE = 210;
 const CROP_OUTPUT_SIZE = 512;
 const MAX_ZOOM_PERCENT = 300;
