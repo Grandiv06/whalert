@@ -35,7 +35,7 @@ function loadEnv() {
 }
 
 const env = loadEnv();
-const apiBase = env.NEXT_PUBLIC_API_BASE_URL || "http://api.whalert.net";
+const apiBase = env.NEXT_PUBLIC_API_BASE_URL || "https://api.whalert.net";
 const specUrl = env.OPENAPI_SPEC_URL || `${apiBase}/swagger/v1/swagger.json`;
 const output = join(root, "lib", "api");
 
