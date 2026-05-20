@@ -304,14 +304,14 @@ export function SubscriptionContent() {
 
       <Dialog open={isPlansModalOpen} onOpenChange={setIsPlansModalOpen}>
         <DialogContent
-          className="max-w-6xl w-[95vw] max-h-[90vh] overflow-y-auto border border-white/20 bg-[radial-gradient(130%_120%_at_100%_0%,rgba(181,124,255,0.26)_0%,rgba(41,18,73,0.94)_42%,rgba(9,2,20,0.98)_100%)] text-white p-6 md:p-7 shadow-[0_28px_110px_rgba(93,49,160,0.45)] backdrop-blur-xl scrollbar-subscription"
+          className="max-w-6xl w-[95vw] max-h-[90vh] overflow-hidden border border-white/20 bg-[radial-gradient(130%_120%_at_100%_0%,rgba(181,124,255,0.26)_0%,rgba(41,18,73,0.94)_42%,rgba(9,2,20,0.98)_100%)] text-white p-4 sm:p-6 md:p-7 shadow-[0_28px_110px_rgba(93,49,160,0.45)] backdrop-blur-xl"
           dir="rtl"
         >
           <div className="pointer-events-none absolute -top-20 -right-20 h-56 w-56 rounded-full bg-fuchsia-400/25 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-24 -left-20 h-64 w-64 rounded-full bg-indigo-400/20 blur-3xl" />
           <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-l from-transparent via-[#D6B4FF]/80 to-transparent" />
 
-          <div className="mt-2 pr-1">
+          <div className="mt-2 w-full max-w-full overflow-hidden pb-2">
             <PlansSection showHeader={false} onPurchaseSuccess={() => setIsPlansModalOpen(false)} />
           </div>
         </DialogContent>

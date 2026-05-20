@@ -16,6 +16,10 @@ import {
 import { Check, Sparkles } from "lucide-react";
 import { toPersianDigits } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Pagination } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/pagination";
 import {
   SubscriptionPurchaseService,
   SubscriptionDashboardService,
@@ -63,6 +67,37 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
   const [selectedPlan, setSelectedPlan] = useState<GoldPlan | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const container = e.currentTarget;
+    const firstCard = container.firstElementChild as HTMLElement;
+    if (!firstCard) return;
+    const cardWidth = firstCard.offsetWidth + 16; // card width + gap
+    const scrollLeft = Math.abs(container.scrollLeft);
+    const index = Math.round(scrollLeft / cardWidth);
+    
+    if (index >= 0 && index < 3) { // up to 3 plans typically
+      setActiveIndex(index);
+    }
+  };
+
+  const scrollToCard = (index: number) => {
+    const container = document.getElementById("plans-container");
+    if (!container) return;
+    const firstCard = container.firstElementChild as HTMLElement;
+    if (!firstCard) return;
+    const cardWidth = firstCard.offsetWidth + 16;
+    
+    const isRtl = document.dir === "rtl" || document.documentElement.dir === "rtl";
+    const targetScroll = isRtl ? -index * cardWidth : index * cardWidth;
+    
+    container.scrollTo({
+      left: targetScroll,
+      behavior: "smooth"
+    });
+    setActiveIndex(index);
+  };
 
   useEffect(() => {
     const token =
@@ -189,13 +224,16 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
         </div>
       )}
 
+      {/* Desktop view (md and up) */}
       <div
-        className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 ${showHeader ? "gap-6 lg:gap-8 mt-12 px-4 md:px-0" : "gap-4 lg:gap-5 mt-2"} auto-rows-fr`}
+        className={`hidden md:grid md:grid-cols-2 lg:grid-cols-3 ${
+          showHeader ? "gap-6 lg:gap-8 mt-12 px-4 md:px-0" : "gap-4 lg:gap-5 mt-2"
+        } auto-rows-fr`}
       >
         {isLoading &&
           Array.from({ length: 3 }).map((_, index) => (
             <Card
-              key={`plans-skeleton-${index}`}
+              key={`plans-skeleton-desktop-${index}`}
               className="relative overflow-hidden rounded-4xl border border-white/10 bg-gradient-to-br from-white/[0.08] to-[#02000B]/50 h-full flex flex-col"
             >
               <CardContent className={`${showHeader ? "p-5 md:p-6" : "p-4 md:p-4.5"} flex-1 flex flex-col justify-between`}>
@@ -242,43 +280,43 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
             };
 
             if (index % 3 === 0) {
-              theme = {
-                cardBg:
-                  "border-indigo-400/40 bg-gradient-to-br from-indigo-500/15 via-[#3B216A]/25 to-[#02000B]/60 shadow-lg shadow-indigo-500/10 hover:border-indigo-400/60",
-                glow: "bg-indigo-400/20",
-                priceBox: "border-indigo-400/30 bg-indigo-400/10",
-                check: "text-indigo-300",
-                button:
-                  "bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/25",
+                theme = {
+                  cardBg:
+                    "border-indigo-400/40 bg-gradient-to-br from-indigo-500/15 via-[#3B216A]/25 to-[#02000B]/60 hover:border-indigo-400/60",
+                  glow: "bg-indigo-400/20",
+                  priceBox: "border-indigo-400/30 bg-indigo-400/10",
+                  check: "text-indigo-300",
+                  button:
+                    "bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/25",
               };
             } else if (index % 3 === 1) {
-              theme = {
-                cardBg:
-                  "border-fuchsia-400/40 bg-gradient-to-br from-fuchsia-500/15 via-[#542C85]/25 to-[#02000B]/60 shadow-lg shadow-fuchsia-500/10 hover:border-fuchsia-400/60",
-                glow: "bg-fuchsia-400/20",
-                priceBox: "border-fuchsia-400/30 bg-fuchsia-400/10",
-                check: "text-fuchsia-300",
-                button:
-                  "bg-fuchsia-600 hover:bg-fuchsia-500 text-white shadow-lg shadow-fuchsia-600/25",
+                theme = {
+                  cardBg:
+                    "border-fuchsia-400/40 bg-gradient-to-br from-fuchsia-500/15 via-[#542C85]/25 to-[#02000B]/60 hover:border-fuchsia-400/60",
+                  glow: "bg-fuchsia-400/20",
+                  priceBox: "border-fuchsia-400/30 bg-fuchsia-400/10",
+                  check: "text-fuchsia-300",
+                  button:
+                    "bg-fuchsia-600 hover:bg-fuchsia-500 text-white shadow-lg shadow-fuchsia-600/25",
               };
             }
 
             if (isBundle) {
-              theme = {
-                cardBg:
-                  "border-amber-300/70 bg-gradient-to-br from-amber-400/30 via-[#5F2E96]/35 to-[#090613]/90 shadow-2xl shadow-amber-500/30 lg:z-10",
-                glow: "bg-amber-300/25",
-                priceBox: "border-amber-300/40 bg-amber-400/10",
-                check: "text-amber-400",
-                button:
-                  "bg-amber-400 hover:bg-amber-300 text-black font-bold shadow-lg shadow-amber-500/25",
+                theme = {
+                  cardBg:
+                    "border-amber-300/70 bg-gradient-to-br from-amber-400/30 via-[#5F2E96]/35 to-[#090613]/90 lg:z-10",
+                  glow: "bg-amber-300/25",
+                  priceBox: "border-amber-300/40 bg-amber-400/10",
+                  check: "text-amber-400",
+                  button:
+                    "bg-amber-400 hover:bg-amber-300 text-black font-bold shadow-lg shadow-amber-500/25",
               };
             }
 
             return (
               <Card
                 key={plan.id}
-                className={`relative overflow-hidden ${showHeader ? "rounded-4xl border" : "rounded-3xl border"} transition-all duration-300 group ${theme.cardBg} h-full flex flex-col`}
+                className={`relative overflow-hidden ${showHeader ? "rounded-4xl border h-[600px]" : "rounded-3xl border h-[600px]"} transition-all duration-300 group ${theme.cardBg} shadow-[0_16px_40px_rgba(7,2,20,0.45)] hover:shadow-[0_20px_52px_rgba(11,4,28,0.55)] flex flex-col`}
               >
                 <div className="absolute inset-0 pointer-events-none">
                   <div
@@ -293,8 +331,10 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
                   </div>
                 )}
 
-                <CardContent className={`${showHeader ? "p-5 md:p-6" : "p-4 md:p-4.5"} flex-1 flex flex-col justify-between`}>
-                  <div className={`${showHeader ? "space-y-5" : "space-y-3.5"} flex-1 flex flex-col justify-between h-full`}>
+                <CardContent
+                  className={`${showHeader ? "p-5 md:p-6" : "p-4 md:p-4.5"} ${isBundle ? (showHeader ? "pt-14" : "pt-12") : ""} flex-1 flex flex-col`}
+                >
+                  <div className={`${showHeader ? "space-y-5" : "space-y-3.5"} flex-1 flex flex-col h-full`}>
                     <div>
                       <h3 className={`font-extrabold text-white leading-8 ${showHeader ? "text-xl" : "text-[17px]"}`}>
                         {plan.displayName}
@@ -312,7 +352,7 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
                       <p className="text-xs mt-1.5 text-white/65">پرداخت ماهانه</p>
                     </div>
 
-                    <ul className={`${showHeader ? "space-y-2 text-sm" : "space-y-1.5 text-[12px]"} text-white/85 flex-1`}>
+                    <ul className={`${showHeader ? "space-y-2 text-sm min-h-[170px]" : "space-y-1.5 text-[12px] min-h-[150px]"} text-white/85 flex-1`}>
                       {plan.features.map((feature) => (
                         <li
                           key={feature}
@@ -331,7 +371,7 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
                       )}
                     </ul>
 
-                    <p className={`text-white/70 leading-5 border-t border-white/10 ${showHeader ? "text-xs md:text-sm pt-3 mt-1" : "text-[11px] pt-2 mt-0.5"}`}>
+                    <p className={`text-white/70 leading-5 border-t border-white/10 ${showHeader ? "text-xs md:text-sm pt-3 mt-1 min-h-[48px]" : "text-[11px] pt-2 mt-0.5 min-h-[40px]"}`}>
                       {plan.footerText}
                     </p>
 
@@ -357,6 +397,207 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
               </Card>
             );
           })}
+      </div>
+
+      {/* Mobile view (under md) using Swiper */}
+      <div className="block md:hidden w-full overflow-visible relative px-1">
+        {isLoading ? (
+          <div className="flex gap-4">
+            <Card className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.08] to-[#02000B]/50 w-full h-96 flex flex-col">
+              <CardContent className="p-4 flex-1 flex flex-col justify-between">
+                <div className="space-y-3.5 flex-1 flex flex-col justify-between h-full">
+                  <div className="space-y-3">
+                    <Skeleton className="h-8 w-3/4 bg-white/10" />
+                    <Skeleton className="h-5 w-full bg-white/10" />
+                  </div>
+                  <Skeleton className="h-16 w-full bg-white/10 mt-auto" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        ) : plans.length === 0 ? (
+          <div className="rounded-3xl border border-dashed border-white/20 bg-white/[0.02] p-8 text-center text-white/70">
+            در حال حاضر پلن فعالی برای نمایش وجود ندارد.
+          </div>
+        ) : (
+          <>
+            <style dangerouslySetInnerHTML={{ __html: `
+              .plans-swiper .swiper-pagination-bullet {
+                background: rgba(255, 255, 255, 0.2) !important;
+                opacity: 1 !important;
+                width: 7px !important;
+                height: 7px !important;
+                transition: all 0.3s ease !important;
+              }
+              .plans-swiper .swiper-pagination-bullet-active {
+                background: linear-gradient(90deg, #B57CFF, #8C46FF) !important;
+                width: 22px !important;
+                border-radius: 4px !important;
+                box-shadow: 0 0 10px rgba(181, 124, 255, 0.5) !important;
+              }
+              .plans-swiper .swiper-pagination {
+                position: static !important;
+                margin-top: 10px;
+                line-height: 0;
+                text-align: center;
+              }
+              .plans-swiper .swiper-wrapper {
+                align-items: stretch;
+              }
+              .plans-swiper .swiper-slide {
+                height: auto;
+                display: flex;
+              }
+            `}} />
+            <Swiper
+              modules={[Pagination]}
+              spaceBetween={14}
+              slidesPerView={1.12}
+              centeredSlides={true}
+              speed={280}
+              onSlideChange={(swiper) => setActiveIndex(swiper.activeIndex)}
+              pagination={{ clickable: true }}
+              className="plans-swiper overflow-visible"
+            >
+              {plans.map((plan, index) => {
+                const isBundle = !!plan.isBundle;
+                const isActive = activeIndex === index;
+
+                let theme = {
+                  cardBg:
+                    "border-white/10 bg-gradient-to-br from-white/[0.08] to-[#02000B]/50 hover:border-white/20",
+                  glow: "bg-white/5",
+                  priceBox: "border-white/10 bg-white/[0.03]",
+                  check: "text-white/60",
+                  button: "bg-[#5D31A0] hover:bg-[#6A3D9C] text-white",
+                };
+
+                if (index % 3 === 0) {
+                  theme = {
+                    cardBg:
+                      "border-indigo-400/40 bg-gradient-to-br from-indigo-500/15 via-[#3B216A]/25 to-[#02000B]/60 hover:border-indigo-400/60",
+                    glow: "bg-indigo-400/20",
+                    priceBox: "border-indigo-400/30 bg-indigo-400/10",
+                    check: "text-indigo-300",
+                    button:
+                      "bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/25",
+                  };
+                } else if (index % 3 === 1) {
+                  theme = {
+                    cardBg:
+                      "border-fuchsia-400/40 bg-gradient-to-br from-fuchsia-500/15 via-[#542C85]/25 to-[#02000B]/60 hover:border-fuchsia-400/60",
+                    glow: "bg-fuchsia-400/20",
+                    priceBox: "border-fuchsia-400/30 bg-fuchsia-400/10",
+                    check: "text-fuchsia-300",
+                    button:
+                      "bg-fuchsia-600 hover:bg-fuchsia-500 text-white shadow-lg shadow-fuchsia-600/25",
+                  };
+                }
+
+                if (isBundle) {
+                  theme = {
+                    cardBg:
+                      "border-amber-300/70 bg-gradient-to-br from-amber-400/30 via-[#5F2E96]/35 to-[#090613]/90 lg:z-10",
+                    glow: "bg-amber-300/25",
+                    priceBox: "border-amber-300/40 bg-amber-400/10",
+                    check: "text-amber-400",
+                    button:
+                      "bg-amber-400 hover:bg-amber-300 text-black font-bold shadow-lg shadow-amber-500/25",
+                  };
+                }
+
+                const mobileActiveClasses = isActive
+                  ? "border-opacity-100 opacity-100"
+                  : "opacity-80 border-opacity-65";
+
+                return (
+                  <SwiperSlide key={plan.id} className="overflow-visible py-2">
+                    <Card
+                      className={`relative overflow-hidden rounded-3xl border transition-[opacity,border-color] duration-200 ${theme.cardBg} w-full h-full min-h-[580px] shadow-[0_8px_18px_rgba(7,2,20,0.28)] flex flex-col will-change-transform ${mobileActiveClasses}`}
+                    >
+                      <div className="absolute inset-0 pointer-events-none hidden sm:block">
+                        <div
+                          className={`absolute -top-20 -right-20 w-48 h-48 rounded-full blur-3xl ${theme.glow}`}
+                        />
+                      </div>
+
+                      {isBundle && (
+                        <div className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-3xl text-[11px] border border-amber-200/60 bg-amber-400/25 text-amber-100 inline-flex items-center gap-1 font-semibold backdrop-blur-sm">
+                          <Sparkles className="w-3 h-3" />
+                          پیشنهاد ویژه
+                        </div>
+                      )}
+
+                      <CardContent
+                        className={`p-4 md:p-4.5 ${isBundle ? "pt-12" : ""} flex-1 flex flex-col`}
+                      >
+                        <div className="space-y-3.5 flex-1 flex flex-col h-full">
+                          <div>
+                            <h3 className="font-extrabold text-white leading-8 text-[17px]">
+                              {plan.displayName}
+                            </h3>
+                            <p className="text-white/75 mt-1.5 leading-6 text-[12px] min-h-[2.5rem]">
+                              {plan.subtitle}
+                            </p>
+                          </div>
+
+                          <div className={`rounded-2xl p-3 border ${theme.priceBox}`}>
+                            <p className="text-xs text-white/60 mb-1.5">شروع از</p>
+                            <p className="font-black text-white leading-none text-2xl md:text-[26px]">
+                              {formatMoney(plan.monthlyPrice)}
+                            </p>
+                            <p className="text-xs mt-1.5 text-white/65">پرداخت ماهانه</p>
+                          </div>
+
+                          <ul className="space-y-1.5 text-[12px] text-white/85 flex-1 min-h-[150px]">
+                            {plan.features.map((feature) => (
+                              <li
+                                key={feature}
+                                className="inline-flex items-start gap-2 w-full leading-5"
+                              >
+                                <Check
+                                  className={`shrink-0 mt-0.5 w-3.5 h-3.5 ${theme.check}`}
+                                />
+                                <span>{feature}</span>
+                              </li>
+                            ))}
+                            {plan.features.length === 0 && (
+                              <li className="text-white/60 text-sm">
+                                جزئیات ویژگی‌ها به‌زودی اعلام می‌شود.
+                              </li>
+                            )}
+                          </ul>
+
+                          <p className="text-white/70 leading-5 border-t border-white/10 text-[11px] pt-2 mt-0.5 min-h-[40px]">
+                            {plan.footerText}
+                          </p>
+
+                          <Button
+                            type="button"
+                            onClick={() => openConfirm(plan)}
+                            disabled={
+                              (isLoggedIn && pendingPlanId === plan.id) ||
+                              (isLoggedIn && hasActiveSubscription)
+                            }
+                            className={`w-full cursor-pointer mt-auto rounded-2xl h-10 text-sm ${theme.button}`}
+                          >
+                            {!isLoggedIn
+                              ? "ورود به اکانت"
+                              : hasActiveSubscription
+                                ? "اشتراک فعال دارید"
+                              : pendingPlanId === plan.id
+                                ? "در حال انتقال..."
+                                : plan.ctaText}
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </SwiperSlide>
+                );
+              })}
+            </Swiper>
+          </>
+        )}
       </div>
 
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
