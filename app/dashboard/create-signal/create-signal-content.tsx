@@ -1132,7 +1132,7 @@ export function CreateSignalContent() {
         }}
       >
         <AlertDialogContent
-          className="w-[calc(100%-2rem)] max-w-md rounded-2xl border border-[#C8A6FF]/20 bg-[radial-gradient(120%_120%_at_80%_0%,rgba(124,77,204,0.28),rgba(12,8,25,0.95)_45%,rgba(7,4,16,0.98)_100%)] text-white shadow-[0_30px_80px_-24px_rgba(94,53,177,0.85)] backdrop-blur-xl sm:w-full"
+          className="w-[calc(100%-2rem)] max-w-md rounded-2xl border border-[#C8A6FF]/20 bg-[radial-gradient(120%_120%_at_80%_0%,rgba(124,77,204,0.28),rgba(12,8,25,0.95)_45%,rgba(7,4,16,0.98)_100%)] px-6 pb-4 pt-5 text-white shadow-[0_30px_80px_-24px_rgba(94,53,177,0.85)] backdrop-blur-xl sm:w-full"
           dir="rtl"
         >
           <button
@@ -1206,8 +1206,8 @@ export function CreateSignalContent() {
             className={cn(
               "mt-1 overflow-hidden transition-all duration-300 ease-out",
               pendingOutcomeStatus
-                ? "max-h-44 opacity-100 translate-y-0"
-                : "max-h-0 opacity-0 translate-y-2 pointer-events-none",
+                ? "mt-1 max-h-44 opacity-100 translate-y-0"
+                : "mt-0 max-h-0 opacity-0 translate-y-2 pointer-events-none",
             )}
           >
             <div className="rounded-xl border border-violet-300/25 bg-violet-500/10 p-3.5">
