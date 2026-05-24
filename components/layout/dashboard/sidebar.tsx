@@ -186,7 +186,7 @@ export function DashboardSidebar() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const {
-    data: notifications = [],
+    data: notificationsSummary,
   } = useQuery({
     queryKey: ["sidebar-user-notifications"],
     queryFn: async () => {
@@ -197,14 +197,26 @@ export function DashboardSidebar() {
         8,
         0,
       );
-      const payload = res as { result?: { items?: Array<{ state?: UserNotificationState }> | null } };
-      return payload.result?.items ?? res.items ?? [];
+      const payload = (
+        res as {
+          result?: {
+            items?: Array<{ state?: UserNotificationState }> | null;
+            unreadCount?: number;
+          };
+          items?: Array<{ state?: UserNotificationState }> | null;
+          unreadCount?: number;
+        }
+      ).result ?? res;
+      const items = payload.items ?? [];
+      const unreadCount =
+        typeof payload.unreadCount === "number"
+          ? payload.unreadCount
+          : items.filter((item) => item.state === UserNotificationState._0).length;
+      return { unreadCount };
     },
   });
 
-  const unreadNotificationsCount = notifications.filter(
-    (item) => item.state === UserNotificationState._0,
-  ).length;
+  const unreadNotificationsCount = notificationsSummary?.unreadCount ?? 0;
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
