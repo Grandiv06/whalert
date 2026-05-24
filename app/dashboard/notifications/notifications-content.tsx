@@ -200,7 +200,7 @@ export function NotificationsContent() {
               onClick={handleSetAllAsRead}
               disabled={unreadCount === 0 || markingAllAsRead}
               className={cn(
-                "inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-semibold transition-colors",
+                "inline-flex cursor-pointer items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-semibold transition-colors",
                 unreadCount === 0 || markingAllAsRead
                   ? "opacity-50 cursor-not-allowed border-white/15 text-white/50"
                   : isDark
@@ -225,7 +225,7 @@ export function NotificationsContent() {
               type="button"
               onClick={() => setActiveFilter(tab.key)}
               className={cn(
-                "rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors",
+                "cursor-pointer rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors",
                 activeFilter === tab.key
                   ? isDark
                     ? "border-violet-300/35 bg-violet-500/15 text-violet-100"
@@ -355,7 +355,7 @@ export function NotificationsContent() {
                           type="button"
                           onClick={() => router.push(targetLink)}
                           className={cn(
-                            "inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold transition-colors",
+                            "inline-flex cursor-pointer items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold transition-colors",
                             isDark
                               ? "border-violet-300/25 bg-violet-500/10 text-violet-200 hover:bg-violet-500/20"
                               : "border-violet-200 bg-violet-100 text-violet-700 hover:bg-violet-200",
@@ -371,7 +371,7 @@ export function NotificationsContent() {
                           onClick={() => handleSetNotificationAsRead(item.id)}
                           disabled={readingNotificationId === item.id}
                           className={cn(
-                            "inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold transition-colors",
+                            "inline-flex cursor-pointer items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold transition-colors",
                             isDark
                               ? "border-emerald-300/25 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20"
                               : "border-emerald-200 bg-emerald-100 text-emerald-700 hover:bg-emerald-200",

@@ -1,11 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Eye,
   Loader2,
   Pencil,
   RefreshCcw,
@@ -518,7 +516,7 @@ export function CreateSignalContent({
                 isDark ? "border-white/10 bg-white/[0.02]" : "border-gray-200 bg-white",
               )}
             >
-              <table className="w-full min-w-[980px] text-xs lg:text-sm">
+              <table className="w-full min-w-[1120px] text-xs lg:text-sm">
                 <thead
                   className={cn(
                     "sticky top-0 z-10 backdrop-blur-md",
@@ -533,6 +531,7 @@ export function CreateSignalContent({
                     <th className="text-right px-4 py-3 font-medium">Stop Loss</th>
                     <th className="text-right px-4 py-3 font-medium">وضعیت</th>
                     <th className="text-right px-4 py-3 font-medium">تاریخ ایجاد</th>
+                    <th className="text-right px-4 py-3 font-medium">توضیحات</th>
                     <th className="text-right px-4 py-3 font-medium">اقدامات</th>
                   </tr>
                 </thead>
@@ -685,20 +684,13 @@ export function CreateSignalContent({
                         <td className={cn("px-4 py-3 text-[12px]", isDark ? "text-white/75" : "text-gray-600")}>
                           {item.datePersian ?? item.date ?? "-"}
                         </td>
+                        <td className={cn("px-4 py-3 max-w-[260px] text-[12px]", isDark ? "text-white/70" : "text-gray-600")}>
+                          <p className="truncate" title={item.description ?? ""}>
+                            {item.description?.trim() || "-"}
+                          </p>
+                        </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1.5">
-                            <Link
-                              href="/dashboard/opportunities/"
-                              className={cn(
-                                "inline-flex cursor-pointer items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold transition-colors",
-                                isDark
-                                  ? "border-violet-300/25 bg-violet-500/10 text-violet-100 hover:bg-violet-500/20"
-                                  : "border-violet-200 bg-violet-100 text-violet-700 hover:bg-violet-200",
-                              )}
-                            >
-                              <Eye className="h-3.5 w-3.5" />
-                              جزئیات
-                            </Link>
                             <button
                               type="button"
                               disabled={finalized || !item.tradingSignalId || editingSignalId !== null}
@@ -897,19 +889,14 @@ export function CreateSignalContent({
                       </div>
                     </div>
 
+                    <div className={cn("mt-3 rounded-xl border px-2.5 py-2", isDark ? "border-white/10 bg-white/[0.02]" : "border-gray-200 bg-gray-50")}>
+                      <p className={cn("mb-1 text-[11px]", isDark ? "text-white/55" : "text-gray-500")}>توضیحات</p>
+                      <p className={cn("text-[12px] leading-5", isDark ? "text-white/80" : "text-gray-700")}>
+                        {item.description?.trim() || "-"}
+                      </p>
+                    </div>
+
                     <div className="mt-3 flex flex-wrap gap-1.5">
-                      <Link
-                        href="/dashboard/opportunities/"
-                        className={cn(
-                          "inline-flex cursor-pointer items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold",
-                          isDark
-                            ? "border-violet-300/25 bg-violet-500/10 text-violet-100"
-                            : "border-violet-200 bg-violet-100 text-violet-700",
-                        )}
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                        جزئیات
-                      </Link>
                       <button
                         type="button"
                         disabled={finalized || !item.tradingSignalId || editingSignalId !== null}

@@ -153,12 +153,12 @@ function MobileSkeleton() {
 function DesktopSkeleton() {
   return (
     <>
-      {[1, 2, 3, 4, 5].map((i) => (
+          {[1, 2, 3, 4, 5].map((i) => (
         <TableRow
           key={i}
           className="dark:bg-transparent bg-white dark:hover:bg-white/5 hover:bg-gray-50"
         >
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((j) => (
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((j) => (
             <TableCell key={j} className="text-center h-[72px] px-6 py-8">
               <Skeleton className="h-4 w-16 mx-auto" />
             </TableCell>
@@ -896,9 +896,6 @@ export function OpportunitiesContent() {
                       حد سود
                     </TableHead>
                     <TableHead className="text-center text-white h-12">
-                      وضعیت
-                    </TableHead>
-                    <TableHead className="text-center text-white h-12">
                       توضیحات
                     </TableHead>
                   </TableRow>
@@ -909,7 +906,7 @@ export function OpportunitiesContent() {
                     <TableRow className="dark:bg-transparent bg-white dark:hover:bg-white/5 hover:bg-gray-50">
                       <TableCell
                         className="text-center text-muted-foreground dark:text-white/70 h-[72px] px-6 py-8"
-                        colSpan={11}
+                        colSpan={10}
                       >
                         هیچ داده‌ای یافت نشد.
                       </TableCell>
@@ -993,49 +990,6 @@ export function OpportunitiesContent() {
                               )}
                             </TableCell>
                             <TableCell className="text-center h-[72px] px-6 py-8">
-                              {pos.outcomeStatus !== undefined && pos.outcomeStatus !== 0 ? (
-                                pos.outcomeStatus === 1 ? (
-                                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-green-400 bg-green-500/10 px-2.5 py-1 rounded-full border border-green-500/20">
-                                    🎯 به TP رسید {pos.outcomeSource === 2 ? "(خودکار)" : "(دستی)"}
-                                  </span>
-                                ) : pos.outcomeStatus === 2 ? (
-                                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-400 bg-rose-500/10 px-2.5 py-1 rounded-full border border-rose-500/20">
-                                    🛑 به SL رسید {pos.outcomeSource === 2 ? "(خودکار)" : "(دستی)"}
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-white/50 bg-white/5 px-2.5 py-1 rounded-full border border-white/10">
-                                    ⚠️ لغو شده
-                                  </span>
-                                )
-                              ) : (
-                                pos.canDeclareOutcome && pos.tradingSignalId ? (
-                                  <div className="flex items-center justify-center gap-1.5">
-                                    <button
-                                      type="button"
-                                      disabled={isSubmittingOutcome[pos.tradingSignalId]}
-                                      onClick={() => setConfirmSignal({ tradingSignalId: pos.tradingSignalId!, outcomeStatus: 1, symbol: pos.symbol })}
-                                      className="inline-flex items-center justify-center text-[10px] text-green-400 hover:text-green-300 font-bold bg-green-500/10 hover:bg-green-500/20 px-2.5 py-1 rounded border border-green-500/30 transition-all cursor-pointer disabled:opacity-50"
-                                    >
-                                      ثبت TP
-                                    </button>
-                                    <button
-                                      type="button"
-                                      disabled={isSubmittingOutcome[pos.tradingSignalId]}
-                                      onClick={() => setConfirmSignal({ tradingSignalId: pos.tradingSignalId!, outcomeStatus: 2, symbol: pos.symbol })}
-                                      className="inline-flex items-center justify-center text-[10px] text-rose-400 hover:text-rose-300 font-bold bg-rose-500/10 hover:bg-rose-500/20 px-2.5 py-1 rounded border border-rose-500/30 transition-all cursor-pointer disabled:opacity-50"
-                                    >
-                                      ثبت SL
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-purple-400 bg-purple-500/10 px-2.5 py-1 rounded-full border border-purple-500/20">
-                                    <span className="h-1.5 w-1.5 rounded-full bg-purple-400 animate-pulse" />
-                                    در انتظار نتیجه
-                                  </span>
-                                )
-                              )}
-                            </TableCell>
-                            <TableCell className="text-center h-[72px] px-6 py-8">
                               {pos.description ? (
                                 <button
                                   type="button"
@@ -1052,7 +1006,7 @@ export function OpportunitiesContent() {
                           </TableRow>
                           {expandedRows[pos.id] && pos.description && (
                             <TableRow className="bg-[#1A1036]/10 dark:hover:bg-[#1A1036]/10 hover:bg-gray-50/5 border-b border-white/5 transition-all">
-                              <TableCell colSpan={11} className="p-4 text-right">
+                              <TableCell colSpan={10} className="p-4 text-right">
                                 <div className="text-sm text-white/80 bg-[#02000B]/50 p-4 rounded-xl border border-white/5 shadow-inner">
                                   <div className="font-bold text-xs text-[#A87FF3] mb-1.5 flex items-center gap-1.5">
                                     <FileText className="h-3.5 w-3.5" />

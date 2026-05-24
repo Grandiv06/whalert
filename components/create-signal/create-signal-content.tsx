@@ -687,7 +687,9 @@ export function CreateSignalContent({
   );
   const [errorMessage, setErrorMessage] = useState<string>("");
 
-  const [creationMode, setCreationMode] = useState<"ai" | "manual">("ai");
+  const [creationMode, setCreationMode] = useState<"ai" | "manual">(
+    initialManualEditDraft ? "manual" : "ai",
+  );
   const [manualSymbol, setManualSymbol] = useState<string>(mergedConfig.defaults.symbol);
   const [pendingManualSymbol, setPendingManualSymbol] =
     useState<string | null>(null);
@@ -783,7 +785,8 @@ export function CreateSignalContent({
     const normalizedSide = initialManualEditDraft.side === "SHORT" ? "SHORT" : "LONG";
 
     setCreationMode("manual");
-    setStep("editing");
+    // In edit mode we only prefill manual flow; AI flow must stay in its default input state.
+    setStep("input");
     setManualSymbol(mappedSymbol);
     setEntryPointDisplay(String(normalizedEntry));
     setStopLossDisplay(String(normalizedSl));
