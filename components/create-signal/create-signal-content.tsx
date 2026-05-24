@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -164,6 +165,7 @@ export type CreateSignalConfig = {
     addTarget?: string;
     noTargets?: string;
     submit?: string;
+    submitEdit?: string;
     submitting?: string;
     paste?: string;
     linkTitle?: string;
@@ -323,6 +325,7 @@ const DEFAULT_CREATE_SIGNAL_CONFIG: ResolvedCreateSignalConfig = {
     addTarget: "افزودن هدف",
     noTargets: "حد سودی تعریف نشده است.",
     submit: "ثبت نهایی سیگنال",
+    submitEdit: "ثبت تغییرات",
     submitting: "در حال ثبت سیگنال...",
     paste: "Paste from clipboard",
     linkTitle: "ورود لینک تحلیل",
@@ -401,6 +404,14 @@ export type CreateSignalContentProps = {
   onSignalCreated?: () => void | Promise<void>;
   services: CreateSignalServices;
   config?: CreateSignalConfig;
+  initialManualEditDraft?: {
+    symbolApi?: string;
+    side?: "LONG" | "SHORT";
+    entry?: number;
+    stopLoss?: number;
+    takeProfits?: number[];
+    description?: string;
+  } | null;
 };
 
 type SignalData = {
@@ -643,7 +654,10 @@ export function CreateSignalContent({
   onSignalCreated,
   services,
   config,
+  initialManualEditDraft = null,
 }: CreateSignalContentProps) {
+  const router = useRouter();
+  const isEditMode = !!initialManualEditDraft;
   const mergedConfig = useMemo(
     () =>
       deepMerge(
@@ -723,6 +737,9 @@ export function CreateSignalContent({
   const [isTimeframeSheetOpen, setIsTimeframeSheetOpen] = useState(false);
   const [isMoreToolsSheetOpen, setIsMoreToolsSheetOpen] = useState(false);
   const [fitContentTrigger, setFitContentTrigger] = useState(0);
+  const [appliedManualDraftKey, setAppliedManualDraftKey] = useState<string | null>(
+    null,
+  );
 
   // Auto-focus new target input when added
   useEffect(() => {
@@ -739,6 +756,52 @@ export function CreateSignalContent({
       }
     }
   }, [targetsDisplay.length]);
+
+  useEffect(() => {
+    if (!initialManualEditDraft) return;
+
+    const draftKey = JSON.stringify(initialManualEditDraft);
+    if (appliedManualDraftKey === draftKey) return;
+
+    const mappedSymbol =
+      mergedConfig.availableSymbols.find(
+        (s) => s.apiSymbol === initialManualEditDraft.symbolApi,
+      )?.value ?? mergedConfig.defaults.symbol;
+    const normalizedTargets = (initialManualEditDraft.takeProfits ?? [])
+      .filter((v): v is number => typeof v === "number" && Number.isFinite(v) && v > 0)
+      .map((v) => Number(v));
+    const normalizedEntry =
+      typeof initialManualEditDraft.entry === "number" &&
+      Number.isFinite(initialManualEditDraft.entry)
+        ? initialManualEditDraft.entry
+        : 0;
+    const normalizedSl =
+      typeof initialManualEditDraft.stopLoss === "number" &&
+      Number.isFinite(initialManualEditDraft.stopLoss)
+        ? initialManualEditDraft.stopLoss
+        : 0;
+    const normalizedSide = initialManualEditDraft.side === "SHORT" ? "SHORT" : "LONG";
+
+    setCreationMode("manual");
+    setStep("editing");
+    setManualSymbol(mappedSymbol);
+    setEntryPointDisplay(String(normalizedEntry));
+    setStopLossDisplay(String(normalizedSl));
+    setTargetsDisplay(
+      normalizedTargets.length > 0 ? normalizedTargets.map((t) => String(t)) : [""],
+    );
+    setDescription(initialManualEditDraft.description?.trim() ?? "");
+    setSignalData((prev) => ({
+      ...prev,
+      symbol: mappedSymbol,
+      position: normalizedSide,
+      entry: normalizedEntry,
+      stopLoss: normalizedSl,
+      targets: normalizedTargets,
+      description: initialManualEditDraft.description?.trim() ?? "",
+    }));
+    setAppliedManualDraftKey(draftKey);
+  }, [appliedManualDraftKey, initialManualEditDraft, mergedConfig]);
 
   const pushToast = (message: string, kind: ToastKind) => {
     const id = Date.now() + Math.floor(Math.random() * 1000);
@@ -1709,7 +1772,11 @@ export function CreateSignalContent({
       <div className="flex items-center justify-between mb-6 md:mb-8">
         <div>
           <h1 className="text-3xl font-bold text-white">
-            {creationMode === "ai" ? mergedConfig.labels.titleAi : mergedConfig.labels.titleManual}
+            {creationMode === "ai"
+              ? mergedConfig.labels.titleAi
+              : isEditMode
+                ? "ویرایش سیگنال دستی"
+                : mergedConfig.labels.titleManual}
           </h1>
           {creationMode === "ai" && step === "input" && (
             <p className={cn("mt-2", styles.textMuted)}>
@@ -1722,6 +1789,20 @@ export function CreateSignalContent({
             </p>
           )}
         </div>
+        {isEditMode && creationMode === "manual" && (
+          <Button
+            variant="tertiary"
+            onClick={() => router.replace("/dashboard/create-signal/")}
+            className={cn(
+              "h-10 px-4 md:h-11 md:px-5 rounded-xl border text-sm font-semibold",
+              isDark
+                ? "bg-white/5 border-white/15 text-white/85 hover:bg-white/10 hover:text-white"
+                : "bg-white border-gray-200 text-gray-700 hover:bg-gray-100 hover:text-gray-900",
+            )}
+          >
+            خروج از حالت ویرایش
+          </Button>
+        )}
         {creationMode === "ai" && (step === "editing" || step === "error") && (
           <Button
             variant="tertiary"
@@ -1977,7 +2058,7 @@ export function CreateSignalContent({
                           <FileText className="w-4 h-4 text-[#A87FF3]" />
                         </div>
                         <span className="font-bold tracking-wide">
-                          {mergedConfig.labels.titleManual} {manualSymbol}
+                          {isEditMode ? "ویرایش سیگنال دستی" : mergedConfig.labels.titleManual} {manualSymbol}
                         </span>
                       </div>
                     </CardTitle>
@@ -2288,7 +2369,9 @@ export function CreateSignalContent({
                     >
                       {isPublishing
                         ? mergedConfig.labels.submitting
-                        : mergedConfig.labels.submit}
+                        : isEditMode
+                          ? mergedConfig.labels.submitEdit
+                          : mergedConfig.labels.submit}
                     </Button>
                   </div>
                 </CardContent>
