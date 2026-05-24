@@ -5,10 +5,19 @@ import { clearAuthCookie, setAuthCookie } from "@/lib/auth-cookie";
 const ACCESS_TOKEN_KEY = "accessToken";
 const REFRESH_TOKEN_KEY = "refreshToken";
 const ACCESS_TOKEN_REFRESH_LEEWAY_SECONDS = 30;
+const SIGNAL_CREATOR_PERMISSION = "SignalCreator";
+
+type JwtPayload = {
+  exp?: number;
+  customPermissions?: string[];
+};
 
 export function getAccessToken(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem(ACCESS_TOKEN_KEY);
+  return (
+    localStorage.getItem(ACCESS_TOKEN_KEY) ??
+    sessionStorage.getItem(ACCESS_TOKEN_KEY)
+  );
 }
 
 let refreshPromise: Promise<string | null> | null = null;
@@ -34,7 +43,7 @@ function isBrowser(): boolean {
 
 function readStorage(key: string): string | null {
   if (!isBrowser()) return null;
-  return localStorage.getItem(key);
+  return localStorage.getItem(key) ?? sessionStorage.getItem(key);
 }
 
 function writeStorage(key: string, value: string) {
@@ -45,19 +54,42 @@ function writeStorage(key: string, value: string) {
 function removeStorage(key: string) {
   if (!isBrowser()) return;
   localStorage.removeItem(key);
+  sessionStorage.removeItem(key);
 }
 
 function parseJwtExpiration(token: string): number | null {
+  const payload = decodeJwtPayload(token);
+  return typeof payload?.exp === "number" ? payload.exp : null;
+}
+
+export function decodeJwtPayload(token: string): JwtPayload | null {
   try {
     const payloadPart = token.split(".")[1];
     if (!payloadPart || !isBrowser()) return null;
     const normalized = payloadPart.replace(/-/g, "+").replace(/_/g, "/");
     const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
-    const payload = JSON.parse(window.atob(padded)) as { exp?: number };
-    return typeof payload.exp === "number" ? payload.exp : null;
+    return JSON.parse(window.atob(padded)) as JwtPayload;
   } catch {
     return null;
   }
+}
+
+export function getCustomPermissionsFromToken(token: string | null): string[] {
+  if (!token) return [];
+  const payload = decodeJwtPayload(token);
+  return Array.isArray(payload?.customPermissions)
+    ? payload.customPermissions
+    : [];
+}
+
+export function hasPermission(permissionName: string): boolean {
+  const token = getAccessToken();
+  const permissions = getCustomPermissionsFromToken(token);
+  return permissions.includes(permissionName);
+}
+
+export function hasSignalCreatorPermission(): boolean {
+  return hasPermission(SIGNAL_CREATOR_PERMISSION);
 }
 
 function shouldRefreshAccessToken(token: string): boolean {

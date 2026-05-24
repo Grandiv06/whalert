@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTheme } from "@/hooks/useTheme";
 import { useSidebar } from "@/contexts/sidebar-context";
@@ -21,6 +21,7 @@ import {
 import { toPersianDigits } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { clearAuthSession } from "@/lib/auth-session";
+import { hasSignalCreatorPermission } from "@/lib/auth-session";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -70,11 +71,6 @@ const defaultNavItems: NavItem[] = [
     label: "موقعیت های پیشنهادی",
     path: "/dashboard/suggested/",
     iconName: "sparkles"
-  },
-  {
-    label: "دعوت از دوستان",
-    path: "/dashboard/invite-friends/",
-    iconName: "userplus",
   },
 ];
 
@@ -176,7 +172,13 @@ export function DashboardSidebar() {
     !!subscriptionDetails?.hasSubscription &&
     (subscriptionDetails?.remainingDays ?? 0) > 0;
 
-  const [navItems] = useState<NavItem[]>(defaultNavItems);
+  const navItems = useMemo(
+    () =>
+      hasSignalCreatorPermission()
+        ? defaultNavItems
+        : defaultNavItems.filter((item) => item.path !== "/dashboard/create-signal/"),
+    [],
+  );
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 

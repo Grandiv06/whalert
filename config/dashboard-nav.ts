@@ -5,7 +5,6 @@ import {
   Trophy,
   TrendingUp,
   Sparkles,
-  UserPlus,
 } from "lucide-react";
 
 export interface DashboardNavItem {
@@ -20,7 +19,6 @@ export const dashboardNavItems: DashboardNavItem[] = [
   { label: "فرصت های من", href: "/dashboard/opportunities/", icon: Trophy },
   { label: "مشاهده تحلیل", href: "/dashboard/analysis/", icon: TrendingUp },
   { label: "موقعیت های پیشنهادی", href: "/dashboard/suggested/", icon: Sparkles },
-  { label: "دعوت از دوستان", href: "/dashboard/invite-friends/", icon: UserPlus },
 ];
 
 export const dashboardSettingsHref = "/dashboard/settings/account-setting/";
