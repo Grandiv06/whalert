@@ -37,6 +37,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import {
   AlertDialog,
@@ -417,7 +425,7 @@ export function CreateSignalContent({
           <div className="pointer-events-none absolute -bottom-16 -right-10 h-48 w-48 rounded-full bg-[#3D1D77]/30 blur-2xl" />
         )}
 
-        <div className="relative z-10 mb-5 flex items-start justify-between gap-4 border-b border-white/10 pb-4">
+        <div className="relative z-10 mb-5 flex items-start justify-between gap-4 pb-4">
           <div>
             <h2 className="text-lg md:text-xl font-semibold tracking-tight">سیگنال‌های من</h2>
             <p className={cn("mt-1 text-xs md:text-sm", isDark ? "text-white/65" : "text-gray-600")}>
@@ -512,30 +520,31 @@ export function CreateSignalContent({
           <div className="space-y-3">
             <div
               className={cn(
-                "hidden md:block overflow-x-auto rounded-2xl border",
+                "hidden md:block overflow-hidden rounded-2xl border",
                 isDark ? "border-white/10 bg-white/[0.02]" : "border-gray-200 bg-white",
               )}
             >
-              <table className="w-full min-w-[1120px] text-xs lg:text-sm">
-                <thead
+              <div className="overflow-x-auto">
+              <Table className="min-w-[1120px] text-xs lg:text-sm">
+                <TableHeader
                   className={cn(
-                    "sticky top-0 z-10 backdrop-blur-md",
+                    "sticky top-0 z-10 overflow-hidden rounded-t-2xl backdrop-blur-md",
                     isDark ? "bg-[#12072A]/95 text-white/75" : "bg-gray-50 text-gray-600",
                   )}
                 >
-                  <tr className="border-b border-white/10">
-                    <th className="text-right px-4 py-3 font-medium">نماد</th>
-                    <th className="text-right px-4 py-3 font-medium">نوع</th>
-                    <th className="text-right px-4 py-3 font-medium">Entry</th>
-                    <th className="text-right px-4 py-3 font-medium">Take Profit</th>
-                    <th className="text-right px-4 py-3 font-medium">Stop Loss</th>
-                    <th className="text-right px-4 py-3 font-medium">وضعیت</th>
-                    <th className="text-right px-4 py-3 font-medium">تاریخ ایجاد</th>
-                    <th className="text-right px-4 py-3 font-medium">توضیحات</th>
-                    <th className="text-right px-4 py-3 font-medium">اقدامات</th>
-                  </tr>
-                </thead>
-                <tbody>
+                  <TableRow className="h-14 border-b border-white/10">
+                    <TableHead className="text-right px-4 py-4 font-medium">نماد</TableHead>
+                    <TableHead className="text-right px-4 py-4 font-medium">نوع</TableHead>
+                    <TableHead className="text-right px-4 py-4 font-medium">Entry</TableHead>
+                    <TableHead className="text-right px-4 py-4 font-medium">Take Profit</TableHead>
+                    <TableHead className="text-right px-4 py-4 font-medium">Stop Loss</TableHead>
+                    <TableHead className="text-right px-4 py-4 font-medium">وضعیت</TableHead>
+                    <TableHead className="text-right px-4 py-4 font-medium">تاریخ ایجاد</TableHead>
+                    <TableHead className="text-right px-4 py-4 font-medium">توضیحات</TableHead>
+                    <TableHead className="text-right px-4 py-4 font-medium">اقدامات</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {myCreatedSignals.map((item, index) => {
                     const typeBadge = getSignalTypeBadge(item.side, isDark);
                     const statusBadge = getOutcomeStatusBadge(item.outcomeStatus, isDark);
@@ -543,7 +552,7 @@ export function CreateSignalContent({
                     const tpSplit = getVisibleAndHiddenTpValues(item.tPs, 1);
                     const marketLabel = getMarketLabel(item.market);
                     return (
-                      <tr
+                      <TableRow
                         key={item.tradingSignalId ?? `row-${index}`}
                         className={cn(
                           "border-b border-white/10 transition-colors",
@@ -555,7 +564,7 @@ export function CreateSignalContent({
                           isDark ? "hover:bg-violet-500/10" : "hover:bg-violet-50",
                         )}
                       >
-                        <td className="px-4 py-3">
+                        <TableCell className="px-4 py-3">
                           <div className={cn("font-semibold", isDark ? "text-white" : "text-gray-900")}>
                             {item.symbol ?? "-"}
                           </div>
@@ -564,16 +573,16 @@ export function CreateSignalContent({
                               {marketLabel}
                             </div>
                           )}
-                        </td>
-                        <td className="px-4 py-3">
+                        </TableCell>
+                        <TableCell className="px-4 py-3">
                           <span className={cn("inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold", typeBadge.className)}>
                             {typeBadge.label}
                           </span>
-                        </td>
-                        <td className={cn("px-4 py-3 font-medium tabular-nums", isDark ? "text-white/90" : "text-gray-900")} dir="ltr">
+                        </TableCell>
+                        <TableCell className={cn("px-4 py-3 font-medium tabular-nums", isDark ? "text-white/90" : "text-gray-900")} dir="ltr">
                           {formatNumber(item.entryPrice)}
-                        </td>
-                        <td className="px-4 py-3">
+                        </TableCell>
+                        <TableCell className="px-4 py-3">
                           <div className="flex flex-wrap gap-1.5">
                             {tpSplit.visible.length > 0 ? (
                               tpSplit.hidden.length > 0 ? (
@@ -661,8 +670,8 @@ export function CreateSignalContent({
                               <span className={isDark ? "text-white/45" : "text-gray-400"}>-</span>
                             )}
                           </div>
-                        </td>
-                        <td className="px-4 py-3">
+                        </TableCell>
+                        <TableCell className="px-4 py-3">
                           <div
                             className={cn(
                               "inline-flex items-center gap-1.5 rounded-lg border px-2 py-1 text-[11px] font-semibold tabular-nums",
@@ -675,21 +684,21 @@ export function CreateSignalContent({
                             <TrendingDown className="h-3.5 w-3.5" />
                             {formatNumber(item.sl)}
                           </div>
-                        </td>
-                        <td className="px-4 py-3">
+                        </TableCell>
+                        <TableCell className="px-4 py-3">
                           <span className={cn("inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold", statusBadge.className)}>
                             {statusBadge.label}
                           </span>
-                        </td>
-                        <td className={cn("px-4 py-3 text-[12px]", isDark ? "text-white/75" : "text-gray-600")}>
+                        </TableCell>
+                        <TableCell className={cn("px-4 py-3 text-[12px]", isDark ? "text-white/75" : "text-gray-600")}>
                           {item.datePersian ?? item.date ?? "-"}
-                        </td>
-                        <td className={cn("px-4 py-3 max-w-[260px] text-[12px]", isDark ? "text-white/70" : "text-gray-600")}>
+                        </TableCell>
+                        <TableCell className={cn("px-4 py-3 max-w-[260px] text-[12px]", isDark ? "text-white/70" : "text-gray-600")}>
                           <p className="truncate" title={item.description ?? ""}>
                             {item.description?.trim() || "-"}
                           </p>
-                        </td>
-                        <td className="px-4 py-3">
+                        </TableCell>
+                        <TableCell className="px-4 py-3">
                           <div className="flex items-center gap-1.5">
                             <button
                               type="button"
@@ -742,12 +751,13 @@ export function CreateSignalContent({
                               تغییر وضعیت
                             </button>
                           </div>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     );
                   })}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
+              </div>
             </div>
 
             <div className="md:hidden space-y-3">
