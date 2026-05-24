@@ -7,18 +7,20 @@ import { useQuery } from "@tanstack/react-query";
 import { useTheme } from "@/hooks/useTheme";
 import { useSidebar } from "@/contexts/sidebar-context";
 import { useCreateSignalLoading } from "@/contexts/create-signal-loading-context";
-import { User, LogOut, X, Crown, AlertTriangle } from "lucide-react";
+import { User, LogOut, X, Crown, AlertTriangle, Bell } from "lucide-react";
 import { renderIcon } from "@/lib/utils/iconMapper";
 import Image from "next/image";
 import {
   TokenAuthService,
   ProfileService,
+  NotificationService,
+  UserNotificationState,
   UserDashboardService,
   type CurrentUserProfileEditDto,
   type GetCurrentAppUserProfilePictureOutput,
   type UserSubscriptionPlanDetailsDto,
 } from "@/lib/api/client";
-import { toPersianDigits } from "@/lib/utils";
+import { cn, toPersianDigits } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { clearAuthSession } from "@/lib/auth-session";
 import { hasSignalCreatorPermission } from "@/lib/auth-session";
@@ -73,6 +75,7 @@ const defaultNavItems: NavItem[] = [
     iconName: "sparkles"
   },
 ];
+const notificationsPageHref = "/dashboard/notifications/";
 
 export function DashboardSidebar() {
   const pathname = usePathname();
@@ -182,6 +185,27 @@ export function DashboardSidebar() {
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
+  const {
+    data: notifications = [],
+  } = useQuery({
+    queryKey: ["sidebar-user-notifications"],
+    queryFn: async () => {
+      const res = await NotificationService.apiServicesAppNotificationGetusernotificationsGet(
+        undefined,
+        undefined,
+        undefined,
+        8,
+        0,
+      );
+      const payload = res as { result?: { items?: Array<{ state?: UserNotificationState }> | null } };
+      return payload.result?.items ?? res.items ?? [];
+    },
+  });
+
+  const unreadNotificationsCount = notifications.filter(
+    (item) => item.state === UserNotificationState._0,
+  ).length;
+
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
@@ -193,6 +217,16 @@ export function DashboardSidebar() {
     setIsMobileMenuOpen(false);
     setLogoutModalOpen(false);
     router.push("/auth/sign-in");
+  };
+
+  const handleOpenNotificationsPage = () => {
+    if (shouldBlockNav) {
+      setPendingNavigateTo(notificationsPageHref);
+      setLeaveModalOpen(true);
+      return;
+    }
+    setIsMobileMenuOpen(false);
+    router.push(notificationsPageHref);
   };
 
   useEffect(() => {
@@ -294,6 +328,25 @@ export function DashboardSidebar() {
                   : "bg-white border border-gray-200"
               }`}
             >
+              <button
+                type="button"
+                onClick={handleOpenNotificationsPage}
+                className={cn(
+                  "absolute left-3 top-3 inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border transition-all duration-200 hover:scale-105",
+                  theme === "dark"
+                    ? "border-[#B57CFF]/35 bg-[#542C85]/20 text-white hover:border-[#CBA4FF]/55 hover:bg-[#542C85]/40 hover:shadow-[0_0_18px_-6px_rgba(181,124,255,0.9)]"
+                    : "border-purple-200 bg-purple-50 text-purple-700 hover:border-purple-300 hover:bg-purple-100",
+                )}
+                aria-label="صفحه اعلان‌ها"
+                title="صفحه اعلان‌ها"
+              >
+                <Bell className="w-4 h-4" />
+                {unreadNotificationsCount > 0 && (
+                  <span className="absolute -right-1 -top-1 inline-flex min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold leading-4 text-white">
+                    {unreadNotificationsCount > 9 ? "9+" : unreadNotificationsCount}
+                  </span>
+                )}
+              </button>
               <div className="flex items-center gap-3 mb-3">
                 <div
                   className={`w-16 h-16 rounded-full border-2 overflow-hidden shrink-0 ${

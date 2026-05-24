@@ -1,10 +1,17 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { Eye, Pencil, RefreshCcw, Sparkles, TrendingDown, TrendingUp } from "lucide-react";
+import {
+  Eye,
+  Pencil,
+  RefreshCcw,
+  Sparkles,
+  TrendingDown,
+  TrendingUp,
+} from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { useCreateSignalLoading } from "@/contexts/create-signal-loading-context";
 import {
@@ -14,6 +21,7 @@ import {
   PriceService,
   SignalOutcomeStatus,
   SignalSide,
+  SignalProviderService,
   UserDashboardService,
   type ShowPositionsDto,
 } from "@/lib/api/client";
@@ -24,6 +32,15 @@ import {
 import { hasSignalCreatorPermission } from "@/lib/auth-session";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const createSignalServices: CreateSignalServices = {
   getDynamicPrice: async (symbol, timeframe, fromIso, toIso) => {
@@ -199,6 +216,15 @@ export function CreateSignalContent() {
   const { setAnalyzing, setLeaveModalRequest, setManualDirty } =
     useCreateSignalLoading();
   const canCreateSignal = hasSignalCreatorPermission();
+  const [isDeclaringStatus, setIsDeclaringStatus] = useState(false);
+  const [actionFeedback, setActionFeedback] = useState<{
+    message: string;
+    kind: "success" | "error";
+  } | null>(null);
+  const [statusModal, setStatusModal] = useState<{
+    tradingSignalId: number;
+    symbol: string;
+  } | null>(null);
 
   const {
     data: myCreatedSignals = [],
@@ -229,6 +255,31 @@ export function CreateSignalContent() {
       router.replace("/dashboard/opportunities/");
     }
   }, [mySignalsStatus, router]);
+
+  const handleDeclareOutcome = async (outcomeStatus: SignalOutcomeStatus) => {
+    if (!statusModal?.tradingSignalId || isDeclaringStatus) return;
+    setIsDeclaringStatus(true);
+    setActionFeedback(null);
+    try {
+      await SignalProviderService.apiServicesAppSignalproviderDeclaresignaloutcomePost({
+        tradingSignalId: statusModal.tradingSignalId,
+        outcomeStatus,
+      });
+      setActionFeedback({
+        message: "وضعیت سیگنال با موفقیت ثبت شد.",
+        kind: "success",
+      });
+      setStatusModal(null);
+      await refetchMySignals();
+    } catch {
+      setActionFeedback({
+        message: "ثبت وضعیت سیگنال ناموفق بود. لطفاً دوباره تلاش کنید.",
+        kind: "error",
+      });
+    } finally {
+      setIsDeclaringStatus(false);
+    }
+  };
 
   if (!canCreateSignal) return null;
   const isDark = theme === "dark";
@@ -283,6 +334,23 @@ export function CreateSignalContent() {
             {myCreatedSignals.length} سیگنال
           </span>
         </div>
+
+        {actionFeedback && (
+          <div
+            className={cn(
+              "mb-4 rounded-xl border px-3 py-2 text-xs md:text-sm",
+              actionFeedback.kind === "success"
+                ? isDark
+                  ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-200"
+                  : "border-emerald-200 bg-emerald-50 text-emerald-700"
+                : isDark
+                  ? "border-rose-400/30 bg-rose-500/10 text-rose-200"
+                  : "border-rose-200 bg-rose-50 text-rose-700",
+            )}
+          >
+            {actionFeedback.message}
+          </div>
+        )}
 
         {mySignalsLoading ? (
           <div className="space-y-3">
@@ -486,18 +554,33 @@ export function CreateSignalContent() {
                               <Pencil className="h-3.5 w-3.5" />
                               ویرایش
                             </button>
-                            <Link
-                              href="/dashboard/opportunities/"
+                            <button
+                              type="button"
+                              disabled={finalized || !item.tradingSignalId}
+                              onClick={() =>
+                                item.tradingSignalId &&
+                                setStatusModal({
+                                  tradingSignalId: item.tradingSignalId,
+                                  symbol: item.symbol ?? "-",
+                                })
+                              }
+                              title={
+                                finalized
+                                  ? "وضعیت سیگنال نهایی شده است"
+                                  : "ثبت وضعیت نتیجه سیگنال"
+                              }
                               className={cn(
                                 "inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold transition-colors",
-                                isDark
-                                  ? "border-sky-300/25 bg-sky-500/10 text-sky-100 hover:bg-sky-500/20"
-                                  : "border-sky-200 bg-sky-100 text-sky-700 hover:bg-sky-200",
+                                finalized || !item.tradingSignalId
+                                  ? "cursor-not-allowed opacity-45 border-white/15 text-white/50"
+                                  : isDark
+                                    ? "border-sky-300/25 bg-sky-500/10 text-sky-100 hover:bg-sky-500/20"
+                                    : "border-sky-200 bg-sky-100 text-sky-700 hover:bg-sky-200",
                               )}
                             >
                               <RefreshCcw className="h-3.5 w-3.5" />
                               تغییر وضعیت
-                            </Link>
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -621,18 +704,33 @@ export function CreateSignalContent() {
                         <Pencil className="h-3.5 w-3.5" />
                         ویرایش
                       </button>
-                      <Link
-                        href="/dashboard/opportunities/"
+                      <button
+                        type="button"
+                        disabled={finalized || !item.tradingSignalId}
+                        onClick={() =>
+                          item.tradingSignalId &&
+                          setStatusModal({
+                            tradingSignalId: item.tradingSignalId,
+                            symbol: item.symbol ?? "-",
+                          })
+                        }
+                        title={
+                          finalized
+                            ? "وضعیت سیگنال نهایی شده است"
+                            : "ثبت وضعیت نتیجه سیگنال"
+                        }
                         className={cn(
                           "inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold",
-                          isDark
-                            ? "border-sky-300/25 bg-sky-500/10 text-sky-100"
-                            : "border-sky-200 bg-sky-100 text-sky-700",
+                          finalized || !item.tradingSignalId
+                            ? "cursor-not-allowed opacity-45 border-white/15 text-white/50"
+                            : isDark
+                              ? "border-sky-300/25 bg-sky-500/10 text-sky-100 hover:bg-sky-500/20"
+                              : "border-sky-200 bg-sky-100 text-sky-700 hover:bg-sky-200",
                         )}
                       >
                         <RefreshCcw className="h-3.5 w-3.5" />
                         تغییر وضعیت
-                      </Link>
+                      </button>
                     </div>
                   </article>
                 );
@@ -641,6 +739,56 @@ export function CreateSignalContent() {
           </div>
         )}
       </section>
+
+      <AlertDialog
+        open={!!statusModal}
+        onOpenChange={(open) => !open && !isDeclaringStatus && setStatusModal(null)}
+      >
+        <AlertDialogContent className="bg-[#1A102B] border-white/10" dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">
+              تغییر وضعیت سیگنال
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-white/70">
+              وضعیت نتیجه برای سیگنال {statusModal?.symbol ?? "-"} را انتخاب کنید.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <button
+              type="button"
+              disabled={isDeclaringStatus}
+              onClick={() => handleDeclareOutcome(SignalOutcomeStatus._1)}
+              className="rounded-lg border border-emerald-400/30 bg-emerald-500/15 px-3 py-2 text-sm text-emerald-200 hover:bg-emerald-500/20 disabled:opacity-50"
+            >
+              حد سود
+            </button>
+            <button
+              type="button"
+              disabled={isDeclaringStatus}
+              onClick={() => handleDeclareOutcome(SignalOutcomeStatus._2)}
+              className="rounded-lg border border-rose-400/30 bg-rose-500/15 px-3 py-2 text-sm text-rose-200 hover:bg-rose-500/20 disabled:opacity-50"
+            >
+              حد ضرر
+            </button>
+            <button
+              type="button"
+              disabled={isDeclaringStatus}
+              onClick={() => handleDeclareOutcome(SignalOutcomeStatus._3)}
+              className="rounded-lg border border-amber-400/30 bg-amber-500/15 px-3 py-2 text-sm text-amber-200 hover:bg-amber-500/20 disabled:opacity-50"
+            >
+              بسته شده
+            </button>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              disabled={isDeclaringStatus}
+              className="bg-transparent text-white/80 border-white/15 hover:bg-white/10"
+            >
+              بستن
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
