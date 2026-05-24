@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
+  ChevronDown,
+  FileText,
   Loader2,
   Pencil,
   RefreshCcw,
@@ -164,6 +166,16 @@ function getSignalTypeBadge(side?: SignalSide, isDark?: boolean): BadgeMeta {
   };
 }
 
+function getSignalTypeText(side?: SignalSide): { label: string; className: string } {
+  if (side === SignalSide._1) {
+    return { label: "Long", className: "text-emerald-400 font-semibold" };
+  }
+  if (side === SignalSide._2) {
+    return { label: "Short", className: "text-rose-400 font-semibold" };
+  }
+  return { label: "-", className: "text-white/45" };
+}
+
 function getOutcomeStatusBadge(
   outcomeStatus?: SignalOutcomeStatus,
   isDark?: boolean,
@@ -198,6 +210,22 @@ function getOutcomeStatusBadge(
       ? "text-violet-200 bg-violet-500/15 border-violet-400/35"
       : "text-violet-700 bg-violet-100 border-violet-200",
   };
+}
+
+function getOutcomeStatusText(outcomeStatus?: SignalOutcomeStatus): {
+  label: string;
+  className: string;
+} {
+  if (outcomeStatus === SignalOutcomeStatus._1) {
+    return { label: "TP", className: "text-emerald-400 font-semibold" };
+  }
+  if (outcomeStatus === SignalOutcomeStatus._2) {
+    return { label: "SL", className: "text-rose-400 font-semibold" };
+  }
+  if (outcomeStatus === SignalOutcomeStatus._3) {
+    return { label: "Closed", className: "text-white/60 font-semibold" };
+  }
+  return { label: "Active", className: "text-violet-300 font-semibold" };
 }
 
 function isFinalizedSignal(outcomeStatus?: SignalOutcomeStatus): boolean {
@@ -260,6 +288,7 @@ export function CreateSignalContent({
     symbol: string;
   } | null>(null);
   const [editingSignalId, setEditingSignalId] = useState<number | null>(null);
+  const [expandedRows, setExpandedRows] = useState<Record<number, boolean>>({});
 
   const {
     data: myCreatedSignals = [],
@@ -525,7 +554,7 @@ export function CreateSignalContent({
               )}
             >
               <div className="overflow-x-auto">
-              <Table className="min-w-[1120px] text-xs lg:text-sm">
+              <Table className="min-w-[1120px] border-collapse text-xs lg:text-sm">
                 <TableHeader
                   className={cn(
                     "sticky top-0 z-10 overflow-hidden rounded-t-2xl backdrop-blur-md",
@@ -533,7 +562,7 @@ export function CreateSignalContent({
                   )}
                 >
                   <TableRow className="h-14 border-b border-white/10">
-                    <TableHead className="text-right px-4 py-4 font-medium">نماد</TableHead>
+                    <TableHead className="rounded-tr-2xl text-right px-4 py-4 font-medium">نماد</TableHead>
                     <TableHead className="text-right px-4 py-4 font-medium">نوع</TableHead>
                     <TableHead className="text-right px-4 py-4 font-medium">Entry</TableHead>
                     <TableHead className="text-right px-4 py-4 font-medium">Take Profit</TableHead>
@@ -541,19 +570,19 @@ export function CreateSignalContent({
                     <TableHead className="text-right px-4 py-4 font-medium">وضعیت</TableHead>
                     <TableHead className="text-right px-4 py-4 font-medium">تاریخ ایجاد</TableHead>
                     <TableHead className="text-right px-4 py-4 font-medium">توضیحات</TableHead>
-                    <TableHead className="text-right px-4 py-4 font-medium">اقدامات</TableHead>
+                    <TableHead className="rounded-tl-2xl text-right px-4 py-4 font-medium">اقدامات</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {myCreatedSignals.map((item, index) => {
-                    const typeBadge = getSignalTypeBadge(item.side, isDark);
-                    const statusBadge = getOutcomeStatusBadge(item.outcomeStatus, isDark);
+                    const typeText = getSignalTypeText(item.side);
+                    const statusText = getOutcomeStatusText(item.outcomeStatus);
                     const finalized = isFinalizedSignal(item.outcomeStatus);
                     const tpSplit = getVisibleAndHiddenTpValues(item.tPs, 1);
                     const marketLabel = getMarketLabel(item.market);
                     return (
+                      <Fragment key={item.tradingSignalId ?? `row-${index}`}>
                       <TableRow
-                        key={item.tradingSignalId ?? `row-${index}`}
                         className={cn(
                           "border-b border-white/10 transition-colors",
                           index % 2 === 0
@@ -574,10 +603,8 @@ export function CreateSignalContent({
                             </div>
                           )}
                         </TableCell>
-                        <TableCell className="px-4 py-3">
-                          <span className={cn("inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold", typeBadge.className)}>
-                            {typeBadge.label}
-                          </span>
+                        <TableCell className="px-4 py-3" dir="ltr">
+                          <span className={typeText.className}>{typeText.label}</span>
                         </TableCell>
                         <TableCell className={cn("px-4 py-3 font-medium tabular-nums", isDark ? "text-white/90" : "text-gray-900")} dir="ltr">
                           {formatNumber(item.entryPrice)}
@@ -685,18 +712,43 @@ export function CreateSignalContent({
                             {formatNumber(item.sl)}
                           </div>
                         </TableCell>
-                        <TableCell className="px-4 py-3">
-                          <span className={cn("inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold", statusBadge.className)}>
-                            {statusBadge.label}
-                          </span>
+                        <TableCell className="px-4 py-3" dir="ltr">
+                          <span className={statusText.className}>{statusText.label}</span>
                         </TableCell>
                         <TableCell className={cn("px-4 py-3 text-[12px]", isDark ? "text-white/75" : "text-gray-600")}>
                           {item.datePersian ?? item.date ?? "-"}
                         </TableCell>
-                        <TableCell className={cn("px-4 py-3 max-w-[260px] text-[12px]", isDark ? "text-white/70" : "text-gray-600")}>
-                          <p className="truncate" title={item.description ?? ""}>
-                            {item.description?.trim() || "-"}
-                          </p>
+                        <TableCell className={cn("px-4 py-3 text-[12px]", isDark ? "text-white/70" : "text-gray-600")}>
+                          {item.description?.trim() ? (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                item.tradingSignalId &&
+                                setExpandedRows((prev) => ({
+                                  ...prev,
+                                  [item.tradingSignalId as number]: !prev[item.tradingSignalId as number],
+                                }))
+                              }
+                              className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#A87FF3]/25 bg-[#A87FF3]/10 px-2.5 py-1.5 text-xs font-semibold text-[#A87FF3] transition-all hover:bg-[#A87FF3]/20 hover:text-[#c4a6fc]"
+                            >
+                              <FileText className="h-3.5 w-3.5" />
+                              <span>
+                                {item.tradingSignalId && expandedRows[item.tradingSignalId]
+                                  ? "بستن"
+                                  : "مشاهده"}
+                              </span>
+                              <ChevronDown
+                                className={cn(
+                                  "h-4 w-4 transition-transform duration-200",
+                                  item.tradingSignalId && expandedRows[item.tradingSignalId]
+                                    ? "rotate-180"
+                                    : "",
+                                )}
+                              />
+                            </button>
+                          ) : (
+                            <span className="text-white/30">-</span>
+                          )}
                         </TableCell>
                         <TableCell className="px-4 py-3">
                           <div className="flex items-center gap-1.5">
@@ -753,6 +805,22 @@ export function CreateSignalContent({
                           </div>
                         </TableCell>
                       </TableRow>
+                      {item.tradingSignalId && expandedRows[item.tradingSignalId] && item.description?.trim() && (
+                        <TableRow className="border-b border-white/5 bg-[#1A1036]/10 transition-all dark:hover:bg-[#1A1036]/10">
+                          <TableCell colSpan={9} className="p-4 text-right">
+                            <div className="rounded-xl border border-white/5 bg-[#02000B]/50 p-4 text-sm text-white/80 shadow-inner">
+                              <div className="mb-1.5 flex items-center gap-1.5 text-xs font-bold text-[#A87FF3]">
+                                <FileText className="h-3.5 w-3.5" />
+                                توضیحات موقعیت:
+                              </div>
+                              <p className="whitespace-pre-wrap leading-relaxed text-white/90 font-medium">
+                                {item.description}
+                              </p>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                      </Fragment>
                     );
                   })}
                 </TableBody>
