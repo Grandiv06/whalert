@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import {
@@ -159,6 +159,22 @@ export function NotificationsContent() {
     }
   };
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const globalAbp = (window as any).abp;
+    if (!globalAbp?.event) return;
+
+    const handleNotificationReceived = () => {
+      queryClient.invalidateQueries({ queryKey: ["dashboard-notifications-page"] });
+      queryClient.invalidateQueries({ queryKey: ["sidebar-user-notifications"] });
+    };
+
+    globalAbp.event.on("abp.notifications.received", handleNotificationReceived);
+    return () => {
+      globalAbp.event.off("abp.notifications.received", handleNotificationReceived);
+    };
+  }, [queryClient]);
+
   return (
     <div className="p-1 md:p-6 w-full max-w-full overflow-x-hidden" dir="rtl">
       <section
@@ -290,7 +306,7 @@ export function NotificationsContent() {
                 <article
                   key={item.id ?? `notif-page-${index}`}
                   className={cn(
-                    "rounded-2xl border p-4 transition-colors",
+                    "rounded-2xl border p-3.5 md:p-4 transition-colors",
                     isUnread
                       ? isDark
                         ? "border-sky-400/30 bg-gradient-to-r from-sky-500/10 to-violet-500/10"
@@ -300,8 +316,8 @@ export function NotificationsContent() {
                         : "border-gray-200 bg-gray-50",
                   )}
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex min-w-0 flex-1 items-start gap-3">
+                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                    <div className="flex min-w-0 flex-1 items-start gap-2.5 md:gap-3">
                       <div
                         className={cn(
                           "relative mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border",
@@ -321,7 +337,7 @@ export function NotificationsContent() {
                       </div>
 
                       <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
                           <h3 className={cn("text-sm font-semibold", isDark ? "text-white" : "text-gray-900")}>
                             {meta.title}
                           </h3>
@@ -340,7 +356,12 @@ export function NotificationsContent() {
                             {isUnread ? "خوانده‌نشده" : "خوانده‌شده"}
                           </span>
                         </div>
-                        <p className={cn("mt-1 text-sm leading-6", isDark ? "text-white/80" : "text-gray-700")}>
+                        <p
+                          className={cn(
+                            "mt-1 text-sm leading-6 break-words whitespace-normal",
+                            isDark ? "text-white/80" : "text-gray-700",
+                          )}
+                        >
                           {getNotificationMessage(item)}
                         </p>
                         <p className={cn("mt-2 text-xs", isDark ? "text-white/50" : "text-gray-500")}>
@@ -349,7 +370,7 @@ export function NotificationsContent() {
                       </div>
                     </div>
 
-                    <div className="flex shrink-0 items-center gap-1.5">
+                    <div className="flex w-full shrink-0 flex-wrap items-center gap-1.5 md:w-auto md:justify-end md:flex-nowrap">
                       {targetLink && (
                         <button
                           type="button"

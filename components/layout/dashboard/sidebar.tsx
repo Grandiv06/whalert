@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "@/hooks/useTheme";
 import { useSidebar } from "@/contexts/sidebar-context";
 import { useCreateSignalLoading } from "@/contexts/create-signal-loading-context";
@@ -95,6 +95,7 @@ export function DashboardSidebar() {
     null,
   );
   const [pendingBackNav, setPendingBackNav] = useState(false);
+  const queryClient = useQueryClient();
 
   const shouldBlockNav =
     pathname === "/dashboard/create-signal/" && (isAnalyzing || isManualDirty);
@@ -261,6 +262,21 @@ export function DashboardSidebar() {
       if (root) root.style.removeProperty("overflow");
     };
   }, [isMobileMenuOpen]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const globalAbp = (window as any).abp;
+    if (!globalAbp?.event) return;
+
+    const handleNotificationReceived = () => {
+      queryClient.invalidateQueries({ queryKey: ["sidebar-user-notifications"] });
+    };
+
+    globalAbp.event.on("abp.notifications.received", handleNotificationReceived);
+    return () => {
+      globalAbp.event.off("abp.notifications.received", handleNotificationReceived);
+    };
+  }, [queryClient]);
 
   return (
     <>
