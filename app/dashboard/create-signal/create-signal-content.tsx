@@ -11,6 +11,7 @@ import {
   Sparkles,
   TrendingDown,
   TrendingUp,
+  X,
 } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { useCreateSignalLoading } from "@/contexts/create-signal-loading-context";
@@ -125,6 +126,17 @@ type BadgeMeta = {
   className: string;
 };
 
+type EditSignalFormState = {
+  tradingSignalId: number;
+  symbol: string;
+  side: SignalSide;
+  entryPrice: string;
+  stopLoss: string;
+  takeProfits: string;
+  description: string;
+  pictureUrl: string;
+};
+
 function formatNumber(value?: number | null): string {
   if (value === undefined || value === null) return "-";
   return value.toLocaleString("en-US", {
@@ -222,6 +234,20 @@ function getMarketLabel(market?: MarketType | null): string | null {
   return null;
 }
 
+function parseNumberInput(value: string): number | null {
+  const normalized = value.replace(/,/g, "").trim();
+  if (!normalized) return null;
+  const num = Number(normalized);
+  return Number.isFinite(num) ? num : null;
+}
+
+function parseTakeProfitsInput(value: string): number[] {
+  return value
+    .split(/[,\n،]/)
+    .map((part) => parseNumberInput(part))
+    .filter((num): num is number => num !== null && num > 0);
+}
+
 export function CreateSignalContent() {
   const pathname = usePathname();
   const router = useRouter();
@@ -230,6 +256,8 @@ export function CreateSignalContent() {
     useCreateSignalLoading();
   const canCreateSignal = hasSignalCreatorPermission();
   const [isDeclaringStatus, setIsDeclaringStatus] = useState(false);
+  const [pendingOutcomeStatus, setPendingOutcomeStatus] =
+    useState<SignalOutcomeStatus | null>(null);
   const [actionFeedback, setActionFeedback] = useState<{
     message: string;
     kind: "success" | "error";
@@ -238,6 +266,9 @@ export function CreateSignalContent() {
     tradingSignalId: number;
     symbol: string;
   } | null>(null);
+  const [editModal, setEditModal] = useState<EditSignalFormState | null>(null);
+  const [isEditLoading, setIsEditLoading] = useState(false);
+  const [isUpdatingSignal, setIsUpdatingSignal] = useState(false);
 
   const {
     data: myCreatedSignals = [],
@@ -269,6 +300,10 @@ export function CreateSignalContent() {
     }
   }, [mySignalsStatus, router]);
 
+  useEffect(() => {
+    setPendingOutcomeStatus(null);
+  }, [statusModal?.tradingSignalId]);
+
   const handleDeclareOutcome = async (outcomeStatus: SignalOutcomeStatus) => {
     if (!statusModal?.tradingSignalId || isDeclaringStatus) return;
     setIsDeclaringStatus(true);
@@ -282,6 +317,7 @@ export function CreateSignalContent() {
         message: "وضعیت سیگنال با موفقیت ثبت شد.",
         kind: "success",
       });
+      setPendingOutcomeStatus(null);
       setStatusModal(null);
       await refetchMySignals();
     } catch {
@@ -291,6 +327,113 @@ export function CreateSignalContent() {
       });
     } finally {
       setIsDeclaringStatus(false);
+    }
+  };
+
+  const handleOpenEditSignal = async (
+    tradingSignalId?: number,
+    fallbackSymbol?: string | null,
+  ) => {
+    if (!tradingSignalId || isEditLoading) return;
+    setIsEditLoading(true);
+    setActionFeedback(null);
+    try {
+      const res = await SignalProviderService.apiServicesAppSignalproviderGetmysignalforeditPost(
+        { tradingSignalId },
+      );
+      const payload = (
+        res as {
+          result?: {
+            tradingSignalId?: number;
+            symbol?: string | null;
+            side?: SignalSide;
+            entryPrice?: number;
+            stopLoss?: number;
+            takeProfits?: number[] | null;
+            description?: string | null;
+            pictureUrl?: string | null;
+            isEditable?: boolean;
+          };
+          tradingSignalId?: number;
+          symbol?: string | null;
+          side?: SignalSide;
+          entryPrice?: number;
+          stopLoss?: number;
+          takeProfits?: number[] | null;
+          description?: string | null;
+          pictureUrl?: string | null;
+          isEditable?: boolean;
+        }
+      ).result ?? res;
+
+      if (payload.isEditable === false) {
+        setActionFeedback({
+          message: "این سیگنال دیگر قابل ویرایش نیست.",
+          kind: "error",
+        });
+        return;
+      }
+
+      setEditModal({
+        tradingSignalId: payload.tradingSignalId ?? tradingSignalId,
+        symbol: payload.symbol ?? fallbackSymbol ?? "-",
+        side: payload.side ?? SignalSide._1,
+        entryPrice: payload.entryPrice != null ? String(payload.entryPrice) : "",
+        stopLoss: payload.stopLoss != null ? String(payload.stopLoss) : "",
+        takeProfits: (payload.takeProfits ?? []).join(", "),
+        description: payload.description ?? "",
+        pictureUrl: payload.pictureUrl ?? "",
+      });
+    } catch {
+      setActionFeedback({
+        message: "دریافت اطلاعات سیگنال برای ویرایش ناموفق بود.",
+        kind: "error",
+      });
+    } finally {
+      setIsEditLoading(false);
+    }
+  };
+
+  const handleUpdateSignal = async () => {
+    if (!editModal || isUpdatingSignal) return;
+
+    const entryPrice = parseNumberInput(editModal.entryPrice);
+    const stopLoss = parseNumberInput(editModal.stopLoss);
+    const takeProfits = parseTakeProfitsInput(editModal.takeProfits);
+
+    if (!entryPrice || !stopLoss || takeProfits.length === 0) {
+      setActionFeedback({
+        message: "Entry، Stop Loss و حداقل یک Take Profit الزامی است.",
+        kind: "error",
+      });
+      return;
+    }
+
+    setIsUpdatingSignal(true);
+    setActionFeedback(null);
+    try {
+      await SignalProviderService.apiServicesAppSignalproviderUpdatemysignalPost({
+        tradingSignalId: editModal.tradingSignalId,
+        side: editModal.side,
+        entryPrice,
+        stopLoss,
+        takeProfits,
+        description: editModal.description.trim() || null,
+        pictureUrl: editModal.pictureUrl.trim() || null,
+      });
+      setEditModal(null);
+      setActionFeedback({
+        message: "سیگنال با موفقیت ویرایش شد.",
+        kind: "success",
+      });
+      await refetchMySignals();
+    } catch {
+      setActionFeedback({
+        message: "به‌روزرسانی سیگنال ناموفق بود. لطفاً دوباره تلاش کنید.",
+        kind: "error",
+      });
+    } finally {
+      setIsUpdatingSignal(false);
     }
   };
 
@@ -503,8 +646,8 @@ export function CreateSignalContent() {
                                         className={cn(
                                           "inline-grid h-5 w-6 place-items-center rounded-full border p-0 text-center text-[10px] font-bold leading-none tabular-nums",
                                           isDark
-                                            ? "border-cyan-300/40 bg-cyan-500/20 text-cyan-100"
-                                            : "border-cyan-200 bg-cyan-100 text-cyan-700",
+                                            ? "border-[#9BD8FF]/45 bg-[#2A5C88]/45 text-[#DDF4FF]"
+                                            : "border-sky-300 bg-sky-100 text-sky-800",
                                         )}
                                       >
                                         +{tpSplit.hidden.length}
@@ -599,7 +742,7 @@ export function CreateSignalContent() {
                             <Link
                               href="/dashboard/opportunities/"
                               className={cn(
-                                "inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold transition-colors",
+                                "inline-flex cursor-pointer items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold transition-colors",
                                 isDark
                                   ? "border-violet-300/25 bg-violet-500/10 text-violet-100 hover:bg-violet-500/20"
                                   : "border-violet-200 bg-violet-100 text-violet-700 hover:bg-violet-200",
@@ -610,19 +753,22 @@ export function CreateSignalContent() {
                             </Link>
                             <button
                               type="button"
-                              disabled={finalized}
+                              disabled={finalized || !item.tradingSignalId || isEditLoading}
+                              onClick={() =>
+                                handleOpenEditSignal(item.tradingSignalId, item.symbol)
+                              }
                               className={cn(
-                                "inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold transition-colors",
-                                finalized
+                                "inline-flex cursor-pointer items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold transition-colors",
+                                finalized || !item.tradingSignalId
                                   ? "cursor-not-allowed opacity-45 border-white/15 text-white/50"
                                   : isDark
                                     ? "border-emerald-300/25 bg-emerald-500/10 text-emerald-100 hover:bg-emerald-500/20"
                                     : "border-emerald-200 bg-emerald-100 text-emerald-700 hover:bg-emerald-200",
                               )}
-                              title={finalized ? "برای سیگنال نهایی شده امکان ویرایش وجود ندارد" : "ویرایش (به‌زودی)"}
+                              title={finalized ? "برای سیگنال نهایی شده امکان ویرایش وجود ندارد" : "ویرایش سیگنال"}
                             >
                               <Pencil className="h-3.5 w-3.5" />
-                              ویرایش
+                              {isEditLoading ? "..." : "ویرایش"}
                             </button>
                             <button
                               type="button"
@@ -640,7 +786,7 @@ export function CreateSignalContent() {
                                   : "ثبت وضعیت نتیجه سیگنال"
                               }
                               className={cn(
-                                "inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold transition-colors",
+                                "inline-flex cursor-pointer items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold transition-colors",
                                 finalized || !item.tradingSignalId
                                   ? "cursor-not-allowed opacity-45 border-white/15 text-white/50"
                                   : isDark
@@ -729,8 +875,8 @@ export function CreateSignalContent() {
                                     className={cn(
                                       "inline-grid h-5 w-6 place-items-center rounded-full border p-0 text-center text-[10px] font-bold leading-none tabular-nums",
                                       isDark
-                                        ? "border-cyan-300/40 bg-cyan-500/20 text-cyan-100"
-                                        : "border-cyan-200 bg-cyan-100 text-cyan-700",
+                                        ? "border-[#9BD8FF]/45 bg-[#2A5C88]/45 text-[#DDF4FF]"
+                                        : "border-sky-300 bg-sky-100 text-sky-800",
                                     )}
                                   >
                                     +{tpSplit.hidden.length}
@@ -803,7 +949,7 @@ export function CreateSignalContent() {
                       <Link
                         href="/dashboard/opportunities/"
                         className={cn(
-                          "inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold",
+                          "inline-flex cursor-pointer items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold",
                           isDark
                             ? "border-violet-300/25 bg-violet-500/10 text-violet-100"
                             : "border-violet-200 bg-violet-100 text-violet-700",
@@ -814,19 +960,22 @@ export function CreateSignalContent() {
                       </Link>
                       <button
                         type="button"
-                        disabled={finalized}
+                        disabled={finalized || !item.tradingSignalId || isEditLoading}
+                        onClick={() =>
+                          handleOpenEditSignal(item.tradingSignalId, item.symbol)
+                        }
                         className={cn(
-                          "inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold",
-                          finalized
+                          "inline-flex cursor-pointer items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold",
+                          finalized || !item.tradingSignalId
                             ? "cursor-not-allowed opacity-45 border-white/15 text-white/50"
                             : isDark
                               ? "border-emerald-300/25 bg-emerald-500/10 text-emerald-100"
                               : "border-emerald-200 bg-emerald-100 text-emerald-700",
                         )}
-                        title={finalized ? "برای سیگنال نهایی شده امکان ویرایش وجود ندارد" : "ویرایش (به‌زودی)"}
+                        title={finalized ? "برای سیگنال نهایی شده امکان ویرایش وجود ندارد" : "ویرایش سیگنال"}
                       >
                         <Pencil className="h-3.5 w-3.5" />
-                        ویرایش
+                        {isEditLoading ? "..." : "ویرایش"}
                       </button>
                       <button
                         type="button"
@@ -844,7 +993,7 @@ export function CreateSignalContent() {
                             : "ثبت وضعیت نتیجه سیگنال"
                         }
                         className={cn(
-                          "inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold",
+                          "inline-flex cursor-pointer items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold",
                           finalized || !item.tradingSignalId
                             ? "cursor-not-allowed opacity-45 border-white/15 text-white/50"
                             : isDark
@@ -865,52 +1014,236 @@ export function CreateSignalContent() {
       </section>
 
       <AlertDialog
-        open={!!statusModal}
-        onOpenChange={(open) => !open && !isDeclaringStatus && setStatusModal(null)}
+        open={!!editModal}
+        onOpenChange={(open) => !open && !isUpdatingSignal && setEditModal(null)}
       >
         <AlertDialogContent className="bg-[#1A102B] border-white/10" dir="rtl">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">
+            <AlertDialogTitle className="text-white">ویرایش سیگنال</AlertDialogTitle>
+            <AlertDialogDescription className="text-white/70">
+              اطلاعات سیگنال {editModal?.symbol ?? "-"} را ویرایش کنید.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {editModal && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditModal((prev) => (prev ? { ...prev, side: SignalSide._1 } : prev))}
+                  className={cn(
+                    "rounded-lg border px-3 py-2 text-sm",
+                    editModal.side === SignalSide._1
+                      ? "border-emerald-400/40 bg-emerald-500/15 text-emerald-200"
+                      : "border-white/15 bg-white/5 text-white/70",
+                  )}
+                >
+                  خرید
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditModal((prev) => (prev ? { ...prev, side: SignalSide._2 } : prev))}
+                  className={cn(
+                    "rounded-lg border px-3 py-2 text-sm",
+                    editModal.side === SignalSide._2
+                      ? "border-rose-400/40 bg-rose-500/15 text-rose-200"
+                      : "border-white/15 bg-white/5 text-white/70",
+                  )}
+                >
+                  فروش
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label className="text-xs text-white/70">Entry</label>
+                  <input
+                    value={editModal.entryPrice}
+                    onChange={(e) =>
+                      setEditModal((prev) => (prev ? { ...prev, entryPrice: e.target.value } : prev))
+                    }
+                    className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-violet-300/40"
+                    dir="ltr"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-white/70">Stop Loss</label>
+                  <input
+                    value={editModal.stopLoss}
+                    onChange={(e) =>
+                      setEditModal((prev) => (prev ? { ...prev, stopLoss: e.target.value } : prev))
+                    }
+                    className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-violet-300/40"
+                    dir="ltr"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs text-white/70">Take Profits (comma separated)</label>
+                <input
+                  value={editModal.takeProfits}
+                  onChange={(e) =>
+                    setEditModal((prev) => (prev ? { ...prev, takeProfits: e.target.value } : prev))
+                  }
+                  className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-violet-300/40"
+                  dir="ltr"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs text-white/70">توضیحات</label>
+                <textarea
+                  value={editModal.description}
+                  onChange={(e) =>
+                    setEditModal((prev) => (prev ? { ...prev, description: e.target.value } : prev))
+                  }
+                  className="min-h-20 w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-violet-300/40"
+                />
+              </div>
+            </div>
+          )}
+
+          <AlertDialogFooter className="gap-2">
+            <button
+              type="button"
+              onClick={handleUpdateSignal}
+              disabled={isUpdatingSignal || !editModal}
+              className="rounded-lg border border-emerald-400/30 bg-emerald-500/15 px-4 py-2 text-sm text-emerald-200 hover:bg-emerald-500/20 disabled:opacity-50"
+            >
+              {isUpdatingSignal ? "در حال ذخیره..." : "ذخیره تغییرات"}
+            </button>
+            <AlertDialogCancel
+              disabled={isUpdatingSignal}
+              className="bg-transparent text-white/80 border-white/15 hover:bg-white/10"
+            >
+              انصراف
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={!!statusModal}
+        onOpenChange={(open) => {
+          if (!open && !isDeclaringStatus) {
+            setPendingOutcomeStatus(null);
+            setStatusModal(null);
+          }
+        }}
+      >
+        <AlertDialogContent
+          className="w-[calc(100%-2rem)] max-w-md rounded-2xl border border-[#C8A6FF]/20 bg-[radial-gradient(120%_120%_at_80%_0%,rgba(124,77,204,0.28),rgba(12,8,25,0.95)_45%,rgba(7,4,16,0.98)_100%)] text-white shadow-[0_30px_80px_-24px_rgba(94,53,177,0.85)] backdrop-blur-xl sm:w-full"
+          dir="rtl"
+        >
+          <button
+            type="button"
+            disabled={isDeclaringStatus}
+            onClick={() => {
+              setPendingOutcomeStatus(null);
+              setStatusModal(null);
+            }}
+            aria-label="بستن"
+            className="absolute left-4 top-4 inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-white/20 bg-white/5 text-white/80 transition-all hover:bg-white/12 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <X className="h-4 w-4" />
+          </button>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white text-lg font-semibold">
               تغییر وضعیت سیگنال
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-white/70">
+            <AlertDialogDescription className="text-white/75 leading-7">
               وضعیت نتیجه برای سیگنال {statusModal?.symbol ?? "-"} را انتخاب کنید.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             <button
               type="button"
               disabled={isDeclaringStatus}
-              onClick={() => handleDeclareOutcome(SignalOutcomeStatus._1)}
-              className="rounded-lg border border-emerald-400/30 bg-emerald-500/15 px-3 py-2 text-sm text-emerald-200 hover:bg-emerald-500/20 disabled:opacity-50"
+              onClick={() => setPendingOutcomeStatus(SignalOutcomeStatus._1)}
+              className={cn(
+                "rounded-xl border px-3 py-2.5 text-sm font-semibold transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                pendingOutcomeStatus === SignalOutcomeStatus._1
+                  ? "border-emerald-300/55 bg-gradient-to-r from-emerald-500/30 to-emerald-400/18 text-emerald-50 shadow-[0_0_24px_-10px_rgba(16,185,129,0.9)]"
+                  : pendingOutcomeStatus && pendingOutcomeStatus !== SignalOutcomeStatus._1
+                    ? "border-white/15 bg-white/[0.04] text-white/45 hover:text-white/70"
+                    : "border-emerald-300/35 bg-gradient-to-r from-emerald-500/18 to-emerald-400/10 text-emerald-100 hover:brightness-110 hover:shadow-[0_0_24px_-10px_rgba(16,185,129,0.9)]",
+              )}
             >
               حد سود
             </button>
             <button
               type="button"
               disabled={isDeclaringStatus}
-              onClick={() => handleDeclareOutcome(SignalOutcomeStatus._2)}
-              className="rounded-lg border border-rose-400/30 bg-rose-500/15 px-3 py-2 text-sm text-rose-200 hover:bg-rose-500/20 disabled:opacity-50"
+              onClick={() => setPendingOutcomeStatus(SignalOutcomeStatus._2)}
+              className={cn(
+                "rounded-xl border px-3 py-2.5 text-sm font-semibold transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                pendingOutcomeStatus === SignalOutcomeStatus._2
+                  ? "border-rose-300/55 bg-gradient-to-r from-rose-500/30 to-rose-400/18 text-rose-50 shadow-[0_0_24px_-10px_rgba(244,63,94,0.9)]"
+                  : pendingOutcomeStatus && pendingOutcomeStatus !== SignalOutcomeStatus._2
+                    ? "border-white/15 bg-white/[0.04] text-white/45 hover:text-white/70"
+                    : "border-rose-300/35 bg-gradient-to-r from-rose-500/18 to-rose-400/10 text-rose-100 hover:brightness-110 hover:shadow-[0_0_24px_-10px_rgba(244,63,94,0.9)]",
+              )}
             >
               حد ضرر
             </button>
             <button
               type="button"
               disabled={isDeclaringStatus}
-              onClick={() => handleDeclareOutcome(SignalOutcomeStatus._3)}
-              className="rounded-lg border border-amber-400/30 bg-amber-500/15 px-3 py-2 text-sm text-amber-200 hover:bg-amber-500/20 disabled:opacity-50"
+              onClick={() => setPendingOutcomeStatus(SignalOutcomeStatus._3)}
+              className={cn(
+                "rounded-xl border px-3 py-2.5 text-sm font-semibold transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                pendingOutcomeStatus === SignalOutcomeStatus._3
+                  ? "border-amber-300/55 bg-gradient-to-r from-amber-500/30 to-amber-400/18 text-amber-50 shadow-[0_0_24px_-10px_rgba(245,158,11,0.9)]"
+                  : pendingOutcomeStatus && pendingOutcomeStatus !== SignalOutcomeStatus._3
+                    ? "border-white/15 bg-white/[0.04] text-white/45 hover:text-white/70"
+                    : "border-amber-300/35 bg-gradient-to-r from-amber-500/18 to-amber-400/10 text-amber-100 hover:brightness-110 hover:shadow-[0_0_24px_-10px_rgba(245,158,11,0.9)]",
+              )}
             >
               بسته شده
             </button>
           </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel
-              disabled={isDeclaringStatus}
-              className="bg-transparent text-white/80 border-white/15 hover:bg-white/10"
-            >
-              بستن
-            </AlertDialogCancel>
-          </AlertDialogFooter>
+          <div
+            className={cn(
+              "mt-1 overflow-hidden transition-all duration-300 ease-out",
+              pendingOutcomeStatus
+                ? "max-h-44 opacity-100 translate-y-0"
+                : "max-h-0 opacity-0 translate-y-2 pointer-events-none",
+            )}
+          >
+            <div className="rounded-xl border border-violet-300/25 bg-violet-500/10 p-3.5">
+              <p className="text-sm text-white/90 leading-7">
+                آیا از تغییر وضعیت به{" "}
+                <span className="font-semibold text-violet-100">
+                  «{getOutcomeStatusBadge(pendingOutcomeStatus ?? undefined, true).label}»
+                </span>{" "}
+                مطمئن هستید؟
+              </p>
+              <p className="mt-1 text-xs text-rose-200/90">
+                این تغییر غیرقابل بازگشت خواهد بود.
+              </p>
+              <div className="mt-3 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPendingOutcomeStatus(null)}
+                  disabled={isDeclaringStatus}
+                  className="rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white/80 transition-colors cursor-pointer hover:bg-white/10 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  انصراف
+                </button>
+                <button
+                  type="button"
+                  disabled={isDeclaringStatus || pendingOutcomeStatus === null}
+                  onClick={() =>
+                    pendingOutcomeStatus !== null &&
+                    handleDeclareOutcome(pendingOutcomeStatus)
+                  }
+                  className="rounded-lg border border-violet-300/35 bg-gradient-to-r from-violet-500/30 to-fuchsia-500/20 px-3 py-1.5 text-xs font-semibold text-violet-100 transition-all cursor-pointer hover:brightness-110 hover:shadow-[0_0_20px_-10px_rgba(167,139,250,0.95)] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isDeclaringStatus ? "در حال ثبت..." : "تایید نهایی"}
+                </button>
+              </div>
+            </div>
+          </div>
         </AlertDialogContent>
       </AlertDialog>
     </div>
