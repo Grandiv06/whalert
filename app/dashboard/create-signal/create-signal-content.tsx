@@ -47,6 +47,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Pagination } from "@/components/ui/pagination";
 import { cn } from "@/lib/utils";
 import {
   AlertDialog,
@@ -144,7 +145,7 @@ function formatNumber(value?: number | null): string {
 function getSignalTypeBadge(side?: SignalSide, isDark?: boolean): BadgeMeta {
   if (side === SignalSide._1) {
     return {
-      label: "خرید",
+      label: "Long",
       className: isDark
         ? "text-emerald-300 bg-emerald-500/15 border-emerald-400/35"
         : "text-emerald-700 bg-emerald-100 border-emerald-200",
@@ -152,7 +153,7 @@ function getSignalTypeBadge(side?: SignalSide, isDark?: boolean): BadgeMeta {
   }
   if (side === SignalSide._2) {
     return {
-      label: "فروش",
+      label: "Short",
       className: isDark
         ? "text-rose-300 bg-rose-500/15 border-rose-400/35"
         : "text-rose-700 bg-rose-100 border-rose-200",
@@ -182,7 +183,7 @@ function getOutcomeStatusBadge(
 ): BadgeMeta {
   if (outcomeStatus === SignalOutcomeStatus._1) {
     return {
-      label: "حد سود",
+      label: "TP",
       className: isDark
         ? "text-emerald-300 bg-emerald-500/15 border-emerald-400/35"
         : "text-emerald-700 bg-emerald-100 border-emerald-200",
@@ -190,7 +191,7 @@ function getOutcomeStatusBadge(
   }
   if (outcomeStatus === SignalOutcomeStatus._2) {
     return {
-      label: "حد ضرر",
+      label: "SL",
       className: isDark
         ? "text-rose-300 bg-rose-500/15 border-rose-400/35"
         : "text-rose-700 bg-rose-100 border-rose-200",
@@ -198,14 +199,14 @@ function getOutcomeStatusBadge(
   }
   if (outcomeStatus === SignalOutcomeStatus._3) {
     return {
-      label: "بسته شده",
+      label: "Closed",
       className: isDark
         ? "text-amber-300 bg-amber-500/15 border-amber-400/35"
         : "text-amber-700 bg-amber-100 border-amber-200",
     };
   }
   return {
-    label: "فعال",
+    label: "Active",
     className: isDark
       ? "text-violet-200 bg-violet-500/15 border-violet-400/35"
       : "text-violet-700 bg-violet-100 border-violet-200",
@@ -289,25 +290,63 @@ export function CreateSignalContent({
   } | null>(null);
   const [editingSignalId, setEditingSignalId] = useState<number | null>(null);
   const [expandedRows, setExpandedRows] = useState<Record<number, boolean>>({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
   const {
-    data: myCreatedSignals = [],
+    data: mySignalsPayload,
     isLoading: mySignalsLoading,
     error: mySignalsError,
     refetch: refetchMySignals,
   } = useQuery({
-    queryKey: ["create-signal-my-created-signals"],
+    queryKey: ["create-signal-my-created-signals", currentPage, pageSize],
     enabled: canCreateSignal,
     queryFn: async () => {
+      const skipCount = (currentPage - 1) * pageSize;
       const res =
         await UserDashboardService.apiServicesAppUserdashboardGetmycreatedsignalsPost({
-          maxResultCount: 20,
-          skipCount: 0,
+          maxResultCount: pageSize,
+          skipCount,
         });
-      const payload = (res as { result?: { items?: ShowPositionsDto[] | null } }).result ?? res;
-      return payload.items ?? [];
+      const payload = (
+        res as {
+          result?: { items?: ShowPositionsDto[] | null; totalCount?: number | null };
+          items?: ShowPositionsDto[] | null;
+          totalCount?: number | null;
+        }
+      ).result ?? res;
+      return {
+        items: payload.items ?? [],
+        totalCount: payload.totalCount ?? 0,
+      };
     },
+    placeholderData: (previousData) => previousData,
   });
+
+  const myCreatedSignals = mySignalsPayload?.items ?? [];
+  const totalSignals = mySignalsPayload?.totalCount ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalSignals / pageSize));
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+    setExpandedRows({});
+  }, [pageSize]);
+
+  useEffect(() => {
+    setExpandedRows({});
+  }, [currentPage]);
+
+  useEffect(() => {
+    if (myCreatedSignals.length === 0 && totalSignals > 0 && currentPage > 1) {
+      setCurrentPage((prev) => Math.max(1, prev - 1));
+    }
+  }, [myCreatedSignals.length, totalSignals, currentPage]);
 
   const mySignalsStatus =
     typeof mySignalsError === "object" && mySignalsError && "status" in mySignalsError
@@ -470,7 +509,7 @@ export function CreateSignalContent({
             )}
           >
             <Sparkles className="h-3.5 w-3.5" />
-            {myCreatedSignals.length} سیگنال
+            {totalSignals} سیگنال
           </span>
         </div>
 
@@ -627,7 +666,7 @@ export function CreateSignalContent({
                                       <span
                                         dir="ltr"
                                         className={cn(
-                                          "inline-grid h-5 w-6 place-items-center rounded-full border p-0 text-center text-[10px] font-bold leading-none tabular-nums",
+                                          "relative -mr-1 inline-grid h-5 w-6 place-items-center rounded-full border p-0 text-center text-[10px] font-bold leading-none tabular-nums",
                                           isDark
                                             ? "border-emerald-400/25 bg-emerald-500/10 text-emerald-200"
                                             : "border-emerald-200 bg-emerald-50 text-emerald-700",
@@ -747,7 +786,7 @@ export function CreateSignalContent({
                               />
                             </button>
                           ) : (
-                            <span className="text-white/30">-</span>
+                            <span className="text-white/45 text-[11px]">بدون توضیح</span>
                           )}
                         </TableCell>
                         <TableCell className="px-4 py-3">
@@ -895,7 +934,7 @@ export function CreateSignalContent({
                                   <span
                                     dir="ltr"
                                     className={cn(
-                                      "inline-grid h-5 w-6 place-items-center rounded-full border p-0 text-center text-[10px] font-bold leading-none tabular-nums",
+                                      "relative -mr-1 inline-grid h-5 w-6 place-items-center rounded-full border p-0 text-center text-[10px] font-bold leading-none tabular-nums",
                                       isDark
                                         ? "border-emerald-400/25 bg-emerald-500/10 text-emerald-200"
                                         : "border-emerald-200 bg-emerald-50 text-emerald-700",
@@ -1030,6 +1069,30 @@ export function CreateSignalContent({
                 );
               })}
             </div>
+
+            {totalSignals > 0 && (
+              <div
+                className={cn(
+                  "flex items-center justify-between gap-4 rounded-xl border px-4 py-3 md:px-6 md:py-4",
+                  isDark
+                    ? "border-white/10 bg-white/[0.02]"
+                    : "border-gray-200 bg-gray-50",
+                )}
+              >
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  pageSize={pageSize}
+                  totalItems={totalSignals}
+                  pageSizeOptions={[10, 20, 50]}
+                  onPageChange={(page) => setCurrentPage(page)}
+                  onPageSizeChange={(size) => {
+                    setPageSize(size);
+                    setCurrentPage(1);
+                  }}
+                />
+              </div>
+            )}
           </div>
         )}
       </section>
