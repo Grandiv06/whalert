@@ -398,6 +398,7 @@ export type CreateSignalContentProps = {
   onAnalyzingChange?: (value: boolean) => void;
   onManualDirtyChange?: (value: boolean) => void;
   onLeaveModalRequest?: (request: LeaveModalRequest | null) => void;
+  onSignalCreated?: () => void | Promise<void>;
   services: CreateSignalServices;
   config?: CreateSignalConfig;
 };
@@ -639,6 +640,7 @@ export function CreateSignalContent({
   onAnalyzingChange,
   onManualDirtyChange,
   onLeaveModalRequest,
+  onSignalCreated,
   services,
   config,
 }: CreateSignalContentProps) {
@@ -1605,6 +1607,7 @@ export function CreateSignalContent({
       setDescription("");
       setIsManualPublishConfirmOpen(false);
       setManualPublishPreview(null);
+      await onSignalCreated?.();
       pushToast(mergedConfig.messages.submitSuccessManual, "success");
     } catch (err) {
       const message =
