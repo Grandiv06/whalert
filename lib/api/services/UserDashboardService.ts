@@ -22,6 +22,7 @@ import type { GetPnLSequenceChartOutput } from '../models/GetPnLSequenceChartOut
 import type { GetRewardToRiskChartOutput } from '../models/GetRewardToRiskChartOutput';
 import type { GetSignalSequenceQualityChartOutput } from '../models/GetSignalSequenceQualityChartOutput';
 import type { MarketViewInput } from '../models/MarketViewInput';
+import type { MyCreatedSignalsInputDto } from '../models/MyCreatedSignalsInputDto';
 import type { OfferedPosiotionsInput } from '../models/OfferedPosiotionsInput';
 import type { PagedResultDtoOfMarketViewDto } from '../models/PagedResultDtoOfMarketViewDto';
 import type { PagedResultDtoOfOfferedPositionsDto } from '../models/PagedResultDtoOfOfferedPositionsDto';
@@ -108,6 +109,21 @@ export class UserDashboardService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/services/app/UserDashboard/ShowPositions',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @param requestBody
+     * @returns PagedResultDtoOfShowPositionsDto Success
+     * @throws ApiError
+     */
+    public static apiServicesAppUserdashboardGetmycreatedsignalsPost(
+        requestBody?: MyCreatedSignalsInputDto,
+    ): CancelablePromise<PagedResultDtoOfShowPositionsDto> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/services/app/UserDashboard/GetMyCreatedSignals',
             body: requestBody,
             mediaType: 'application/json',
         });

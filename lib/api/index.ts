@@ -191,6 +191,8 @@ export type { GetMarketForEditOutput } from './models/GetMarketForEditOutput';
 export type { GetMarketForViewDto } from './models/GetMarketForViewDto';
 export type { GetMemberActivityOutput } from './models/GetMemberActivityOutput';
 export type { GetMonthlyProfitLossChartOutput } from './models/GetMonthlyProfitLossChartOutput';
+export type { GetMySignalForEditInput } from './models/GetMySignalForEditInput';
+export type { GetMySignalForEditOutput } from './models/GetMySignalForEditOutput';
 export type { GetNotificationsCreatedByUserOutput } from './models/GetNotificationsCreatedByUserOutput';
 export type { GetNotificationSettingsOutput } from './models/GetNotificationSettingsOutput';
 export type { GetNotificationsOutput } from './models/GetNotificationsOutput';
@@ -314,6 +316,7 @@ export type { MoveTenantsToAnotherEditionDto } from './models/MoveTenantsToAnoth
 export type { Mt5AckSignalInput } from './models/Mt5AckSignalInput';
 export type { Mt5PendingSignalDto } from './models/Mt5PendingSignalDto';
 export type { Mt5PendingSignalsOutput } from './models/Mt5PendingSignalsOutput';
+export type { MyCreatedSignalsInputDto } from './models/MyCreatedSignalsInputDto';
 export type { NameValue } from './models/NameValue';
 export type { NameValueDto } from './models/NameValueDto';
 export type { NameValueOfString } from './models/NameValueOfString';
@@ -550,6 +553,7 @@ export type { UpdateGoldPriceResultDto } from './models/UpdateGoldPriceResultDto
 export type { UpdateGoogleAuthenticatorKeyInput } from './models/UpdateGoogleAuthenticatorKeyInput';
 export type { UpdateGoogleAuthenticatorKeyOutput } from './models/UpdateGoogleAuthenticatorKeyOutput';
 export type { UpdateLanguageTextInput } from './models/UpdateLanguageTextInput';
+export type { UpdateMySignalInput } from './models/UpdateMySignalInput';
 export type { UpdateNotificationSettingsInput } from './models/UpdateNotificationSettingsInput';
 export type { UpdateOrganizationUnitInput } from './models/UpdateOrganizationUnitInput';
 export type { UpdatePaymentDto } from './models/UpdatePaymentDto';
