@@ -18,6 +18,7 @@ import {
   AiServiceService,
   GoldPriceService,
   GoldPriceSeries,
+  MarketType,
   PriceService,
   SignalOutcomeStatus,
   SignalSide,
@@ -31,6 +32,11 @@ import {
 } from "@/components/create-signal/create-signal-content";
 import { hasSignalCreatorPermission } from "@/lib/auth-session";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import {
   AlertDialog,
@@ -207,6 +213,13 @@ function getVisibleAndHiddenTpValues(
     visible: takeProfits.slice(0, visibleCount),
     hidden: takeProfits.slice(visibleCount),
   };
+}
+
+function getMarketLabel(market?: MarketType | null): string | null {
+  if (market === MarketType._1) return "CRYPTO";
+  if (market === MarketType._0) return "FOREX";
+  if (market === MarketType._2) return "GOLD";
+  return null;
 }
 
 export function CreateSignalContent() {
@@ -437,7 +450,8 @@ export function CreateSignalContent() {
                     const typeBadge = getSignalTypeBadge(item.side, isDark);
                     const statusBadge = getOutcomeStatusBadge(item.outcomeStatus, isDark);
                     const finalized = isFinalizedSignal(item.outcomeStatus);
-                    const tpSplit = getVisibleAndHiddenTpValues(item.tPs, 2);
+                    const tpSplit = getVisibleAndHiddenTpValues(item.tPs, 1);
+                    const marketLabel = getMarketLabel(item.market);
                     return (
                       <tr
                         key={item.tradingSignalId ?? `row-${index}`}
@@ -455,9 +469,11 @@ export function CreateSignalContent() {
                           <div className={cn("font-semibold", isDark ? "text-white" : "text-gray-900")}>
                             {item.symbol ?? "-"}
                           </div>
-                          <div className={cn("mt-0.5 text-[11px]", isDark ? "text-white/55" : "text-gray-500")}>
-                            {item.market ?? "-"}
-                          </div>
+                          {marketLabel && (
+                            <div className={cn("mt-0.5 text-[11px]", isDark ? "text-white/55" : "text-gray-500")}>
+                              {marketLabel}
+                            </div>
+                          )}
                         </td>
                         <td className="px-4 py-3">
                           <span className={cn("inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold", typeBadge.className)}>
@@ -470,35 +486,89 @@ export function CreateSignalContent() {
                         <td className="px-4 py-3">
                           <div className="flex flex-wrap gap-1.5">
                             {tpSplit.visible.length > 0 ? (
-                              tpSplit.visible.map((tp, tpIndex) => (
+                              tpSplit.hidden.length > 0 ? (
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <button
+                                      type="button"
+                                      className={cn(
+                                        "inline-flex cursor-pointer items-center gap-1.5 rounded-2xl border px-2.5 py-1 text-[11px] font-semibold transition-colors",
+                                        isDark
+                                          ? "border-emerald-400/25 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20"
+                                          : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100",
+                                      )}
+                                    >
+                                      <span
+                                        dir="ltr"
+                                        className={cn(
+                                          "inline-grid h-5 w-6 place-items-center rounded-full border p-0 text-center text-[10px] font-bold leading-none tabular-nums",
+                                          isDark
+                                            ? "border-cyan-300/40 bg-cyan-500/20 text-cyan-100"
+                                            : "border-cyan-200 bg-cyan-100 text-cyan-700",
+                                        )}
+                                      >
+                                        +{tpSplit.hidden.length}
+                                      </span>
+                                      <span className="tabular-nums" dir="ltr">
+                                        {formatNumber(tpSplit.visible[0])}
+                                      </span>
+                                    </button>
+                                  </PopoverTrigger>
+                                  <PopoverContent
+                                    align="start"
+                                    side="bottom"
+                                    dir="rtl"
+                                    className={cn(
+                                      "w-52 rounded-2xl p-3 text-right shadow-[0_18px_40px_rgba(8,3,22,0.75)]",
+                                      isDark
+                                        ? "border border-[#C4A0FF]/30 bg-[#090516]/95 text-white"
+                                        : "border border-gray-200 bg-white text-gray-900",
+                                    )}
+                                  >
+                                    <div className="flex flex-col gap-2.5">
+                                      <p className={cn("mb-0.5 border-b pb-1.5 text-xs font-semibold", isDark ? "border-white/10 text-[#C9AEFF]" : "border-gray-200 text-violet-700")}>
+                                        حد سودهای هدف
+                                      </p>
+                                      <div className="flex flex-col gap-1.5 text-xs">
+                                        {(item.tPs ?? []).map((tpVal, tpIdx) => (
+                                          <div
+                                            key={`${item.tradingSignalId}-tp-list-${tpIdx}`}
+                                            className={cn(
+                                              "flex items-center justify-between gap-3 rounded-lg px-2.5 py-1.5",
+                                              isDark
+                                                ? "border border-white/8 bg-white/[0.03]"
+                                                : "border border-gray-200 bg-gray-50",
+                                            )}
+                                            dir="ltr"
+                                          >
+                                            <span className={cn("text-[11px] font-semibold tracking-wide", isDark ? "text-white/55" : "text-gray-500")}>
+                                              t{tpIdx + 1}
+                                            </span>
+                                            <span className={cn("font-extrabold", isDark ? "text-emerald-300" : "text-emerald-700")}>
+                                              {formatNumber(tpVal)}
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </PopoverContent>
+                                </Popover>
+                              ) : (
                                 <span
-                                  key={`${item.tradingSignalId}-tp-${tpIndex}`}
                                   className={cn(
-                                    "inline-flex items-center rounded-lg border px-2 py-0.5 text-[11px] font-semibold tabular-nums",
+                                    "inline-flex items-center gap-1.5 rounded-2xl border px-2.5 py-1 text-[11px] font-semibold",
                                     isDark
                                       ? "border-emerald-400/25 bg-emerald-500/10 text-emerald-200"
                                       : "border-emerald-200 bg-emerald-50 text-emerald-700",
                                   )}
-                                  dir="ltr"
                                 >
-                                  {formatNumber(tp)}
+                                  <span className="tabular-nums" dir="ltr">
+                                    {formatNumber(tpSplit.visible[0])}
+                                  </span>
                                 </span>
-                              ))
+                              )
                             ) : (
                               <span className={isDark ? "text-white/45" : "text-gray-400"}>-</span>
-                            )}
-                            {tpSplit.hidden.length > 0 && (
-                              <span
-                                className={cn(
-                                  "inline-flex items-center rounded-lg border px-2 py-0.5 text-[11px] font-semibold",
-                                  isDark
-                                    ? "border-violet-400/25 bg-violet-500/10 text-violet-200"
-                                    : "border-violet-200 bg-violet-100 text-violet-700",
-                                )}
-                                title={tpSplit.hidden.map((tp) => formatNumber(tp)).join(" | ")}
-                              >
-                                +{tpSplit.hidden.length}
-                              </span>
                             )}
                           </div>
                         </td>
@@ -595,7 +665,7 @@ export function CreateSignalContent() {
                 const typeBadge = getSignalTypeBadge(item.side, isDark);
                 const statusBadge = getOutcomeStatusBadge(item.outcomeStatus, isDark);
                 const finalized = isFinalizedSignal(item.outcomeStatus);
-                const tpSplit = getVisibleAndHiddenTpValues(item.tPs, 2);
+                const tpSplit = getVisibleAndHiddenTpValues(item.tPs, 1);
                 return (
                   <article
                     key={item.tradingSignalId ?? `card-${index}`}
@@ -642,35 +712,89 @@ export function CreateSignalContent() {
                       <p className={cn("mb-1.5 text-[11px]", isDark ? "text-white/55" : "text-gray-500")}>Take Profit</p>
                       <div className="flex flex-wrap gap-1.5">
                         {tpSplit.visible.length > 0 ? (
-                          tpSplit.visible.map((tp, tpIndex) => (
+                          tpSplit.hidden.length > 0 ? (
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <button
+                                  type="button"
+                                  className={cn(
+                                    "inline-flex cursor-pointer items-center gap-1.5 rounded-2xl border px-2.5 py-1 text-[11px] font-semibold transition-colors",
+                                    isDark
+                                      ? "border-emerald-400/25 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20"
+                                      : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100",
+                                  )}
+                                >
+                                  <span
+                                    dir="ltr"
+                                    className={cn(
+                                      "inline-grid h-5 w-6 place-items-center rounded-full border p-0 text-center text-[10px] font-bold leading-none tabular-nums",
+                                      isDark
+                                        ? "border-cyan-300/40 bg-cyan-500/20 text-cyan-100"
+                                        : "border-cyan-200 bg-cyan-100 text-cyan-700",
+                                    )}
+                                  >
+                                    +{tpSplit.hidden.length}
+                                  </span>
+                                  <span className="tabular-nums" dir="ltr">
+                                    {formatNumber(tpSplit.visible[0])}
+                                  </span>
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent
+                                align="start"
+                                side="bottom"
+                                dir="rtl"
+                                className={cn(
+                                  "w-52 rounded-2xl p-3 text-right shadow-[0_18px_40px_rgba(8,3,22,0.75)]",
+                                  isDark
+                                    ? "border border-[#C4A0FF]/30 bg-[#090516]/95 text-white"
+                                    : "border border-gray-200 bg-white text-gray-900",
+                                )}
+                              >
+                                <div className="flex flex-col gap-2.5">
+                                  <p className={cn("mb-0.5 border-b pb-1.5 text-xs font-semibold", isDark ? "border-white/10 text-[#C9AEFF]" : "border-gray-200 text-violet-700")}>
+                                    حد سودهای هدف
+                                  </p>
+                                  <div className="flex flex-col gap-1.5 text-xs">
+                                    {(item.tPs ?? []).map((tpVal, tpIdx) => (
+                                      <div
+                                        key={`${item.tradingSignalId}-mobile-tp-list-${tpIdx}`}
+                                        className={cn(
+                                          "flex items-center justify-between gap-3 rounded-lg px-2.5 py-1.5",
+                                          isDark
+                                            ? "border border-white/8 bg-white/[0.03]"
+                                            : "border border-gray-200 bg-gray-50",
+                                        )}
+                                        dir="ltr"
+                                      >
+                                        <span className={cn("text-[11px] font-semibold tracking-wide", isDark ? "text-white/55" : "text-gray-500")}>
+                                          t{tpIdx + 1}
+                                        </span>
+                                        <span className={cn("font-extrabold", isDark ? "text-emerald-300" : "text-emerald-700")}>
+                                          {formatNumber(tpVal)}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </PopoverContent>
+                            </Popover>
+                          ) : (
                             <span
-                              key={`${item.tradingSignalId}-mobile-tp-${tpIndex}`}
                               className={cn(
-                                "inline-flex items-center rounded-lg border px-2 py-0.5 text-[11px] font-semibold tabular-nums",
+                                "inline-flex items-center gap-1.5 rounded-2xl border px-2.5 py-1 text-[11px] font-semibold",
                                 isDark
                                   ? "border-emerald-400/25 bg-emerald-500/10 text-emerald-200"
                                   : "border-emerald-200 bg-emerald-50 text-emerald-700",
                               )}
-                              dir="ltr"
                             >
-                              {formatNumber(tp)}
+                              <span className="tabular-nums" dir="ltr">
+                                {formatNumber(tpSplit.visible[0])}
+                              </span>
                             </span>
-                          ))
+                          )
                         ) : (
                           <span className={cn("text-[12px]", isDark ? "text-white/45" : "text-gray-400")}>-</span>
-                        )}
-                        {tpSplit.hidden.length > 0 && (
-                          <span
-                            className={cn(
-                              "inline-flex items-center rounded-lg border px-2 py-0.5 text-[11px] font-semibold",
-                              isDark
-                                ? "border-violet-400/25 bg-violet-500/10 text-violet-200"
-                                : "border-violet-200 bg-violet-100 text-violet-700",
-                            )}
-                            title={tpSplit.hidden.map((tp) => formatNumber(tp)).join(" | ")}
-                          >
-                            +{tpSplit.hidden.length}
-                          </span>
                         )}
                       </div>
                     </div>
