@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
   Eye,
+  Loader2,
   Pencil,
   RefreshCcw,
   Sparkles,
@@ -41,10 +42,8 @@ import {
 import { cn } from "@/lib/utils";
 import {
   AlertDialog,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
-  AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
@@ -124,17 +123,6 @@ const createSignalConfig = {
 type BadgeMeta = {
   label: string;
   className: string;
-};
-
-type EditSignalFormState = {
-  tradingSignalId: number;
-  symbol: string;
-  side: SignalSide;
-  entryPrice: string;
-  stopLoss: string;
-  takeProfits: string;
-  description: string;
-  pictureUrl: string;
 };
 
 function formatNumber(value?: number | null): string {
@@ -234,21 +222,20 @@ function getMarketLabel(market?: MarketType | null): string | null {
   return null;
 }
 
-function parseNumberInput(value: string): number | null {
-  const normalized = value.replace(/,/g, "").trim();
-  if (!normalized) return null;
-  const num = Number(normalized);
-  return Number.isFinite(num) ? num : null;
-}
+type CreateSignalContentPageProps = {
+  initialManualEditDraft?: {
+    symbolApi?: string;
+    side?: "LONG" | "SHORT";
+    entry?: number;
+    stopLoss?: number;
+    takeProfits?: number[];
+    description?: string;
+  } | null;
+};
 
-function parseTakeProfitsInput(value: string): number[] {
-  return value
-    .split(/[,\n،]/)
-    .map((part) => parseNumberInput(part))
-    .filter((num): num is number => num !== null && num > 0);
-}
-
-export function CreateSignalContent() {
+export function CreateSignalContent({
+  initialManualEditDraft = null,
+}: CreateSignalContentPageProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { theme } = useTheme();
@@ -266,9 +253,7 @@ export function CreateSignalContent() {
     tradingSignalId: number;
     symbol: string;
   } | null>(null);
-  const [editModal, setEditModal] = useState<EditSignalFormState | null>(null);
-  const [isEditLoading, setIsEditLoading] = useState(false);
-  const [isUpdatingSignal, setIsUpdatingSignal] = useState(false);
+  const [editingSignalId, setEditingSignalId] = useState<number | null>(null);
 
   const {
     data: myCreatedSignals = [],
@@ -334,8 +319,8 @@ export function CreateSignalContent() {
     tradingSignalId?: number,
     fallbackSymbol?: string | null,
   ) => {
-    if (!tradingSignalId || isEditLoading) return;
-    setIsEditLoading(true);
+    if (!tradingSignalId || editingSignalId !== null) return;
+    setEditingSignalId(tradingSignalId);
     setActionFeedback(null);
     try {
       const res = await SignalProviderService.apiServicesAppSignalproviderGetmysignalforeditPost(
@@ -374,66 +359,28 @@ export function CreateSignalContent() {
         return;
       }
 
-      setEditModal({
-        tradingSignalId: payload.tradingSignalId ?? tradingSignalId,
-        symbol: payload.symbol ?? fallbackSymbol ?? "-",
-        side: payload.side ?? SignalSide._1,
-        entryPrice: payload.entryPrice != null ? String(payload.entryPrice) : "",
-        stopLoss: payload.stopLoss != null ? String(payload.stopLoss) : "",
-        takeProfits: (payload.takeProfits ?? []).join(", "),
-        description: payload.description ?? "",
-        pictureUrl: payload.pictureUrl ?? "",
-      });
+      const params = new URLSearchParams();
+      params.set("edit", "1");
+      params.set("symbol", payload.symbol ?? fallbackSymbol ?? "");
+      params.set("side", payload.side === SignalSide._2 ? "SHORT" : "LONG");
+      if (payload.entryPrice != null) params.set("entry", String(payload.entryPrice));
+      if (payload.stopLoss != null) params.set("stopLoss", String(payload.stopLoss));
+      if (Array.isArray(payload.takeProfits) && payload.takeProfits.length > 0) {
+        params.set("takeProfits", payload.takeProfits.join(","));
+      }
+      if (payload.description) params.set("description", payload.description);
+
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      window.setTimeout(() => {
+        router.push(`/dashboard/create-signal/?${params.toString()}`);
+      }, 220);
     } catch {
       setActionFeedback({
         message: "دریافت اطلاعات سیگنال برای ویرایش ناموفق بود.",
         kind: "error",
       });
     } finally {
-      setIsEditLoading(false);
-    }
-  };
-
-  const handleUpdateSignal = async () => {
-    if (!editModal || isUpdatingSignal) return;
-
-    const entryPrice = parseNumberInput(editModal.entryPrice);
-    const stopLoss = parseNumberInput(editModal.stopLoss);
-    const takeProfits = parseTakeProfitsInput(editModal.takeProfits);
-
-    if (!entryPrice || !stopLoss || takeProfits.length === 0) {
-      setActionFeedback({
-        message: "Entry، Stop Loss و حداقل یک Take Profit الزامی است.",
-        kind: "error",
-      });
-      return;
-    }
-
-    setIsUpdatingSignal(true);
-    setActionFeedback(null);
-    try {
-      await SignalProviderService.apiServicesAppSignalproviderUpdatemysignalPost({
-        tradingSignalId: editModal.tradingSignalId,
-        side: editModal.side,
-        entryPrice,
-        stopLoss,
-        takeProfits,
-        description: editModal.description.trim() || null,
-        pictureUrl: editModal.pictureUrl.trim() || null,
-      });
-      setEditModal(null);
-      setActionFeedback({
-        message: "سیگنال با موفقیت ویرایش شد.",
-        kind: "success",
-      });
-      await refetchMySignals();
-    } catch {
-      setActionFeedback({
-        message: "به‌روزرسانی سیگنال ناموفق بود. لطفاً دوباره تلاش کنید.",
-        kind: "error",
-      });
-    } finally {
-      setIsUpdatingSignal(false);
+      setEditingSignalId(null);
     }
   };
 
@@ -453,6 +400,7 @@ export function CreateSignalContent() {
         }}
         services={createSignalServices}
         config={createSignalConfig}
+        initialManualEditDraft={initialManualEditDraft}
       />
 
       <section
@@ -646,8 +594,8 @@ export function CreateSignalContent() {
                                         className={cn(
                                           "inline-grid h-5 w-6 place-items-center rounded-full border p-0 text-center text-[10px] font-bold leading-none tabular-nums",
                                           isDark
-                                            ? "border-[#9BD8FF]/45 bg-[#2A5C88]/45 text-[#DDF4FF]"
-                                            : "border-sky-300 bg-sky-100 text-sky-800",
+                                            ? "border-emerald-400/25 bg-emerald-500/10 text-emerald-200"
+                                            : "border-emerald-200 bg-emerald-50 text-emerald-700",
                                         )}
                                       >
                                         +{tpSplit.hidden.length}
@@ -753,7 +701,7 @@ export function CreateSignalContent() {
                             </Link>
                             <button
                               type="button"
-                              disabled={finalized || !item.tradingSignalId || isEditLoading}
+                              disabled={finalized || !item.tradingSignalId || editingSignalId !== null}
                               onClick={() =>
                                 handleOpenEditSignal(item.tradingSignalId, item.symbol)
                               }
@@ -767,8 +715,12 @@ export function CreateSignalContent() {
                               )}
                               title={finalized ? "برای سیگنال نهایی شده امکان ویرایش وجود ندارد" : "ویرایش سیگنال"}
                             >
-                              <Pencil className="h-3.5 w-3.5" />
-                              {isEditLoading ? "..." : "ویرایش"}
+                              {editingSignalId === item.tradingSignalId ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Pencil className="h-3.5 w-3.5" />
+                              )}
+                              {editingSignalId === item.tradingSignalId ? "در حال بارگذاری" : "ویرایش"}
                             </button>
                             <button
                               type="button"
@@ -875,8 +827,8 @@ export function CreateSignalContent() {
                                     className={cn(
                                       "inline-grid h-5 w-6 place-items-center rounded-full border p-0 text-center text-[10px] font-bold leading-none tabular-nums",
                                       isDark
-                                        ? "border-[#9BD8FF]/45 bg-[#2A5C88]/45 text-[#DDF4FF]"
-                                        : "border-sky-300 bg-sky-100 text-sky-800",
+                                        ? "border-emerald-400/25 bg-emerald-500/10 text-emerald-200"
+                                        : "border-emerald-200 bg-emerald-50 text-emerald-700",
                                     )}
                                   >
                                     +{tpSplit.hidden.length}
@@ -960,7 +912,7 @@ export function CreateSignalContent() {
                       </Link>
                       <button
                         type="button"
-                        disabled={finalized || !item.tradingSignalId || isEditLoading}
+                        disabled={finalized || !item.tradingSignalId || editingSignalId !== null}
                         onClick={() =>
                           handleOpenEditSignal(item.tradingSignalId, item.symbol)
                         }
@@ -974,8 +926,12 @@ export function CreateSignalContent() {
                         )}
                         title={finalized ? "برای سیگنال نهایی شده امکان ویرایش وجود ندارد" : "ویرایش سیگنال"}
                       >
-                        <Pencil className="h-3.5 w-3.5" />
-                        {isEditLoading ? "..." : "ویرایش"}
+                        {editingSignalId === item.tradingSignalId ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Pencil className="h-3.5 w-3.5" />
+                        )}
+                        {editingSignalId === item.tradingSignalId ? "در حال بارگذاری" : "ویرایش"}
                       </button>
                       <button
                         type="button"
@@ -1012,115 +968,6 @@ export function CreateSignalContent() {
           </div>
         )}
       </section>
-
-      <AlertDialog
-        open={!!editModal}
-        onOpenChange={(open) => !open && !isUpdatingSignal && setEditModal(null)}
-      >
-        <AlertDialogContent className="bg-[#1A102B] border-white/10" dir="rtl">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">ویرایش سیگنال</AlertDialogTitle>
-            <AlertDialogDescription className="text-white/70">
-              اطلاعات سیگنال {editModal?.symbol ?? "-"} را ویرایش کنید.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          {editModal && (
-            <div className="space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setEditModal((prev) => (prev ? { ...prev, side: SignalSide._1 } : prev))}
-                  className={cn(
-                    "rounded-lg border px-3 py-2 text-sm",
-                    editModal.side === SignalSide._1
-                      ? "border-emerald-400/40 bg-emerald-500/15 text-emerald-200"
-                      : "border-white/15 bg-white/5 text-white/70",
-                  )}
-                >
-                  خرید
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEditModal((prev) => (prev ? { ...prev, side: SignalSide._2 } : prev))}
-                  className={cn(
-                    "rounded-lg border px-3 py-2 text-sm",
-                    editModal.side === SignalSide._2
-                      ? "border-rose-400/40 bg-rose-500/15 text-rose-200"
-                      : "border-white/15 bg-white/5 text-white/70",
-                  )}
-                >
-                  فروش
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <label className="text-xs text-white/70">Entry</label>
-                  <input
-                    value={editModal.entryPrice}
-                    onChange={(e) =>
-                      setEditModal((prev) => (prev ? { ...prev, entryPrice: e.target.value } : prev))
-                    }
-                    className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-violet-300/40"
-                    dir="ltr"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs text-white/70">Stop Loss</label>
-                  <input
-                    value={editModal.stopLoss}
-                    onChange={(e) =>
-                      setEditModal((prev) => (prev ? { ...prev, stopLoss: e.target.value } : prev))
-                    }
-                    className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-violet-300/40"
-                    dir="ltr"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs text-white/70">Take Profits (comma separated)</label>
-                <input
-                  value={editModal.takeProfits}
-                  onChange={(e) =>
-                    setEditModal((prev) => (prev ? { ...prev, takeProfits: e.target.value } : prev))
-                  }
-                  className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-violet-300/40"
-                  dir="ltr"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs text-white/70">توضیحات</label>
-                <textarea
-                  value={editModal.description}
-                  onChange={(e) =>
-                    setEditModal((prev) => (prev ? { ...prev, description: e.target.value } : prev))
-                  }
-                  className="min-h-20 w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-violet-300/40"
-                />
-              </div>
-            </div>
-          )}
-
-          <AlertDialogFooter className="gap-2">
-            <button
-              type="button"
-              onClick={handleUpdateSignal}
-              disabled={isUpdatingSignal || !editModal}
-              className="rounded-lg border border-emerald-400/30 bg-emerald-500/15 px-4 py-2 text-sm text-emerald-200 hover:bg-emerald-500/20 disabled:opacity-50"
-            >
-              {isUpdatingSignal ? "در حال ذخیره..." : "ذخیره تغییرات"}
-            </button>
-            <AlertDialogCancel
-              disabled={isUpdatingSignal}
-              className="bg-transparent text-white/80 border-white/15 hover:bg-white/10"
-            >
-              انصراف
-            </AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       <AlertDialog
         open={!!statusModal}
