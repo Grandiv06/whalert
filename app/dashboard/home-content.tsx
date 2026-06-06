@@ -11,10 +11,10 @@ import {
 } from "@/components/ui/table";
 import { Pagination } from "@/components/ui/pagination";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { FollowedProposalsDashboard } from "@/components/charts/followed-proposals-dashboard";
 import { SignalCard } from "@/components/charts/signal-card";
 import useDevice from "@/hooks/useDevice";
@@ -31,7 +31,6 @@ import { FollowedOfferStatusTimeFilter } from "@/lib/api/client";
 import { SignalStatus } from "@/lib/api/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Info } from "lucide-react";
 import type { SignalCardProps } from "@/components/charts/signal-card";
 import { normalizePersianText } from "@/lib/utils";
 
@@ -295,23 +294,58 @@ export function HomeContent() {
                             {signal.sl}
                           </TableCell>
                           <TableCell className="text-center h-[72px] px-6 py-8">
-                            <div className="flex items-center justify-center gap-2">
-                              {signal.tPs?.length ? (
-                                <>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Info className="w-4 h-4 text-muted-foreground dark:text-gray-400 hover:text-foreground dark:hover:text-gray-300 cursor-pointer transition-colors shrink-0" />
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p>{signal.tPs.join(", ")}</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                  {signal.tPs[0]}
-                                </>
-                              ) : (
-                                "-"
-                              )}
-                            </div>
+                            {signal.tPs?.length ? (
+                              <div className="flex items-center justify-center w-full">
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <button
+                                      type="button"
+                                      className="group flex items-center gap-1.5 rounded-xl border border-[#9C73DE]/45 bg-[#3A2068]/55 px-2.5 py-1 text-[11px] font-bold text-[#EDE3FF] shadow-[0_6px_18px_rgba(40,18,74,0.35)] transition-all hover:scale-[1.02] hover:border-[#B996F2]/65 hover:bg-[#4A2A7E]/65 cursor-pointer"
+                                    >
+                                      <span className="tracking-wide">{signal.tPs[0]}</span>
+                                      {signal.tPs.length > 1 ? (
+                                        <span
+                                          dir="ltr"
+                                          className="inline-flex h-[16px] w-[16px] min-w-[16px] max-w-[16px] max-h-[16px] items-center justify-center rounded-full border border-[#CBAFFF]/55 bg-[#5A3493] font-mono text-[8px] font-extrabold leading-[1] text-center text-[#EFE7FF] shadow-sm select-none transition-colors group-hover:bg-[#6740A4] pt-[0.5px]"
+                                        >
+                                          +{signal.tPs.length - 1}
+                                        </span>
+                                      ) : null}
+                                    </button>
+                                  </PopoverTrigger>
+                                  <PopoverContent
+                                    className="w-52 rounded-2xl border border-[#C4A0FF]/30 bg-[#090516]/95 p-3.5 text-right text-white shadow-[0_18px_40px_rgba(8,3,22,0.75)] backdrop-blur-sm z-[99999]"
+                                    align="center"
+                                    side="bottom"
+                                    dir="rtl"
+                                  >
+                                    <div className="flex flex-col gap-2.5">
+                                      <p className="mb-0.5 border-b border-white/10 pb-1.5 text-xs font-semibold text-[#C9AEFF]">
+                                        حد سودهای هدف
+                                      </p>
+                                      <div className="flex flex-col gap-1.5 text-xs">
+                                        {signal.tPs.map((tpVal, tpIdx) => (
+                                          <div
+                                            key={tpIdx}
+                                            className="flex items-center justify-between gap-3 rounded-lg border border-white/8 bg-white/[0.03] px-2.5 py-1.5"
+                                            dir="ltr"
+                                          >
+                                            <span className="text-[11px] font-semibold tracking-wide text-white/55">
+                                              t{tpIdx + 1}
+                                            </span>
+                                            <span className="font-extrabold text-emerald-300">
+                                              {tpVal.toString()}
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </PopoverContent>
+                                </Popover>
+                              </div>
+                            ) : (
+                              "-"
+                            )}
                           </TableCell>
                         </TableRow>
                       ))}

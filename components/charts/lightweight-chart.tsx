@@ -563,30 +563,6 @@ export function LightweightChart({
     isDark,
   ]);
 
-  useEffect(() => {
-    if (!seriesRef.current) return;
-
-    const levels = [entryPoint, stopLoss, ...normalizedTakeProfits].filter(
-      (value): value is number => typeof value === "number" && Number.isFinite(value) && value > 0,
-    );
-
-    if (levels.length < 2) {
-      seriesRef.current.priceScale().applyOptions({ autoScale: true });
-      return;
-    }
-
-    const min = Math.min(...levels);
-    const max = Math.max(...levels);
-    const span = Math.max(max - min, max * 0.002);
-    const padding = span * 0.35;
-
-    seriesRef.current.priceScale().applyOptions({ autoScale: false });
-    seriesRef.current.priceScale().setVisibleRange({
-      from: min - padding,
-      to: max + padding,
-    });
-  }, [entryPoint, stopLoss, normalizedTakeProfits]);
-
   const handleFitContent = () => {
     chartRef.current?.timeScale().fitContent();
   };
