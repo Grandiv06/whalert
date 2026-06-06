@@ -2,13 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
 import {
   Bell,
   BellRing,
   CheckCheck,
   CheckCircle2,
-  ExternalLink,
   Info,
   Signal,
   Sparkles,
@@ -29,6 +27,30 @@ type NotificationTypeMeta = {
   icon: typeof BellRing;
 };
 
+type BackendNotificationProperties = {
+  title?: unknown;
+  Title?: unknown;
+  subject?: unknown;
+  Subject?: unknown;
+  message?: unknown;
+  Message?: unknown;
+  body?: unknown;
+  Body?: unknown;
+  text?: unknown;
+  Text?: unknown;
+  description?: unknown;
+  Description?: unknown;
+};
+
+type AbpWindow = Window & {
+  abp?: {
+    event?: {
+      on: (eventName: string, handler: () => void) => void;
+      off: (eventName: string, handler: () => void) => void;
+    };
+  };
+};
+
 const NOTIFICATION_TYPE_META: Record<string, NotificationTypeMeta> = {
   "App.SignalOutcomeDeclared": {
     title: "نتیجه سیگنال اعلام شد",
@@ -37,6 +59,15 @@ const NOTIFICATION_TYPE_META: Record<string, NotificationTypeMeta> = {
 };
 
 function getNotificationMeta(item: UserNotification): NotificationTypeMeta {
+  const backendTitle = getNotificationTitle(item);
+  if (backendTitle) {
+    const key = item.notification?.notificationName ?? "";
+    return {
+      title: backendTitle,
+      icon: NOTIFICATION_TYPE_META[key]?.icon ?? BellRing,
+    };
+  }
+
   const key = item.notification?.notificationName ?? "";
   return (
     NOTIFICATION_TYPE_META[key] ?? {
@@ -46,11 +77,34 @@ function getNotificationMeta(item: UserNotification): NotificationTypeMeta {
   );
 }
 
-function getNotificationMessage(item: UserNotification): string {
-  const message = item.notification?.data?.properties?.message;
-  if (typeof message === "string" && message.trim()) {
-    return message;
+function getStringProperty(
+  properties: BackendNotificationProperties | null | undefined,
+  keys: Array<keyof BackendNotificationProperties>,
+): string | null {
+  if (!properties) return null;
+  for (const key of keys) {
+    const value = properties[key];
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
   }
+  return null;
+}
+
+function getNotificationTitle(item: UserNotification): string | null {
+  return getStringProperty(
+    item.notification?.data?.properties as BackendNotificationProperties | null | undefined,
+    ["title", "Title", "subject", "Subject"],
+  );
+}
+
+function getNotificationMessage(item: UserNotification): string {
+  const message = getStringProperty(
+    item.notification?.data?.properties as BackendNotificationProperties | null | undefined,
+    ["message", "Message", "body", "Body", "text", "Text", "description", "Description"],
+  );
+  if (message) return message;
+
   return "برای مشاهده جزئیات بیشتر اعلان را بررسی کنید.";
 }
 
@@ -69,14 +123,7 @@ function formatNotificationDate(iso?: string): string {
     .replace(",", " - ");
 }
 
-function resolveNotificationLink(item: UserNotification): string | null {
-  const key = item.notification?.notificationName ?? "";
-  if (key === "App.SignalOutcomeDeclared") return "/dashboard/opportunities/";
-  return null;
-}
-
 export function NotificationsContent() {
-  const router = useRouter();
   const { theme } = useTheme();
   const queryClient = useQueryClient();
   const isDark = theme === "dark";
@@ -161,17 +208,18 @@ export function NotificationsContent() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const globalAbp = (window as any).abp;
+    const globalAbp = (window as AbpWindow).abp;
     if (!globalAbp?.event) return;
+    const abpEvent = globalAbp.event;
 
     const handleNotificationReceived = () => {
       queryClient.invalidateQueries({ queryKey: ["dashboard-notifications-page"] });
       queryClient.invalidateQueries({ queryKey: ["sidebar-user-notifications"] });
     };
 
-    globalAbp.event.on("abp.notifications.received", handleNotificationReceived);
+    abpEvent.on("abp.notifications.received", handleNotificationReceived);
     return () => {
-      globalAbp.event.off("abp.notifications.received", handleNotificationReceived);
+      abpEvent.off("abp.notifications.received", handleNotificationReceived);
     };
   }, [queryClient]);
 
@@ -300,7 +348,6 @@ export function NotificationsContent() {
               const isUnread = item.state === UserNotificationState._0;
               const meta = getNotificationMeta(item);
               const Icon = meta.icon;
-              const targetLink = resolveNotificationLink(item);
 
               return (
                 <article
@@ -371,21 +418,6 @@ export function NotificationsContent() {
                     </div>
 
                     <div className="flex w-full shrink-0 flex-wrap items-center gap-1.5 md:w-auto md:justify-end md:flex-nowrap">
-                      {targetLink && (
-                        <button
-                          type="button"
-                          onClick={() => router.push(targetLink)}
-                          className={cn(
-                            "inline-flex cursor-pointer items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold transition-colors",
-                            isDark
-                              ? "border-violet-300/25 bg-violet-500/10 text-violet-200 hover:bg-violet-500/20"
-                              : "border-violet-200 bg-violet-100 text-violet-700 hover:bg-violet-200",
-                          )}
-                        >
-                          <ExternalLink className="h-3.5 w-3.5" />
-                          جزئیات
-                        </button>
-                      )}
                       {isUnread && item.id ? (
                         <button
                           type="button"

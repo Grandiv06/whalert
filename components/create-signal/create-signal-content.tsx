@@ -71,6 +71,21 @@ type FetchDataFromImageFromUrlResultDto = {
   imageBase64?: string | null;
 };
 
+async function captureElementImageBase64(
+  element: HTMLElement | null,
+): Promise<string | null> {
+  if (!element) return null;
+  const { default: html2canvas } = await import("html2canvas");
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+  const canvas = await html2canvas(element, {
+    backgroundColor: null,
+    scale: Math.min(window.devicePixelRatio || 1, 2),
+    useCORS: true,
+    logging: false,
+  });
+  return canvas.toDataURL("image/png").replace(/^data:image\/png;base64,/, "");
+}
+
 export type CreateSignalServices = {
   getDynamicPrice: (
     symbol: string,
@@ -104,6 +119,7 @@ export type CreateSignalServices = {
     stopLoss: number;
     takeProfits: number[];
     description?: string;
+    imageBase64?: string | null;
   }) => PromiseLike<unknown>;
 };
 
@@ -704,6 +720,7 @@ export function CreateSignalContent({
     [],
   );
   const requestIdRef = useRef(0);
+  const manualChartCaptureRef = useRef<HTMLDivElement | null>(null);
   const [isManualChartLoading, setIsManualChartLoading] = useState(false);
   const [manualChartSelectionMode, setManualChartSelectionMode] =
     useState<ChartSelectionMode | null>(null);
@@ -1039,6 +1056,18 @@ export function CreateSignalContent({
     link.href = signalData.chartImage;
     link.download = `chart-${signalData.symbol}-${Date.now()}.png`;
     link.click();
+  };
+
+  const handleExitEditMode = () => {
+    setEntryPointDisplay("0");
+    setStopLossDisplay("0");
+    setTargetsDisplay([]);
+    setDescription("");
+    setManualChartAlert("");
+    setManualChartSelectionMode(null);
+    setSelectedManualTpIndex(null);
+    setSignalData(createDefaultSignalData(mergedConfig));
+    router.replace("/dashboard/create-signal/");
   };
 
   const handleAnalyze = async () => {
@@ -1659,6 +1688,9 @@ export function CreateSignalContent({
     setIsPublishing(true);
     setPublishError("");
     try {
+      const imageBase64 = await captureElementImageBase64(
+        manualChartCaptureRef.current,
+      );
       await services.submitSignalFromUserInput({
         direction: manualPublishPreview.side,
         symbol: manualPublishPreview.symbol,
@@ -1666,6 +1698,7 @@ export function CreateSignalContent({
         stopLoss: manualPublishPreview.stopLoss,
         takeProfits: manualPublishPreview.takeProfits,
         description: manualPublishPreview.description,
+        imageBase64,
       });
       setEntryPointDisplay("0");
       setTargetsDisplay([]);
@@ -1795,7 +1828,7 @@ export function CreateSignalContent({
         {isEditMode && creationMode === "manual" && (
           <Button
             variant="tertiary"
-            onClick={() => router.replace("/dashboard/create-signal/")}
+            onClick={handleExitEditMode}
             className={cn(
               "h-10 px-4 md:h-11 md:px-5 rounded-xl border text-sm font-semibold",
               isDark
@@ -1880,37 +1913,39 @@ export function CreateSignalContent({
 
           <div className={cn(manualGridClass, "mt-4 md:mt-8")}>
             <div className={manualChartWrapperClass}>
-              <Card className={manualChartCardClass}>
-                <LightweightChart
-                  data={manualChartData}
-                  title={manualSymbol}
-                  manualModeLabel={mergedConfig.labels.manualModeLabel}
-                  timeframeOptions={manualChartTimeframeOptions}
-                  activeTimeframe={manualTimeframe}
-                  onTimeframeChange={(timeframeValue) => {
-                    if (timeframeValue === manualTimeframe) return;
-                    setManualTimeframe(timeframeValue);
-                  }}
-                  onToggleSelectionMode={handleToggleManualChartSelection}
-                  onSelectSelectionMode={handleSelectManualChartMode}
-                  selectedTpIndex={selectedManualTpIndex}
-                  onSelectTpIndex={setSelectedManualTpIndex}
-                  onRemoveTpIndex={handleRemoveSelectedTp}
-                  loading={isManualChartLoading}
-                  entryPoint={chartEntryPoint}
-                  stopLoss={chartStopLoss}
-                  takeProfits={chartTakeProfits}
-                  side={signalData.position}
-                  selectionMode={manualChartSelectionMode}
-                  onSelectPrice={handleManualChartPriceSelect}
-                  entryColor={manualEntryColor}
-                  tpColor={manualTpColor}
-                  slColor={manualSlColor}
-                  hideToolbar={isMobileViewport}
-                  isMobile={isMobileViewport}
-                  fitContentTrigger={fitContentTrigger}
-                />
-              </Card>
+              <div ref={manualChartCaptureRef}>
+                <Card className={manualChartCardClass}>
+                  <LightweightChart
+                    data={manualChartData}
+                    title={manualSymbol}
+                    manualModeLabel={mergedConfig.labels.manualModeLabel}
+                    timeframeOptions={manualChartTimeframeOptions}
+                    activeTimeframe={manualTimeframe}
+                    onTimeframeChange={(timeframeValue) => {
+                      if (timeframeValue === manualTimeframe) return;
+                      setManualTimeframe(timeframeValue);
+                    }}
+                    onToggleSelectionMode={handleToggleManualChartSelection}
+                    onSelectSelectionMode={handleSelectManualChartMode}
+                    selectedTpIndex={selectedManualTpIndex}
+                    onSelectTpIndex={setSelectedManualTpIndex}
+                    onRemoveTpIndex={handleRemoveSelectedTp}
+                    loading={isManualChartLoading}
+                    entryPoint={chartEntryPoint}
+                    stopLoss={chartStopLoss}
+                    takeProfits={chartTakeProfits}
+                    side={signalData.position}
+                    selectionMode={manualChartSelectionMode}
+                    onSelectPrice={handleManualChartPriceSelect}
+                    entryColor={manualEntryColor}
+                    tpColor={manualTpColor}
+                    slColor={manualSlColor}
+                    hideToolbar={isMobileViewport}
+                    isMobile={isMobileViewport}
+                    fitContentTrigger={fitContentTrigger}
+                  />
+                </Card>
+              </div>
             </div>
 
             {/* Mobile Chart Toolbar */}

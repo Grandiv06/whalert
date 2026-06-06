@@ -41,6 +41,14 @@ interface NavItem {
 }
 
 type AbpWrapper<T> = { result?: T };
+type AbpWindow = Window & {
+  abp?: {
+    event?: {
+      on: (eventName: string, handler: () => void) => void;
+      off: (eventName: string, handler: () => void) => void;
+    };
+  };
+};
 
 function unwrapAbp<T>(res: unknown): T {
   const w = res as AbpWrapper<T>;
@@ -94,7 +102,6 @@ export function DashboardSidebar() {
   const [pendingNavigateTo, setPendingNavigateTo] = useState<string | null>(
     null,
   );
-  const [pendingBackNav, setPendingBackNav] = useState(false);
   const queryClient = useQueryClient();
 
   const shouldBlockNav =
@@ -113,29 +120,17 @@ export function DashboardSidebar() {
   const handleConfirmLeave = () => {
     setIsMobileMenuOpen(false);
     setLeaveModalOpen(false);
-    if (pendingBackNav) {
-      setPendingBackNav(false);
+    if (leaveModalRequest?.type === "back") {
       setLeaveModalRequest(null);
       router.back();
       router.back();
-    } else if (pendingNavigateTo) {
-      router.push(pendingNavigateTo);
+    } else if (leaveModalRequest?.target || pendingNavigateTo) {
+      const target = leaveModalRequest?.target ?? pendingNavigateTo;
+      if (target) router.push(target);
       setPendingNavigateTo(null);
+      setLeaveModalRequest(null);
     }
   };
-
-  useEffect(() => {
-    if (!leaveModalRequest) return;
-    if (leaveModalRequest.type === "back") {
-      setPendingBackNav(true);
-      setPendingNavigateTo(null);
-    } else {
-      setPendingNavigateTo(leaveModalRequest.target);
-      setPendingBackNav(false);
-    }
-    setLeaveModalOpen(true);
-    setLeaveModalRequest(null);
-  }, [leaveModalRequest, setLeaveModalRequest]);
 
   const { data: profile, isPending: profileLoading } = useQuery({
     queryKey: ["currentUserProfileForEdit"],
@@ -265,16 +260,17 @@ export function DashboardSidebar() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const globalAbp = (window as any).abp;
+    const globalAbp = (window as AbpWindow).abp;
     if (!globalAbp?.event) return;
+    const abpEvent = globalAbp.event;
 
     const handleNotificationReceived = () => {
       queryClient.invalidateQueries({ queryKey: ["sidebar-user-notifications"] });
     };
 
-    globalAbp.event.on("abp.notifications.received", handleNotificationReceived);
+    abpEvent.on("abp.notifications.received", handleNotificationReceived);
     return () => {
-      globalAbp.event.off("abp.notifications.received", handleNotificationReceived);
+      abpEvent.off("abp.notifications.received", handleNotificationReceived);
     };
   }, [queryClient]);
 
@@ -356,25 +352,6 @@ export function DashboardSidebar() {
                   : "bg-white border border-gray-200"
               }`}
             >
-              <button
-                type="button"
-                onClick={handleOpenNotificationsPage}
-                className={cn(
-                  "absolute left-3 top-3 inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border transition-all duration-200 hover:scale-105",
-                  theme === "dark"
-                    ? "border-[#B57CFF]/35 bg-[#542C85]/20 text-white hover:border-[#CBA4FF]/55 hover:bg-[#542C85]/40 hover:shadow-[0_0_18px_-6px_rgba(181,124,255,0.9)]"
-                    : "border-purple-200 bg-purple-50 text-purple-700 hover:border-purple-300 hover:bg-purple-100",
-                )}
-                aria-label="صفحه اعلان‌ها"
-                title="صفحه اعلان‌ها"
-              >
-                <Bell className="w-4 h-4" />
-                {unreadNotificationsCount > 0 && (
-                  <span className="absolute -right-1 -top-1 inline-flex min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold leading-4 text-white">
-                    {unreadNotificationsCount > 9 ? "9+" : unreadNotificationsCount}
-                  </span>
-                )}
-              </button>
               <div className="flex items-center gap-3 mb-3">
                 <div
                   className={`w-16 h-16 rounded-full border-2 overflow-hidden shrink-0 ${
@@ -468,7 +445,26 @@ export function DashboardSidebar() {
                   )}
                 </div>
               </div>
-              <div className="flex flex-row-reverse justify-end">
+              <div className="flex flex-row-reverse items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={handleOpenNotificationsPage}
+                  className={cn(
+                    "relative inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[13px] border transition-all duration-300 ease-out hover:-translate-y-0.5 hover:scale-[1.03]",
+                    theme === "dark"
+                      ? "border-white/10 bg-white/5 text-white/90 hover:border-white/20 hover:bg-white/10 hover:shadow-[0_10px_20px_-14px_rgba(181,124,255,0.35)]"
+                      : "border-purple-100 bg-purple-50 text-purple-700 hover:border-purple-200 hover:bg-purple-100 hover:shadow-[0_10px_20px_-14px_rgba(124,58,237,0.16)]",
+                  )}
+                  aria-label="صفحه اعلان‌ها"
+                  title="صفحه اعلان‌ها"
+                >
+                  <Bell className="h-3.25 w-3.25 opacity-90" strokeWidth={1.7} />
+                  {unreadNotificationsCount > 0 && (
+                    <span className="absolute -right-1 -top-1 inline-flex min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold leading-4 text-white shadow-sm">
+                      {unreadNotificationsCount > 9 ? "9+" : unreadNotificationsCount}
+                    </span>
+                  )}
+                </button>
                 <Link
                   href="/dashboard/settings/account-setting/"
                   onClick={(e) => {
@@ -483,11 +479,11 @@ export function DashboardSidebar() {
                     }
                   }}
                   className={`
-                    flex items-center justify-center gap-2 rounded-[14px] py-2 px-4 transition-all duration-200 w-full
+                    flex-1 flex items-center justify-center gap-2 rounded-[14px] py-2.5 px-4 transition-all duration-300 ease-out w-full
                     ${
                       theme === "dark"
-                        ? "bg-[#542C85] hover:bg-purple-700 text-white"
-                        : "bg-purple-600 hover:bg-purple-700 text-white"
+                        ? "bg-[#542C85] hover:bg-[#61349B] text-white shadow-[0_10px_24px_-14px_rgba(181,124,255,0.55)] hover:shadow-[0_14px_28px_-14px_rgba(181,124,255,0.7)] hover:-translate-y-0.5"
+                        : "bg-purple-600 hover:bg-purple-700 text-white shadow-[0_10px_24px_-14px_rgba(124,58,237,0.35)] hover:shadow-[0_14px_28px_-14px_rgba(124,58,237,0.45)] hover:-translate-y-0.5"
                     }
                   `}
                 >
@@ -670,11 +666,11 @@ export function DashboardSidebar() {
           </AlertDialog>
 
           <AlertDialog
-            open={leaveModalOpen}
+            open={leaveModalOpen || !!leaveModalRequest}
             onOpenChange={(open) => {
               if (!open) {
                 setPendingNavigateTo(null);
-                setPendingBackNav(false);
+                setLeaveModalRequest(null);
               }
               setLeaveModalOpen(open);
             }}
@@ -699,7 +695,7 @@ export function DashboardSidebar() {
               <AlertDialogFooter className="gap-3">
                 <button
                   onClick={handleConfirmLeave}
-                  disabled={!pendingNavigateTo && !pendingBackNav}
+                  disabled={!pendingNavigateTo && !leaveModalRequest}
                   className="inline-flex h-11 items-center justify-center rounded-xl px-6 py-2.5 text-sm font-semibold transition-all duration-200 bg-gradient-to-r from-[#6B3FA5] to-[#542C85] hover:brightness-110 text-white shadow-[0_0_24px_-8px_rgba(124,77,204,0.95)] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {isAnalyzing ? "بله، تحلیل لغو شود" : "بله، خارج می‌شوم"}

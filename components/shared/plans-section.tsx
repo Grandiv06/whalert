@@ -69,36 +69,6 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
 
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const container = e.currentTarget;
-    const firstCard = container.firstElementChild as HTMLElement;
-    if (!firstCard) return;
-    const cardWidth = firstCard.offsetWidth + 16; // card width + gap
-    const scrollLeft = Math.abs(container.scrollLeft);
-    const index = Math.round(scrollLeft / cardWidth);
-    
-    if (index >= 0 && index < 3) { // up to 3 plans typically
-      setActiveIndex(index);
-    }
-  };
-
-  const scrollToCard = (index: number) => {
-    const container = document.getElementById("plans-container");
-    if (!container) return;
-    const firstCard = container.firstElementChild as HTMLElement;
-    if (!firstCard) return;
-    const cardWidth = firstCard.offsetWidth + 16;
-    
-    const isRtl = document.dir === "rtl" || document.documentElement.dir === "rtl";
-    const targetScroll = isRtl ? -index * cardWidth : index * cardWidth;
-    
-    container.scrollTo({
-      left: targetScroll,
-      behavior: "smooth"
-    });
-    setActiveIndex(index);
-  };
-
   useEffect(() => {
     const token =
       typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
@@ -111,7 +81,7 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
       SubscriptionDashboardService.apiServicesAppSubscriptiondashboardGetactivesubscriptionplansGet(),
   });
 
-  const { data: subscriptionDetailsResponse, refetch: refetchDetails } = useQuery({
+  const { data: subscriptionDetailsResponse } = useQuery({
     queryKey: ["mySubscriptionPlanDetails-for-purchase-guard"],
     enabled: isLoggedIn,
     queryFn: () =>
@@ -160,6 +130,24 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
     ctaText: plan.callToActionText ?? "مشاهده و فعال‌سازی پلن",
     isBundle: plan.isHighlighted === true,
   }));
+  const bundlePlanIndex = plans.findIndex((plan) => plan.isBundle);
+  const desktopPlans =
+    bundlePlanIndex > -1 && plans.length >= 3
+      ? [
+          ...plans.filter((_, index) => index !== bundlePlanIndex).slice(0, 1),
+          plans[bundlePlanIndex],
+          ...plans.filter((_, index) => index !== bundlePlanIndex).slice(1),
+        ]
+      : plans;
+  const mobilePlans = [...plans].reverse();
+  const mobileInitialSlide =
+    bundlePlanIndex > -1
+      ? mobilePlans.findIndex((plan) => plan.isBundle)
+      : 0;
+
+  useEffect(() => {
+    setActiveIndex(mobileInitialSlide);
+  }, [mobileInitialSlide]);
 
   const handlePurchase = async (planId: number) => {
     if (!planId) return;
@@ -169,7 +157,7 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
         subscriptionPlanId: planId,
       });
 
-      const payload = unwrapAbp<any>(response);
+      const payload = unwrapAbp<{ checkoutUrl?: string | null }>(response);
       if (payload && typeof payload === "object" && "checkoutUrl" in payload && payload.checkoutUrl) {
         window.location.href = payload.checkoutUrl;
         return;
@@ -267,7 +255,7 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
         )}
 
         {!isLoading &&
-          plans.map((plan, index) => {
+          desktopPlans.map((plan, index) => {
             const isBundle = !!plan.isBundle;
 
             let theme = {
@@ -316,7 +304,7 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
             return (
               <Card
                 key={plan.id}
-                className={`relative overflow-hidden ${showHeader ? "rounded-4xl border h-[600px]" : "rounded-3xl border h-[600px]"} transition-all duration-300 group ${theme.cardBg} shadow-[0_16px_40px_rgba(7,2,20,0.45)] hover:shadow-[0_20px_52px_rgba(11,4,28,0.55)] flex flex-col`}
+                className={`relative overflow-hidden ${showHeader ? "rounded-4xl border h-[640px]" : "rounded-3xl border h-[640px]"} transition-all duration-300 group ${theme.cardBg} shadow-[0_16px_40px_rgba(7,2,20,0.45)] hover:shadow-[0_20px_52px_rgba(11,4,28,0.55)] flex flex-col`}
               >
                 <div className="absolute inset-0 pointer-events-none">
                   <div
@@ -332,9 +320,9 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
                 )}
 
                 <CardContent
-                  className={`${showHeader ? "p-5 md:p-6" : "p-4 md:p-4.5"} ${isBundle ? (showHeader ? "pt-14" : "pt-12") : ""} flex-1 flex flex-col`}
+                  className={`${showHeader ? "p-5 md:p-6" : "p-4 md:p-4.5"} ${isBundle ? (showHeader ? "pt-14" : "pt-12") : ""} flex-1 flex flex-col h-full`}
                 >
-                  <div className={`${showHeader ? "space-y-5" : "space-y-3.5"} flex-1 flex flex-col h-full`}>
+                  <div className={`${showHeader ? "space-y-5" : "space-y-3.5"} flex-1 flex flex-col h-full min-h-0`}>
                     <div>
                       <h3 className={`font-extrabold text-white leading-8 ${showHeader ? "text-xl" : "text-[17px]"}`}>
                         {plan.displayName}
@@ -375,23 +363,25 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
                       {plan.footerText}
                     </p>
 
-                    <Button
-                      type="button"
-                      onClick={() => openConfirm(plan)}
-                      disabled={
-                        (isLoggedIn && pendingPlanId === plan.id) ||
-                        (isLoggedIn && hasActiveSubscription)
-                      }
-                      className={`w-full cursor-pointer mt-auto ${showHeader ? "rounded-3xl h-12 text-base" : "rounded-2xl h-10 text-sm"} ${theme.button}`}
-                    >
-                      {!isLoggedIn
-                        ? "ورود به اکانت"
-                        : hasActiveSubscription
-                          ? "اشتراک فعال دارید"
-                        : pendingPlanId === plan.id
-                          ? "در حال انتقال..."
-                          : plan.ctaText}
-                    </Button>
+                    <div className="mt-auto pt-6">
+                      <Button
+                        type="button"
+                        onClick={() => openConfirm(plan)}
+                        disabled={
+                          (isLoggedIn && pendingPlanId === plan.id) ||
+                          (isLoggedIn && hasActiveSubscription)
+                        }
+                        className={`w-full cursor-pointer ${showHeader ? "rounded-3xl h-12 text-base" : "rounded-2xl h-10 text-sm"} ${theme.button}`}
+                      >
+                        {!isLoggedIn
+                          ? "ورود به اکانت"
+                          : hasActiveSubscription
+                            ? "اشتراک فعال دارید"
+                          : pendingPlanId === plan.id
+                            ? "در حال انتقال..."
+                            : plan.ctaText}
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -448,18 +438,24 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
                 height: auto;
                 display: flex;
               }
+              .plans-swiper {
+                direction: rtl;
+              }
             `}} />
             <Swiper
               modules={[Pagination]}
               spaceBetween={14}
               slidesPerView={1.12}
-              centeredSlides={true}
+              centeredSlides={false}
+              initialSlide={mobileInitialSlide}
               speed={280}
               onSlideChange={(swiper) => setActiveIndex(swiper.activeIndex)}
               pagination={{ clickable: true }}
               className="plans-swiper overflow-visible"
+              dir="rtl"
+              style={{ direction: "rtl" }}
             >
-              {plans.map((plan, index) => {
+              {mobilePlans.map((plan, index) => {
                 const isBundle = !!plan.isBundle;
                 const isActive = activeIndex === index;
 
@@ -513,7 +509,7 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
                 return (
                   <SwiperSlide key={plan.id} className="overflow-visible py-2">
                     <Card
-                      className={`relative overflow-hidden rounded-3xl border transition-[opacity,border-color] duration-200 ${theme.cardBg} w-full h-full min-h-[580px] shadow-[0_8px_18px_rgba(7,2,20,0.28)] flex flex-col will-change-transform ${mobileActiveClasses}`}
+                      className={`relative overflow-hidden rounded-3xl border transition-[opacity,border-color] duration-200 ${theme.cardBg} w-full h-full min-h-[620px] shadow-[0_8px_18px_rgba(7,2,20,0.28)] flex flex-col will-change-transform ${mobileActiveClasses}`}
                     >
                       <div className="absolute inset-0 pointer-events-none hidden sm:block">
                         <div
@@ -529,9 +525,9 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
                       )}
 
                       <CardContent
-                        className={`p-4 md:p-4.5 ${isBundle ? "pt-12" : ""} flex-1 flex flex-col`}
+                        className={`p-4 md:p-4.5 ${isBundle ? "pt-12" : ""} flex-1 flex flex-col h-full`}
                       >
-                        <div className="space-y-3.5 flex-1 flex flex-col h-full">
+                        <div className="space-y-3.5 flex-1 flex flex-col h-full min-h-0">
                           <div>
                             <h3 className="font-extrabold text-white leading-8 text-[17px]">
                               {plan.displayName}
@@ -572,23 +568,25 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
                             {plan.footerText}
                           </p>
 
-                          <Button
-                            type="button"
-                            onClick={() => openConfirm(plan)}
-                            disabled={
-                              (isLoggedIn && pendingPlanId === plan.id) ||
-                              (isLoggedIn && hasActiveSubscription)
-                            }
-                            className={`w-full cursor-pointer mt-auto rounded-2xl h-10 text-sm ${theme.button}`}
-                          >
-                            {!isLoggedIn
-                              ? "ورود به اکانت"
-                              : hasActiveSubscription
-                                ? "اشتراک فعال دارید"
-                              : pendingPlanId === plan.id
-                                ? "در حال انتقال..."
-                                : plan.ctaText}
-                          </Button>
+                          <div className="mt-auto pt-6">
+                            <Button
+                              type="button"
+                              onClick={() => openConfirm(plan)}
+                              disabled={
+                                (isLoggedIn && pendingPlanId === plan.id) ||
+                                (isLoggedIn && hasActiveSubscription)
+                              }
+                              className={`w-full cursor-pointer rounded-2xl h-10 text-sm ${theme.button}`}
+                            >
+                              {!isLoggedIn
+                                ? "ورود به اکانت"
+                                : hasActiveSubscription
+                                  ? "اشتراک فعال دارید"
+                                : pendingPlanId === plan.id
+                                  ? "در حال انتقال..."
+                                  : plan.ctaText}
+                            </Button>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>

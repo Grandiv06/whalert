@@ -1,53 +1,24 @@
 "use client";
 
-import { Fragment, useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
-import {
-  ChevronDown,
-  FileText,
-  Loader2,
-  Pencil,
-  RefreshCcw,
-  Sparkles,
-  TrendingDown,
-  TrendingUp,
-  X,
-} from "lucide-react";
+import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import { X } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { useCreateSignalLoading } from "@/contexts/create-signal-loading-context";
 import {
   AiServiceService,
   GoldPriceService,
   GoldPriceSeries,
-  MarketType,
   PriceService,
   SignalOutcomeStatus,
-  SignalSide,
   SignalProviderService,
   UserDashboardService,
-  type ShowPositionsDto,
 } from "@/lib/api/client";
 import {
   CreateSignalContent as CreateSignalContentPortable,
   type CreateSignalServices,
 } from "@/components/create-signal/create-signal-content";
 import { hasSignalCreatorPermission } from "@/lib/auth-session";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Pagination } from "@/components/ui/pagination";
 import { cn } from "@/lib/utils";
 import {
   AlertDialog,
@@ -80,18 +51,22 @@ const createSignalServices: CreateSignalServices = {
       );
 
       // Handle ABP wrapper if present
-      const candles = (Array.isArray(candlesRaw) ? candlesRaw : (candlesRaw as any)?.result) ?? [];
-      
-      console.log('App CreateSignal getDynamicPrice:', { 
-        symbol, 
-        timeframe, 
-        rawCount: (candlesRaw as any)?.length,
-        hasResult: !!(candlesRaw as any)?.result,
-        extractedCount: candles.length 
-      });
+      type GoldCandle = {
+        open?: number;
+        high?: number;
+        low?: number;
+        close?: number;
+        bucketStart?: string;
+      };
+      const wrapper = candlesRaw as { result?: GoldCandle[] } | GoldCandle[];
+      const candles = Array.isArray(wrapper)
+        ? wrapper
+        : (Array.isArray(wrapper.result)
+            ? (wrapper.result ?? [])
+            : []);
 
       return {
-        response: candles.map((candle: any) => ({
+        response: candles.map((candle) => ({
           open: candle.open,
           high: candle.high,
           low: candle.low,
@@ -114,7 +89,7 @@ const createSignalServices: CreateSignalServices = {
     AiServiceService.apiServicesAppAiserviceFetchdatafromimagefromurlPost(payload),
   submitSignalFromImageAnalysis: (payload) =>
     UserDashboardService.apiServicesAppUserdashboardSubmitsignalfromimageanalysisPost(
-      payload as any,
+      payload as never,
     ),
   submitSignalFromUserInput: (payload) =>
     UserDashboardService.apiServicesAppUserdashboardSubmitsignalfromuserinputPost(
@@ -133,49 +108,6 @@ type BadgeMeta = {
   label: string;
   className: string;
 };
-
-function formatNumber(value?: number | null): string {
-  if (value === undefined || value === null) return "-";
-  return value.toLocaleString("en-US", {
-    minimumFractionDigits: value >= 1000 ? 2 : 0,
-    maximumFractionDigits: value >= 1000 ? 2 : 4,
-  });
-}
-
-function getSignalTypeBadge(side?: SignalSide, isDark?: boolean): BadgeMeta {
-  if (side === SignalSide._1) {
-    return {
-      label: "Long",
-      className: isDark
-        ? "text-emerald-300 bg-emerald-500/15 border-emerald-400/35"
-        : "text-emerald-700 bg-emerald-100 border-emerald-200",
-    };
-  }
-  if (side === SignalSide._2) {
-    return {
-      label: "Short",
-      className: isDark
-        ? "text-rose-300 bg-rose-500/15 border-rose-400/35"
-        : "text-rose-700 bg-rose-100 border-rose-200",
-    };
-  }
-  return {
-    label: "نامشخص",
-    className: isDark
-      ? "text-white/70 bg-white/10 border-white/15"
-      : "text-gray-700 bg-gray-100 border-gray-200",
-  };
-}
-
-function getSignalTypeText(side?: SignalSide): { label: string; className: string } {
-  if (side === SignalSide._1) {
-    return { label: "Long", className: "text-emerald-400 font-semibold" };
-  }
-  if (side === SignalSide._2) {
-    return { label: "Short", className: "text-rose-400 font-semibold" };
-  }
-  return { label: "-", className: "text-white/45" };
-}
 
 function getOutcomeStatusBadge(
   outcomeStatus?: SignalOutcomeStatus,
@@ -213,50 +145,6 @@ function getOutcomeStatusBadge(
   };
 }
 
-function getOutcomeStatusText(outcomeStatus?: SignalOutcomeStatus): {
-  label: string;
-  className: string;
-} {
-  if (outcomeStatus === SignalOutcomeStatus._1) {
-    return { label: "TP", className: "text-emerald-400 font-semibold" };
-  }
-  if (outcomeStatus === SignalOutcomeStatus._2) {
-    return { label: "SL", className: "text-rose-400 font-semibold" };
-  }
-  if (outcomeStatus === SignalOutcomeStatus._3) {
-    return { label: "Closed", className: "text-white/60 font-semibold" };
-  }
-  return { label: "Active", className: "text-violet-300 font-semibold" };
-}
-
-function isFinalizedSignal(outcomeStatus?: SignalOutcomeStatus): boolean {
-  return (
-    outcomeStatus === SignalOutcomeStatus._1 ||
-    outcomeStatus === SignalOutcomeStatus._2 ||
-    outcomeStatus === SignalOutcomeStatus._3
-  );
-}
-
-function getVisibleAndHiddenTpValues(
-  takeProfits?: Array<number> | null,
-  visibleCount = 2,
-): { visible: number[]; hidden: number[] } {
-  if (!Array.isArray(takeProfits) || takeProfits.length === 0) {
-    return { visible: [], hidden: [] };
-  }
-  return {
-    visible: takeProfits.slice(0, visibleCount),
-    hidden: takeProfits.slice(visibleCount),
-  };
-}
-
-function getMarketLabel(market?: MarketType | null): string | null {
-  if (market === MarketType._1) return "CRYPTO";
-  if (market === MarketType._0) return "FOREX";
-  if (market === MarketType._2) return "GOLD";
-  return null;
-}
-
 type CreateSignalContentPageProps = {
   initialManualEditDraft?: {
     symbolApi?: string;
@@ -272,7 +160,6 @@ export function CreateSignalContent({
   initialManualEditDraft = null,
 }: CreateSignalContentPageProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const { theme } = useTheme();
   const { setAnalyzing, setLeaveModalRequest, setManualDirty } =
     useCreateSignalLoading();
@@ -280,84 +167,10 @@ export function CreateSignalContent({
   const [isDeclaringStatus, setIsDeclaringStatus] = useState(false);
   const [pendingOutcomeStatus, setPendingOutcomeStatus] =
     useState<SignalOutcomeStatus | null>(null);
-  const [actionFeedback, setActionFeedback] = useState<{
-    message: string;
-    kind: "success" | "error";
-  } | null>(null);
   const [statusModal, setStatusModal] = useState<{
     tradingSignalId: number;
     symbol: string;
   } | null>(null);
-  const [editingSignalId, setEditingSignalId] = useState<number | null>(null);
-  const [expandedRows, setExpandedRows] = useState<Record<number, boolean>>({});
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
-
-  const {
-    data: mySignalsPayload,
-    isLoading: mySignalsLoading,
-    error: mySignalsError,
-    refetch: refetchMySignals,
-  } = useQuery({
-    queryKey: ["create-signal-my-created-signals", currentPage, pageSize],
-    enabled: canCreateSignal,
-    queryFn: async () => {
-      const skipCount = (currentPage - 1) * pageSize;
-      const res =
-        await UserDashboardService.apiServicesAppUserdashboardGetmycreatedsignalsPost({
-          maxResultCount: pageSize,
-          skipCount,
-        });
-      const payload = (
-        res as {
-          result?: { items?: ShowPositionsDto[] | null; totalCount?: number | null };
-          items?: ShowPositionsDto[] | null;
-          totalCount?: number | null;
-        }
-      ).result ?? res;
-      return {
-        items: payload.items ?? [],
-        totalCount: payload.totalCount ?? 0,
-      };
-    },
-    placeholderData: (previousData) => previousData,
-  });
-
-  const myCreatedSignals = mySignalsPayload?.items ?? [];
-  const totalSignals = mySignalsPayload?.totalCount ?? 0;
-  const totalPages = Math.max(1, Math.ceil(totalSignals / pageSize));
-
-  useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(totalPages);
-    }
-  }, [currentPage, totalPages]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-    setExpandedRows({});
-  }, [pageSize]);
-
-  useEffect(() => {
-    setExpandedRows({});
-  }, [currentPage]);
-
-  useEffect(() => {
-    if (myCreatedSignals.length === 0 && totalSignals > 0 && currentPage > 1) {
-      setCurrentPage((prev) => Math.max(1, prev - 1));
-    }
-  }, [myCreatedSignals.length, totalSignals, currentPage]);
-
-  const mySignalsStatus =
-    typeof mySignalsError === "object" && mySignalsError && "status" in mySignalsError
-      ? Number((mySignalsError as { status?: number }).status)
-      : null;
-
-  useEffect(() => {
-    if (mySignalsStatus === 401 || mySignalsStatus === 403) {
-      router.replace("/dashboard/opportunities/");
-    }
-  }, [mySignalsStatus, router]);
 
   useEffect(() => {
     setPendingOutcomeStatus(null);
@@ -366,95 +179,16 @@ export function CreateSignalContent({
   const handleDeclareOutcome = async (outcomeStatus: SignalOutcomeStatus) => {
     if (!statusModal?.tradingSignalId || isDeclaringStatus) return;
     setIsDeclaringStatus(true);
-    setActionFeedback(null);
     try {
       await SignalProviderService.apiServicesAppSignalproviderDeclaresignaloutcomePost({
         tradingSignalId: statusModal.tradingSignalId,
         outcomeStatus,
       });
-      setActionFeedback({
-        message: "وضعیت سیگنال با موفقیت ثبت شد.",
-        kind: "success",
-      });
       setPendingOutcomeStatus(null);
       setStatusModal(null);
-      await refetchMySignals();
     } catch {
-      setActionFeedback({
-        message: "ثبت وضعیت سیگنال ناموفق بود. لطفاً دوباره تلاش کنید.",
-        kind: "error",
-      });
     } finally {
       setIsDeclaringStatus(false);
-    }
-  };
-
-  const handleOpenEditSignal = async (
-    tradingSignalId?: number,
-    fallbackSymbol?: string | null,
-  ) => {
-    if (!tradingSignalId || editingSignalId !== null) return;
-    setEditingSignalId(tradingSignalId);
-    setActionFeedback(null);
-    try {
-      const res = await SignalProviderService.apiServicesAppSignalproviderGetmysignalforeditPost(
-        { tradingSignalId },
-      );
-      const payload = (
-        res as {
-          result?: {
-            tradingSignalId?: number;
-            symbol?: string | null;
-            side?: SignalSide;
-            entryPrice?: number;
-            stopLoss?: number;
-            takeProfits?: number[] | null;
-            description?: string | null;
-            pictureUrl?: string | null;
-            isEditable?: boolean;
-          };
-          tradingSignalId?: number;
-          symbol?: string | null;
-          side?: SignalSide;
-          entryPrice?: number;
-          stopLoss?: number;
-          takeProfits?: number[] | null;
-          description?: string | null;
-          pictureUrl?: string | null;
-          isEditable?: boolean;
-        }
-      ).result ?? res;
-
-      if (payload.isEditable === false) {
-        setActionFeedback({
-          message: "این سیگنال دیگر قابل ویرایش نیست.",
-          kind: "error",
-        });
-        return;
-      }
-
-      const params = new URLSearchParams();
-      params.set("edit", "1");
-      params.set("symbol", payload.symbol ?? fallbackSymbol ?? "");
-      params.set("side", payload.side === SignalSide._2 ? "SHORT" : "LONG");
-      if (payload.entryPrice != null) params.set("entry", String(payload.entryPrice));
-      if (payload.stopLoss != null) params.set("stopLoss", String(payload.stopLoss));
-      if (Array.isArray(payload.takeProfits) && payload.takeProfits.length > 0) {
-        params.set("takeProfits", payload.takeProfits.join(","));
-      }
-      if (payload.description) params.set("description", payload.description);
-
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      window.setTimeout(() => {
-        router.push(`/dashboard/create-signal/?${params.toString()}`);
-      }, 220);
-    } catch {
-      setActionFeedback({
-        message: "دریافت اطلاعات سیگنال برای ویرایش ناموفق بود.",
-        kind: "error",
-      });
-    } finally {
-      setEditingSignalId(null);
     }
   };
 
@@ -469,633 +203,10 @@ export function CreateSignalContent({
         onAnalyzingChange={setAnalyzing}
         onManualDirtyChange={setManualDirty}
         onLeaveModalRequest={setLeaveModalRequest}
-        onSignalCreated={async () => {
-          await refetchMySignals();
-        }}
         services={createSignalServices}
         config={createSignalConfig}
         initialManualEditDraft={initialManualEditDraft}
       />
-
-      <section
-        className={cn(
-          "relative overflow-hidden rounded-[28px] border p-4 md:p-6 shadow-[0_20px_70px_-25px_rgba(84,44,133,0.85)]",
-          isDark
-            ? "bg-gradient-to-br from-[#09031A]/92 via-[#100426]/88 to-[#060114]/92 border-[#C09CFF]/18 text-white backdrop-blur-xl"
-            : "bg-white border-gray-200 text-gray-900",
-        )}
-        dir="rtl"
-      >
-        {isDark && (
-          <div className="pointer-events-none absolute -top-24 -left-8 h-60 w-60 rounded-full bg-[#7A3FE0]/18 blur-3xl" />
-        )}
-        {isDark && (
-          <div className="pointer-events-none absolute -bottom-16 -right-10 h-48 w-48 rounded-full bg-[#3D1D77]/30 blur-2xl" />
-        )}
-
-        <div className="relative z-10 mb-5 flex items-start justify-between gap-4 pb-4">
-          <div>
-            <h2 className="text-lg md:text-xl font-semibold tracking-tight">سیگنال‌های من</h2>
-            <p className={cn("mt-1 text-xs md:text-sm", isDark ? "text-white/65" : "text-gray-600")}>
-              لیست سیگنال‌هایی که شما ایجاد کرده‌اید
-            </p>
-          </div>
-          <span
-            className={cn(
-              "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold",
-              isDark
-                ? "border-violet-300/25 bg-violet-500/15 text-violet-100"
-                : "border-violet-200 bg-violet-100 text-violet-700",
-            )}
-          >
-            <Sparkles className="h-3.5 w-3.5" />
-            {totalSignals} سیگنال
-          </span>
-        </div>
-
-        {actionFeedback && (
-          <div
-            className={cn(
-              "mb-4 rounded-xl border px-3 py-2 text-xs md:text-sm",
-              actionFeedback.kind === "success"
-                ? isDark
-                  ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-200"
-                  : "border-emerald-200 bg-emerald-50 text-emerald-700"
-                : isDark
-                  ? "border-rose-400/30 bg-rose-500/10 text-rose-200"
-                  : "border-rose-200 bg-rose-50 text-rose-700",
-            )}
-          >
-            {actionFeedback.message}
-          </div>
-        )}
-
-        {mySignalsLoading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 5 }).map((_, index) => (
-              <div
-                key={`skeleton-${index}`}
-                className={cn(
-                  "rounded-2xl border p-3 md:p-4",
-                  isDark ? "border-white/10 bg-white/[0.03]" : "border-gray-200 bg-gray-50",
-                )}
-              >
-                <div className="hidden md:grid grid-cols-12 gap-4 items-center">
-                  <Skeleton className="h-4 col-span-2 bg-white/10" />
-                  <Skeleton className="h-6 col-span-2 bg-white/10" />
-                  <Skeleton className="h-4 col-span-2 bg-white/10" />
-                  <Skeleton className="h-4 col-span-2 bg-white/10" />
-                  <Skeleton className="h-4 col-span-2 bg-white/10" />
-                  <Skeleton className="h-8 col-span-2 bg-white/10" />
-                </div>
-                <div className="md:hidden space-y-2">
-                  <Skeleton className="h-4 w-28 bg-white/10" />
-                  <Skeleton className="h-6 w-20 bg-white/10" />
-                  <Skeleton className="h-3 w-full bg-white/10" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : mySignalsError ? (
-          <div
-            className={cn(
-              "rounded-2xl border px-4 py-5 text-sm",
-              isDark
-                ? "border-rose-400/25 bg-rose-500/10 text-rose-200"
-                : "border-rose-200 bg-rose-50 text-rose-700",
-            )}
-          >
-            عدم دسترسی به سیگنال‌های ایجاد شده. لطفاً اشتراک فعال خود را بررسی کنید.
-          </div>
-        ) : myCreatedSignals.length === 0 ? (
-          <div
-            className={cn(
-              "rounded-2xl border px-4 py-12 text-center",
-              isDark
-                ? "border-white/10 bg-white/[0.02]"
-                : "border-gray-200 bg-gray-50",
-            )}
-          >
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-violet-300/25 bg-violet-500/15">
-              <TrendingUp className="h-7 w-7 text-violet-200" />
-            </div>
-            <p className="text-base font-semibold">هنوز سیگنالی ایجاد نکرده‌اید</p>
-            <p className={cn("mt-1 text-sm", isDark ? "text-white/60" : "text-gray-600")}>
-              بعد از ایجاد اولین سیگنال، اینجا نمایش داده می‌شود
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <div
-              className={cn(
-                "hidden md:block overflow-hidden rounded-2xl border",
-                isDark ? "border-white/10 bg-white/[0.02]" : "border-gray-200 bg-white",
-              )}
-            >
-              <div className="overflow-x-auto">
-              <Table className="min-w-[1120px] border-collapse text-xs lg:text-sm">
-                <TableHeader
-                  className={cn(
-                    "sticky top-0 z-10 overflow-hidden rounded-t-2xl backdrop-blur-md",
-                    isDark ? "bg-[#12072A]/95 text-white/75" : "bg-gray-50 text-gray-600",
-                  )}
-                >
-                  <TableRow className="h-14 border-b border-white/10">
-                    <TableHead className="rounded-tr-2xl text-right px-4 py-4 font-medium">نماد</TableHead>
-                    <TableHead className="text-right px-4 py-4 font-medium">نوع</TableHead>
-                    <TableHead className="text-right px-4 py-4 font-medium">Entry</TableHead>
-                    <TableHead className="text-right px-4 py-4 font-medium">Take Profit</TableHead>
-                    <TableHead className="text-right px-4 py-4 font-medium">Stop Loss</TableHead>
-                    <TableHead className="text-right px-4 py-4 font-medium">وضعیت</TableHead>
-                    <TableHead className="text-right px-4 py-4 font-medium">تاریخ ایجاد</TableHead>
-                    <TableHead className="text-right px-4 py-4 font-medium">توضیحات</TableHead>
-                    <TableHead className="rounded-tl-2xl text-right px-4 py-4 font-medium">اقدامات</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {myCreatedSignals.map((item, index) => {
-                    const typeText = getSignalTypeText(item.side);
-                    const statusText = getOutcomeStatusText(item.outcomeStatus);
-                    const finalized = isFinalizedSignal(item.outcomeStatus);
-                    const tpSplit = getVisibleAndHiddenTpValues(item.tPs, 1);
-                    const marketLabel = getMarketLabel(item.market);
-                    return (
-                      <Fragment key={item.tradingSignalId ?? `row-${index}`}>
-                      <TableRow
-                        className={cn(
-                          "border-b border-white/10 transition-colors",
-                          index % 2 === 0
-                            ? isDark
-                              ? "bg-white/[0.015]"
-                              : "bg-gray-50/70"
-                            : "bg-transparent",
-                          isDark ? "hover:bg-violet-500/10" : "hover:bg-violet-50",
-                        )}
-                      >
-                        <TableCell className="px-4 py-3">
-                          <div className={cn("font-semibold", isDark ? "text-white" : "text-gray-900")}>
-                            {item.symbol ?? "-"}
-                          </div>
-                          {marketLabel && (
-                            <div className={cn("mt-0.5 text-[11px]", isDark ? "text-white/55" : "text-gray-500")}>
-                              {marketLabel}
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell className="px-4 py-3" dir="ltr">
-                          <span className={typeText.className}>{typeText.label}</span>
-                        </TableCell>
-                        <TableCell className={cn("px-4 py-3 font-medium tabular-nums", isDark ? "text-white/90" : "text-gray-900")} dir="ltr">
-                          {formatNumber(item.entryPrice)}
-                        </TableCell>
-                        <TableCell className="px-4 py-3">
-                          <div className="flex flex-wrap gap-1.5">
-                            {tpSplit.visible.length > 0 ? (
-                              tpSplit.hidden.length > 0 ? (
-                                <Popover>
-                                  <PopoverTrigger asChild>
-                                    <button
-                                      type="button"
-                                      className={cn(
-                                        "inline-flex cursor-pointer items-center gap-1.5 rounded-2xl border px-2.5 py-1 text-[11px] font-semibold transition-colors",
-                                        isDark
-                                          ? "border-emerald-400/25 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20"
-                                          : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100",
-                                      )}
-                                    >
-                                      <span
-                                        dir="ltr"
-                                        className={cn(
-                                          "relative -mr-1 inline-grid h-5 w-6 place-items-center rounded-full border p-0 text-center text-[10px] font-bold leading-none tabular-nums",
-                                          isDark
-                                            ? "border-emerald-400/25 bg-emerald-500/10 text-emerald-200"
-                                            : "border-emerald-200 bg-emerald-50 text-emerald-700",
-                                        )}
-                                      >
-                                        +{tpSplit.hidden.length}
-                                      </span>
-                                      <span className="tabular-nums" dir="ltr">
-                                        {formatNumber(tpSplit.visible[0])}
-                                      </span>
-                                    </button>
-                                  </PopoverTrigger>
-                                  <PopoverContent
-                                    align="start"
-                                    side="bottom"
-                                    dir="rtl"
-                                    className={cn(
-                                      "w-52 rounded-2xl p-3 text-right shadow-[0_18px_40px_rgba(8,3,22,0.75)]",
-                                      isDark
-                                        ? "border border-[#C4A0FF]/30 bg-[#090516]/95 text-white"
-                                        : "border border-gray-200 bg-white text-gray-900",
-                                    )}
-                                  >
-                                    <div className="flex flex-col gap-2.5">
-                                      <p className={cn("mb-0.5 border-b pb-1.5 text-xs font-semibold", isDark ? "border-white/10 text-[#C9AEFF]" : "border-gray-200 text-violet-700")}>
-                                        حد سودهای هدف
-                                      </p>
-                                      <div className="flex flex-col gap-1.5 text-xs">
-                                        {(item.tPs ?? []).map((tpVal, tpIdx) => (
-                                          <div
-                                            key={`${item.tradingSignalId}-tp-list-${tpIdx}`}
-                                            className={cn(
-                                              "flex items-center justify-between gap-3 rounded-lg px-2.5 py-1.5",
-                                              isDark
-                                                ? "border border-white/8 bg-white/[0.03]"
-                                                : "border border-gray-200 bg-gray-50",
-                                            )}
-                                            dir="ltr"
-                                          >
-                                            <span className={cn("text-[11px] font-semibold tracking-wide", isDark ? "text-white/55" : "text-gray-500")}>
-                                              t{tpIdx + 1}
-                                            </span>
-                                            <span className={cn("font-extrabold", isDark ? "text-emerald-300" : "text-emerald-700")}>
-                                              {formatNumber(tpVal)}
-                                            </span>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  </PopoverContent>
-                                </Popover>
-                              ) : (
-                                <span
-                                  className={cn(
-                                    "inline-flex items-center gap-1.5 rounded-2xl border px-2.5 py-1 text-[11px] font-semibold",
-                                    isDark
-                                      ? "border-emerald-400/25 bg-emerald-500/10 text-emerald-200"
-                                      : "border-emerald-200 bg-emerald-50 text-emerald-700",
-                                  )}
-                                >
-                                  <span className="tabular-nums" dir="ltr">
-                                    {formatNumber(tpSplit.visible[0])}
-                                  </span>
-                                </span>
-                              )
-                            ) : (
-                              <span className={isDark ? "text-white/45" : "text-gray-400"}>-</span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="px-4 py-3">
-                          <div
-                            className={cn(
-                              "inline-flex items-center gap-1.5 rounded-lg border px-2 py-1 text-[11px] font-semibold tabular-nums",
-                              isDark
-                                ? "border-rose-400/20 bg-rose-500/10 text-rose-200"
-                                : "border-rose-200 bg-rose-50 text-rose-700",
-                            )}
-                            dir="ltr"
-                          >
-                            <TrendingDown className="h-3.5 w-3.5" />
-                            {formatNumber(item.sl)}
-                          </div>
-                        </TableCell>
-                        <TableCell className="px-4 py-3" dir="ltr">
-                          <span className={statusText.className}>{statusText.label}</span>
-                        </TableCell>
-                        <TableCell className={cn("px-4 py-3 text-[12px]", isDark ? "text-white/75" : "text-gray-600")}>
-                          {item.datePersian ?? item.date ?? "-"}
-                        </TableCell>
-                        <TableCell className={cn("px-4 py-3 text-[12px]", isDark ? "text-white/70" : "text-gray-600")}>
-                          {item.description?.trim() ? (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                item.tradingSignalId &&
-                                setExpandedRows((prev) => ({
-                                  ...prev,
-                                  [item.tradingSignalId as number]: !prev[item.tradingSignalId as number],
-                                }))
-                              }
-                              className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#A87FF3]/25 bg-[#A87FF3]/10 px-2.5 py-1.5 text-xs font-semibold text-[#A87FF3] transition-all hover:bg-[#A87FF3]/20 hover:text-[#c4a6fc]"
-                            >
-                              <FileText className="h-3.5 w-3.5" />
-                              <span>
-                                {item.tradingSignalId && expandedRows[item.tradingSignalId]
-                                  ? "بستن"
-                                  : "مشاهده"}
-                              </span>
-                              <ChevronDown
-                                className={cn(
-                                  "h-4 w-4 transition-transform duration-200",
-                                  item.tradingSignalId && expandedRows[item.tradingSignalId]
-                                    ? "rotate-180"
-                                    : "",
-                                )}
-                              />
-                            </button>
-                          ) : (
-                            <span className="text-white/45 text-[11px]">بدون توضیح</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="px-4 py-3">
-                          <div className="flex items-center gap-1.5">
-                            <button
-                              type="button"
-                              disabled={finalized || !item.tradingSignalId || editingSignalId !== null}
-                              onClick={() =>
-                                handleOpenEditSignal(item.tradingSignalId, item.symbol)
-                              }
-                              className={cn(
-                                "inline-flex cursor-pointer items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold transition-colors",
-                                finalized || !item.tradingSignalId
-                                  ? "cursor-not-allowed opacity-45 border-white/15 text-white/50"
-                                  : isDark
-                                    ? "border-emerald-300/25 bg-emerald-500/10 text-emerald-100 hover:bg-emerald-500/20"
-                                    : "border-emerald-200 bg-emerald-100 text-emerald-700 hover:bg-emerald-200",
-                              )}
-                              title={finalized ? "برای سیگنال نهایی شده امکان ویرایش وجود ندارد" : "ویرایش سیگنال"}
-                            >
-                              {editingSignalId === item.tradingSignalId ? (
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              ) : (
-                                <Pencil className="h-3.5 w-3.5" />
-                              )}
-                              {editingSignalId === item.tradingSignalId ? "در حال بارگذاری" : "ویرایش"}
-                            </button>
-                            <button
-                              type="button"
-                              disabled={finalized || !item.tradingSignalId}
-                              onClick={() =>
-                                item.tradingSignalId &&
-                                setStatusModal({
-                                  tradingSignalId: item.tradingSignalId,
-                                  symbol: item.symbol ?? "-",
-                                })
-                              }
-                              title={
-                                finalized
-                                  ? "وضعیت سیگنال نهایی شده است"
-                                  : "ثبت وضعیت نتیجه سیگنال"
-                              }
-                              className={cn(
-                                "inline-flex cursor-pointer items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold transition-colors",
-                                finalized || !item.tradingSignalId
-                                  ? "cursor-not-allowed opacity-45 border-white/15 text-white/50"
-                                  : isDark
-                                    ? "border-sky-300/25 bg-sky-500/10 text-sky-100 hover:bg-sky-500/20"
-                                    : "border-sky-200 bg-sky-100 text-sky-700 hover:bg-sky-200",
-                              )}
-                            >
-                              <RefreshCcw className="h-3.5 w-3.5" />
-                              تغییر وضعیت
-                            </button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                      {item.tradingSignalId && expandedRows[item.tradingSignalId] && item.description?.trim() && (
-                        <TableRow className="border-b border-white/5 bg-[#1A1036]/10 transition-all dark:hover:bg-[#1A1036]/10">
-                          <TableCell colSpan={9} className="p-4 text-right">
-                            <div className="rounded-xl border border-white/5 bg-[#02000B]/50 p-4 text-sm text-white/80 shadow-inner">
-                              <div className="mb-1.5 flex items-center gap-1.5 text-xs font-bold text-[#A87FF3]">
-                                <FileText className="h-3.5 w-3.5" />
-                                توضیحات موقعیت:
-                              </div>
-                              <p className="whitespace-pre-wrap leading-relaxed text-white/90 font-medium">
-                                {item.description}
-                              </p>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                      </Fragment>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-              </div>
-            </div>
-
-            <div className="md:hidden space-y-3">
-              {myCreatedSignals.map((item, index) => {
-                const typeBadge = getSignalTypeBadge(item.side, isDark);
-                const statusBadge = getOutcomeStatusBadge(item.outcomeStatus, isDark);
-                const finalized = isFinalizedSignal(item.outcomeStatus);
-                const tpSplit = getVisibleAndHiddenTpValues(item.tPs, 1);
-                return (
-                  <article
-                    key={item.tradingSignalId ?? `card-${index}`}
-                    className={cn(
-                      "rounded-2xl border p-3.5",
-                      isDark ? "border-white/10 bg-white/[0.03]" : "border-gray-200 bg-white",
-                    )}
-                  >
-                    <div className="mb-3 flex items-start justify-between gap-2">
-                      <div>
-                        <p className={cn("font-semibold", isDark ? "text-white" : "text-gray-900")}>
-                          {item.symbol ?? "-"}
-                        </p>
-                        <p className={cn("text-[11px]", isDark ? "text-white/55" : "text-gray-500")}>
-                          {item.datePersian ?? item.date ?? "-"}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className={cn("inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold", typeBadge.className)}>
-                          {typeBadge.label}
-                        </span>
-                        <span className={cn("inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold", statusBadge.className)}>
-                          {statusBadge.label}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 text-[12px]">
-                      <div className={cn("rounded-xl border px-2.5 py-2", isDark ? "border-white/10 bg-white/[0.02]" : "border-gray-200 bg-gray-50")}>
-                        <p className={cn("mb-1", isDark ? "text-white/55" : "text-gray-500")}>Entry</p>
-                        <p className={cn("font-semibold tabular-nums", isDark ? "text-white" : "text-gray-900")} dir="ltr">
-                          {formatNumber(item.entryPrice)}
-                        </p>
-                      </div>
-                      <div className={cn("rounded-xl border px-2.5 py-2", isDark ? "border-rose-400/20 bg-rose-500/10" : "border-rose-200 bg-rose-50")}>
-                        <p className={cn("mb-1", isDark ? "text-rose-200/80" : "text-rose-700/80")}>SL</p>
-                        <p className={cn("font-semibold tabular-nums", isDark ? "text-rose-100" : "text-rose-700")} dir="ltr">
-                          {formatNumber(item.sl)}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="mt-3">
-                      <p className={cn("mb-1.5 text-[11px]", isDark ? "text-white/55" : "text-gray-500")}>Take Profit</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {tpSplit.visible.length > 0 ? (
-                          tpSplit.hidden.length > 0 ? (
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <button
-                                  type="button"
-                                  className={cn(
-                                    "inline-flex cursor-pointer items-center gap-1.5 rounded-2xl border px-2.5 py-1 text-[11px] font-semibold transition-colors",
-                                    isDark
-                                      ? "border-emerald-400/25 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20"
-                                      : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100",
-                                  )}
-                                >
-                                  <span
-                                    dir="ltr"
-                                    className={cn(
-                                      "relative -mr-1 inline-grid h-5 w-6 place-items-center rounded-full border p-0 text-center text-[10px] font-bold leading-none tabular-nums",
-                                      isDark
-                                        ? "border-emerald-400/25 bg-emerald-500/10 text-emerald-200"
-                                        : "border-emerald-200 bg-emerald-50 text-emerald-700",
-                                    )}
-                                  >
-                                    +{tpSplit.hidden.length}
-                                  </span>
-                                  <span className="tabular-nums" dir="ltr">
-                                    {formatNumber(tpSplit.visible[0])}
-                                  </span>
-                                </button>
-                              </PopoverTrigger>
-                              <PopoverContent
-                                align="start"
-                                side="bottom"
-                                dir="rtl"
-                                className={cn(
-                                  "w-52 rounded-2xl p-3 text-right shadow-[0_18px_40px_rgba(8,3,22,0.75)]",
-                                  isDark
-                                    ? "border border-[#C4A0FF]/30 bg-[#090516]/95 text-white"
-                                    : "border border-gray-200 bg-white text-gray-900",
-                                )}
-                              >
-                                <div className="flex flex-col gap-2.5">
-                                  <p className={cn("mb-0.5 border-b pb-1.5 text-xs font-semibold", isDark ? "border-white/10 text-[#C9AEFF]" : "border-gray-200 text-violet-700")}>
-                                    حد سودهای هدف
-                                  </p>
-                                  <div className="flex flex-col gap-1.5 text-xs">
-                                    {(item.tPs ?? []).map((tpVal, tpIdx) => (
-                                      <div
-                                        key={`${item.tradingSignalId}-mobile-tp-list-${tpIdx}`}
-                                        className={cn(
-                                          "flex items-center justify-between gap-3 rounded-lg px-2.5 py-1.5",
-                                          isDark
-                                            ? "border border-white/8 bg-white/[0.03]"
-                                            : "border border-gray-200 bg-gray-50",
-                                        )}
-                                        dir="ltr"
-                                      >
-                                        <span className={cn("text-[11px] font-semibold tracking-wide", isDark ? "text-white/55" : "text-gray-500")}>
-                                          t{tpIdx + 1}
-                                        </span>
-                                        <span className={cn("font-extrabold", isDark ? "text-emerald-300" : "text-emerald-700")}>
-                                          {formatNumber(tpVal)}
-                                        </span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              </PopoverContent>
-                            </Popover>
-                          ) : (
-                            <span
-                              className={cn(
-                                "inline-flex items-center gap-1.5 rounded-2xl border px-2.5 py-1 text-[11px] font-semibold",
-                                isDark
-                                  ? "border-emerald-400/25 bg-emerald-500/10 text-emerald-200"
-                                  : "border-emerald-200 bg-emerald-50 text-emerald-700",
-                              )}
-                            >
-                              <span className="tabular-nums" dir="ltr">
-                                {formatNumber(tpSplit.visible[0])}
-                              </span>
-                            </span>
-                          )
-                        ) : (
-                          <span className={cn("text-[12px]", isDark ? "text-white/45" : "text-gray-400")}>-</span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className={cn("mt-3 rounded-xl border px-2.5 py-2", isDark ? "border-white/10 bg-white/[0.02]" : "border-gray-200 bg-gray-50")}>
-                      <p className={cn("mb-1 text-[11px]", isDark ? "text-white/55" : "text-gray-500")}>توضیحات</p>
-                      <p className={cn("text-[12px] leading-5", isDark ? "text-white/80" : "text-gray-700")}>
-                        {item.description?.trim() || "-"}
-                      </p>
-                    </div>
-
-                    <div className="mt-3 flex flex-wrap gap-1.5">
-                      <button
-                        type="button"
-                        disabled={finalized || !item.tradingSignalId || editingSignalId !== null}
-                        onClick={() =>
-                          handleOpenEditSignal(item.tradingSignalId, item.symbol)
-                        }
-                        className={cn(
-                          "inline-flex cursor-pointer items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold",
-                          finalized || !item.tradingSignalId
-                            ? "cursor-not-allowed opacity-45 border-white/15 text-white/50"
-                            : isDark
-                              ? "border-emerald-300/25 bg-emerald-500/10 text-emerald-100"
-                              : "border-emerald-200 bg-emerald-100 text-emerald-700",
-                        )}
-                        title={finalized ? "برای سیگنال نهایی شده امکان ویرایش وجود ندارد" : "ویرایش سیگنال"}
-                      >
-                        {editingSignalId === item.tradingSignalId ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <Pencil className="h-3.5 w-3.5" />
-                        )}
-                        {editingSignalId === item.tradingSignalId ? "در حال بارگذاری" : "ویرایش"}
-                      </button>
-                      <button
-                        type="button"
-                        disabled={finalized || !item.tradingSignalId}
-                        onClick={() =>
-                          item.tradingSignalId &&
-                          setStatusModal({
-                            tradingSignalId: item.tradingSignalId,
-                            symbol: item.symbol ?? "-",
-                          })
-                        }
-                        title={
-                          finalized
-                            ? "وضعیت سیگنال نهایی شده است"
-                            : "ثبت وضعیت نتیجه سیگنال"
-                        }
-                        className={cn(
-                          "inline-flex cursor-pointer items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold",
-                          finalized || !item.tradingSignalId
-                            ? "cursor-not-allowed opacity-45 border-white/15 text-white/50"
-                            : isDark
-                              ? "border-sky-300/25 bg-sky-500/10 text-sky-100 hover:bg-sky-500/20"
-                              : "border-sky-200 bg-sky-100 text-sky-700 hover:bg-sky-200",
-                        )}
-                      >
-                        <RefreshCcw className="h-3.5 w-3.5" />
-                        تغییر وضعیت
-                      </button>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-
-            {totalSignals > 0 && (
-              <div
-                className={cn(
-                  "flex items-center justify-between gap-4 rounded-xl border px-4 py-3 md:px-6 md:py-4",
-                  isDark
-                    ? "border-white/10 bg-white/[0.02]"
-                    : "border-gray-200 bg-gray-50",
-                )}
-              >
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  pageSize={pageSize}
-                  totalItems={totalSignals}
-                  pageSizeOptions={[10, 20, 50]}
-                  onPageChange={(page) => setCurrentPage(page)}
-                  onPageSizeChange={(size) => {
-                    setPageSize(size);
-                    setCurrentPage(1);
-                  }}
-                />
-              </div>
-            )}
-          </div>
-        )}
-      </section>
 
       <AlertDialog
         open={!!statusModal}
@@ -1130,7 +241,7 @@ export function CreateSignalContent({
               وضعیت نتیجه برای سیگنال {statusModal?.symbol ?? "-"} را انتخاب کنید.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <button
               type="button"
               disabled={isDeclaringStatus}
@@ -1139,7 +250,7 @@ export function CreateSignalContent({
                 "rounded-xl border px-3 py-2.5 text-sm font-semibold transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
                 pendingOutcomeStatus === SignalOutcomeStatus._1
                   ? "border-emerald-300/55 bg-gradient-to-r from-emerald-500/30 to-emerald-400/18 text-emerald-50 shadow-[0_0_24px_-10px_rgba(16,185,129,0.9)]"
-                  : pendingOutcomeStatus && pendingOutcomeStatus !== SignalOutcomeStatus._1
+                  : pendingOutcomeStatus !== null
                     ? "border-white/15 bg-white/[0.04] text-white/45 hover:text-white/70"
                     : "border-emerald-300/35 bg-gradient-to-r from-emerald-500/18 to-emerald-400/10 text-emerald-100 hover:brightness-110 hover:shadow-[0_0_24px_-10px_rgba(16,185,129,0.9)]",
               )}
@@ -1154,27 +265,12 @@ export function CreateSignalContent({
                 "rounded-xl border px-3 py-2.5 text-sm font-semibold transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
                 pendingOutcomeStatus === SignalOutcomeStatus._2
                   ? "border-rose-300/55 bg-gradient-to-r from-rose-500/30 to-rose-400/18 text-rose-50 shadow-[0_0_24px_-10px_rgba(244,63,94,0.9)]"
-                  : pendingOutcomeStatus && pendingOutcomeStatus !== SignalOutcomeStatus._2
+                  : pendingOutcomeStatus !== null
                     ? "border-white/15 bg-white/[0.04] text-white/45 hover:text-white/70"
                     : "border-rose-300/35 bg-gradient-to-r from-rose-500/18 to-rose-400/10 text-rose-100 hover:brightness-110 hover:shadow-[0_0_24px_-10px_rgba(244,63,94,0.9)]",
               )}
             >
               حد ضرر
-            </button>
-            <button
-              type="button"
-              disabled={isDeclaringStatus}
-              onClick={() => setPendingOutcomeStatus(SignalOutcomeStatus._3)}
-              className={cn(
-                "rounded-xl border px-3 py-2.5 text-sm font-semibold transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
-                pendingOutcomeStatus === SignalOutcomeStatus._3
-                  ? "border-amber-300/55 bg-gradient-to-r from-amber-500/30 to-amber-400/18 text-amber-50 shadow-[0_0_24px_-10px_rgba(245,158,11,0.9)]"
-                  : pendingOutcomeStatus && pendingOutcomeStatus !== SignalOutcomeStatus._3
-                    ? "border-white/15 bg-white/[0.04] text-white/45 hover:text-white/70"
-                    : "border-amber-300/35 bg-gradient-to-r from-amber-500/18 to-amber-400/10 text-amber-100 hover:brightness-110 hover:shadow-[0_0_24px_-10px_rgba(245,158,11,0.9)]",
-              )}
-            >
-              بسته شده
             </button>
           </div>
           <div
