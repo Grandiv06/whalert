@@ -55,6 +55,7 @@ interface LightweightChartProps {
   hideToolbar?: boolean;
   isMobile?: boolean;
   fitContentTrigger?: number;
+  onChartReady?: (chart: IChartApi | null) => void;
 }
 
 const DEFAULT_ENTRY_COLOR = "#38bdf8";
@@ -89,10 +90,12 @@ export function LightweightChart({
   hideToolbar = false,
   isMobile = false,
   fitContentTrigger = 0,
+  onChartReady,
 }: LightweightChartProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
+  const onChartReadyRef = useRef<LightweightChartProps["onChartReady"]>(onChartReady);
 
   useEffect(() => {
     if (fitContentTrigger > 0) {
@@ -350,6 +353,10 @@ export function LightweightChart({
   }, []);
 
   useEffect(() => {
+    onChartReadyRef.current = onChartReady;
+  }, [onChartReady]);
+
+  useEffect(() => {
     if (!chartContainerRef.current) return;
 
     const resizeObserver = new ResizeObserver(() => {
@@ -404,6 +411,7 @@ export function LightweightChart({
     });
 
     chartRef.current = chart;
+    onChartReadyRef.current?.(chart);
 
     const candlestickSeries = chart.addSeries(CandlestickSeries, {
       upColor: "#10b981",
@@ -476,6 +484,7 @@ export function LightweightChart({
       container.removeEventListener("touchend", handleTouchEnd);
       chart.remove();
       chartRef.current = null;
+      onChartReadyRef.current?.(null);
       seriesRef.current = null;
       linesRef.current = [];
       setHoveredCandle(null);

@@ -53,6 +53,7 @@ import {
   type ChartTimeframeOption,
 } from "@/components/charts/lightweight-chart";
 import { useDebounce } from "@/hooks/useDebounce";
+import type { IChartApi } from "lightweight-charts";
 
 type AbpWrapper<T> = { result?: T };
 
@@ -71,19 +72,19 @@ type FetchDataFromImageFromUrlResultDto = {
   imageBase64?: string | null;
 };
 
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+
 async function captureElementImageBase64(
-  element: HTMLElement | null,
+  chart: IChartApi | null,
 ): Promise<string | null> {
-  if (!element) return null;
-  const { default: html2canvas } = await import("html2canvas");
+  if (!chart) return null;
   await new Promise((resolve) => requestAnimationFrame(resolve));
-  const canvas = await html2canvas(element, {
-    backgroundColor: null,
-    scale: Math.min(window.devicePixelRatio || 1, 2),
-    useCORS: true,
-    logging: false,
-  });
-  return canvas.toDataURL("image/png").replace(/^data:image\/png;base64,/, "");
+  const canvas = chart.takeScreenshot(true, false);
+  const dataUrl = canvas.toDataURL("image/png");
+  if ((dataUrl.length * 3) / 4 > MAX_IMAGE_BYTES) {
+    throw new Error("Chart screenshot is too large. Please try again.");
+  }
+  return dataUrl;
 }
 
 export type CreateSignalServices = {
@@ -759,6 +760,7 @@ export function CreateSignalContent({
   const [appliedManualDraftKey, setAppliedManualDraftKey] = useState<string | null>(
     null,
   );
+  const chartApiRef = useRef<IChartApi | null>(null);
 
   // Auto-focus new target input when added
   useEffect(() => {
@@ -1688,9 +1690,10 @@ export function CreateSignalContent({
     setIsPublishing(true);
     setPublishError("");
     try {
-      const imageBase64 = await captureElementImageBase64(
-        manualChartCaptureRef.current,
-      );
+      const imageBase64 = await captureElementImageBase64(chartApiRef.current);
+      if (!imageBase64) {
+        throw new Error("Chart screenshot could not be captured. Please try again.");
+      }
       await services.submitSignalFromUserInput({
         direction: manualPublishPreview.side,
         symbol: manualPublishPreview.symbol,
@@ -1913,7 +1916,11 @@ export function CreateSignalContent({
 
           <div className={cn(manualGridClass, "mt-4 md:mt-8")}>
             <div className={manualChartWrapperClass}>
-              <div ref={manualChartCaptureRef}>
+              <div
+                ref={manualChartCaptureRef}
+                id="signal-chart-capture-area"
+                data-chart-capture="true"
+              >
                 <Card className={manualChartCardClass}>
                   <LightweightChart
                     data={manualChartData}
@@ -1943,6 +1950,9 @@ export function CreateSignalContent({
                     hideToolbar={isMobileViewport}
                     isMobile={isMobileViewport}
                     fitContentTrigger={fitContentTrigger}
+                    onChartReady={(chart) => {
+                      chartApiRef.current = chart;
+                    }}
                   />
                 </Card>
               </div>

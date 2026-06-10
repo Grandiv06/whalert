@@ -22,7 +22,6 @@ import type { GetPnLSequenceChartOutput } from '../models/GetPnLSequenceChartOut
 import type { GetRewardToRiskChartOutput } from '../models/GetRewardToRiskChartOutput';
 import type { GetSignalSequenceQualityChartOutput } from '../models/GetSignalSequenceQualityChartOutput';
 import type { MarketViewInput } from '../models/MarketViewInput';
-import type { MyCreatedSignalsInputDto } from '../models/MyCreatedSignalsInputDto';
 import type { OfferedPosiotionsInput } from '../models/OfferedPosiotionsInput';
 import type { PagedResultDtoOfMarketViewDto } from '../models/PagedResultDtoOfMarketViewDto';
 import type { PagedResultDtoOfOfferedPositionsDto } from '../models/PagedResultDtoOfOfferedPositionsDto';
@@ -37,6 +36,7 @@ import type { ShowPositionInputDto } from '../models/ShowPositionInputDto';
 import type { SignalProviderInfoInput } from '../models/SignalProviderInfoInput';
 import type { SubmitSignalFromUserInputDto } from '../models/SubmitSignalFromUserInputDto';
 import type { TelegramConnectLinkOutput } from '../models/TelegramConnectLinkOutput';
+import type { TradingSignalDetailDto } from '../models/TradingSignalDetailDto';
 import type { UserSubscriptionPlanDetailsDto } from '../models/UserSubscriptionPlanDetailsDto';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
@@ -114,18 +114,19 @@ export class UserDashboardService {
         });
     }
     /**
-     * @param requestBody
-     * @returns PagedResultDtoOfShowPositionsDto Success
+     * @param tradingSignalId
+     * @returns TradingSignalDetailDto Success
      * @throws ApiError
      */
-    public static apiServicesAppUserdashboardGetmycreatedsignalsPost(
-        requestBody?: MyCreatedSignalsInputDto,
-    ): CancelablePromise<PagedResultDtoOfShowPositionsDto> {
+    public static apiServicesAppUserdashboardGettradingsignaldetailGet(
+        tradingSignalId?: number,
+    ): CancelablePromise<TradingSignalDetailDto> {
         return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/services/app/UserDashboard/GetMyCreatedSignals',
-            body: requestBody,
-            mediaType: 'application/json',
+            method: 'GET',
+            url: '/api/services/app/UserDashboard/GetTradingSignalDetail',
+            query: {
+                'TradingSignalId': tradingSignalId,
+            },
         });
     }
     /**
@@ -211,6 +212,23 @@ export class UserDashboardService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/services/app/UserDashboard/UploadAndApplyProfilePicture',
+            formData: formData,
+            mediaType: 'multipart/form-data',
+        });
+    }
+    /**
+     * @param formData
+     * @returns boolean Success
+     * @throws ApiError
+     */
+    public static apiServicesAppUserdashboardUploadsignalpicturePost(
+        formData?: {
+            file?: Blob;
+        },
+    ): CancelablePromise<boolean> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/services/app/UserDashboard/UploadSignalPicture',
             formData: formData,
             mediaType: 'multipart/form-data',
         });

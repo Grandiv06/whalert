@@ -3,6 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { DynamicPriceCandlesResponseDto } from '../models/DynamicPriceCandlesResponseDto';
+import type { GetDynamicPriceInput } from '../models/GetDynamicPriceInput';
 import type { GlobalGoldRecordDto } from '../models/GlobalGoldRecordDto';
 import type { MesghalSeriesPointDto } from '../models/MesghalSeriesPointDto';
 import type { MesghalSnapshotDto } from '../models/MesghalSnapshotDto';
@@ -180,28 +181,18 @@ export class PriceService {
         });
     }
     /**
-     * @param symbol
-     * @param timeFrame
-     * @param fromDate
-     * @param toDate
+     * @param requestBody
      * @returns DynamicPriceCandlesResponseDto Success
      * @throws ApiError
      */
-    public static apiServicesAppPriceGetdynamicpriceGet(
-        symbol?: string,
-        timeFrame?: string,
-        fromDate?: string,
-        toDate?: string,
+    public static apiServicesAppPriceGetdynamicpricePost(
+        requestBody?: GetDynamicPriceInput,
     ): CancelablePromise<DynamicPriceCandlesResponseDto> {
         return __request(OpenAPI, {
-            method: 'GET',
+            method: 'POST',
             url: '/api/services/app/Price/GetDynamicPrice',
-            query: {
-                'Symbol': symbol,
-                'TimeFrame': timeFrame,
-                'FromDate': fromDate,
-                'ToDate': toDate,
-            },
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
 }
