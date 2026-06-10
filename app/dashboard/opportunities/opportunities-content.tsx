@@ -827,15 +827,15 @@ export function OpportunitiesContent() {
                             )}
                           </div>
                         )}
-                        <div className="flex justify-center">
-                          <button
-                            type="button"
-                            onClick={() => openSignalDetail(item)}
-                            className="inline-flex items-center justify-center rounded-xl border border-dashed border-[#A87FF3]/35 bg-[#542C85]/10 px-4 py-2 text-xs font-semibold text-[#DCCBFF] transition-colors hover:bg-[#542C85]/18"
-                          >
-                            مشاهده
-                          </button>
-                        </div>
+                      </div>
+                      <div className="mt-4 flex w-full">
+                        <button
+                          type="button"
+                          onClick={() => openSignalDetail(item)}
+                          className="inline-flex w-full items-center justify-center rounded-xl border border-dashed border-[#A87FF3]/35 bg-[#542C85]/10 px-4 py-2.5 text-xs font-semibold text-[#DCCBFF] transition-colors hover:bg-[#542C85]/18"
+                        >
+                          مشاهده جزئیات
+                        </button>
                       </div>
                       {pos.description && (
                         <>
