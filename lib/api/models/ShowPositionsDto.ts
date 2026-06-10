@@ -25,4 +25,5 @@ export type ShowPositionsDto = {
     entryPrice?: number;
     sl?: number;
     tPs?: Array<number> | null;
+    takeProfits?: Array<number> | null;
 };

@@ -51,7 +51,6 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { ExclamationCircleIcon } from "@/components/icons/dashboard-icons";
 import useDevice from "@/hooks/useDevice";
 import { useQuery } from "@tanstack/react-query";
 import { normalizePersianText } from "@/lib/utils";
@@ -212,6 +211,31 @@ function getOutcomeStatusMeta(
     className:
       "text-[10px] font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20",
   };
+}
+
+function TakeProfitChip({
+  value,
+  count,
+}: {
+  value: string;
+  count: number;
+}) {
+  return (
+    <button
+      type="button"
+      className="group flex items-center gap-1.5 rounded-xl border border-[#9C73DE]/45 bg-[#3A2068]/55 px-2.5 py-1 text-[11px] font-bold text-[#EDE3FF] shadow-[0_6px_18px_rgba(40,18,74,0.35)] transition-all hover:scale-[1.02] hover:border-[#B996F2]/65 hover:bg-[#4A2A7E]/65 cursor-pointer"
+    >
+      <span className="tracking-wide">{value}</span>
+      {count > 1 ? (
+        <span
+          dir="ltr"
+          className="inline-flex h-[16px] w-[16px] min-w-[16px] max-w-[16px] max-h-[16px] items-center justify-center rounded-full border border-[#CBAFFF]/55 bg-[#5A3493] font-mono text-[8px] font-extrabold leading-[1] text-center text-[#EFE7FF] shadow-sm select-none transition-colors group-hover:bg-[#6740A4] pt-[0.5px]"
+        >
+          +{count - 1}
+        </span>
+      ) : null}
+    </button>
+  );
 }
 
 export function OpportunitiesContent() {
@@ -487,11 +511,23 @@ export function OpportunitiesContent() {
     direction: position.side === SignalSide._1 ? "BUY" : "SELL",
     entry: position.entryPrice?.toString() || "-",
     stopLoss: position.sl?.toString() || "-",
+    takeProfits: position.tPs?.length
+      ? position.tPs
+      : position.takeProfits?.length
+        ? position.takeProfits
+        : [],
     takeProfit:
-      position.tPs && position.tPs.length > 0
+      position.tPs?.length
         ? position.tPs[0].toString()
+        : position.takeProfits?.length
+          ? position.takeProfits[0].toString()
         : "-",
-    tPs: position.tPs || [],
+    tPs:
+      position.tPs?.length
+        ? position.tPs
+        : position.takeProfits?.length
+          ? position.takeProfits
+          : [],
     description: position.description ? normalizePersianText(position.description) : null,
     tradingSignalId: position.tradingSignalId,
     outcomeStatus: position.outcomeStatus,
@@ -744,18 +780,7 @@ export function OpportunitiesContent() {
                             {pos.tPs && pos.tPs.length > 1 ? (
                               <Popover>
                                 <PopoverTrigger asChild>
-                                  <button
-                                    type="button"
-                                    className="group flex items-center gap-1.5 rounded-xl border border-[#9C73DE]/45 bg-[#3A2068]/55 px-2.5 py-1 text-[11px] font-bold text-[#EDE3FF] shadow-[0_6px_18px_rgba(40,18,74,0.35)] transition-all hover:scale-[1.02] hover:border-[#B996F2]/65 hover:bg-[#4A2A7E]/65 cursor-pointer"
-                                  >
-                                    <span className="tracking-wide">{pos.takeProfit}</span>
-                                    <span
-                                      dir="ltr"
-                                      className="inline-flex h-[16px] w-[16px] min-w-[16px] max-w-[16px] max-h-[16px] items-center justify-center rounded-full border border-[#CBAFFF]/55 bg-[#5A3493] font-mono text-[8px] font-extrabold leading-[1] text-center text-[#EFE7FF] shadow-sm select-none transition-colors group-hover:bg-[#6740A4] pt-[0.5px]"
-                                    >
-                                      +{pos.tPs.length - 1}
-                                    </span>
-                                  </button>
+                                  <TakeProfitChip value={pos.takeProfit} count={pos.tPs.length} />
                                 </PopoverTrigger>
                                 <PopoverContent className="w-52 rounded-2xl border border-[#C4A0FF]/30 bg-[#090516]/95 p-3 text-right text-white shadow-[0_18px_40px_rgba(8,3,22,0.75)] backdrop-blur-sm z-[99999]" align="start" side="bottom" dir="rtl">
                                   <div className="flex flex-col gap-2.5">
@@ -772,7 +797,7 @@ export function OpportunitiesContent() {
                                 </PopoverContent>
                               </Popover>
                             ) : (
-                              <span>{pos.takeProfit}</span>
+                              <TakeProfitChip value={pos.takeProfit} count={pos.tPs.length || 1} />
                             )}
                           </div>
                         </div>
@@ -980,18 +1005,7 @@ export function OpportunitiesContent() {
                                 <div className="flex items-center justify-center w-full">
                                   <Popover>
                                     <PopoverTrigger asChild>
-                                      <button
-                                        type="button"
-                                        className="group flex items-center gap-1.5 rounded-xl border border-[#9C73DE]/45 bg-[#3A2068]/55 px-2.5 py-1 text-[11px] font-bold text-[#EDE3FF] shadow-[0_6px_18px_rgba(40,18,74,0.35)] transition-all hover:scale-[1.02] hover:border-[#B996F2]/65 hover:bg-[#4A2A7E]/65 cursor-pointer"
-                                      >
-                                        <span className="tracking-wide">{pos.takeProfit}</span>
-                                        <span
-                                          dir="ltr"
-                                          className="inline-flex h-[16px] w-[16px] min-w-[16px] max-w-[16px] max-h-[16px] items-center justify-center rounded-full border border-[#CBAFFF]/55 bg-[#5A3493] font-mono text-[8px] font-extrabold leading-[1] text-center text-[#EFE7FF] shadow-sm select-none transition-colors group-hover:bg-[#6740A4] pt-[0.5px]"
-                                        >
-                                          +{pos.tPs.length - 1}
-                                        </span>
-                                      </button>
+                                      <TakeProfitChip value={pos.takeProfit} count={pos.tPs.length} />
                                     </PopoverTrigger>
                                     <PopoverContent className="w-52 rounded-2xl border border-[#C4A0FF]/30 bg-[#090516]/95 p-3.5 text-right text-white shadow-[0_18px_40px_rgba(8,3,22,0.75)] backdrop-blur-sm z-[99999]" align="center" side="bottom" dir="rtl">
                                       <div className="flex flex-col gap-2.5">
@@ -1010,14 +1024,7 @@ export function OpportunitiesContent() {
                                 </div>
                               ) : (
                                 <div className="flex items-center justify-center w-full">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xs md:text-sm font-medium text-white">
-                                      {pos.takeProfit}
-                                    </span>
-                                    <div className="cursor-pointer hover:opacity-80 transition-opacity">
-                                      <ExclamationCircleIcon className="w-4 h-4 text-white" />
-                                    </div>
-                                  </div>
+                                  <TakeProfitChip value={pos.takeProfit} count={pos.tPs.length || 1} />
                                 </div>
                               )}
                             </TableCell>
