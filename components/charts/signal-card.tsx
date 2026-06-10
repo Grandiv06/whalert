@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { resolveSignalImage } from "@/lib/signal-image";
 
 export interface SignalCardProps {
   id?: number;
@@ -11,9 +12,17 @@ export interface SignalCardProps {
   entry: string;
   stopLoss: string;
   takeProfit: string;
+  pictureUrl?: string | null;
+  pictureId?: string | null;
+  pictureBase64?: string | null;
+  onViewImage?: () => void;
 }
 
 export function SignalCard({
+  pictureUrl,
+  pictureId,
+  pictureBase64,
+  onViewImage,
   time,
   analysisModel,
   market,
@@ -24,10 +33,33 @@ export function SignalCard({
   takeProfit,
 }: SignalCardProps) {
   const [datePart, timePart] = time.includes(" - ") ? time.split(" - ") : [time, ""];
+  const imageSrc = resolveSignalImage({ pictureUrl, pictureBase64 });
 
   return (
     <Card className="w-full" dir="rtl">
       <CardContent className="p-4 space-y-3">
+        {imageSrc ? (
+          <button
+            type="button"
+            onClick={onViewImage}
+            className="block w-full overflow-hidden rounded-xl border border-white/10 bg-black/20 cursor-pointer"
+            title="مشاهده تصویر چارت"
+          >
+            <img
+              src={imageSrc}
+              alt="Signal chart"
+              className="h-44 w-full object-contain bg-black/20"
+            />
+          </button>
+        ) : pictureId ? (
+          <button
+            type="button"
+            onClick={onViewImage}
+            className="flex h-28 w-full items-center justify-center rounded-xl border border-dashed border-[#A87FF3]/35 bg-[#542C85]/10 px-4 text-sm font-semibold text-[#DCCBFF] transition-colors hover:bg-[#542C85]/18"
+          >
+            View chart image
+          </button>
+        ) : null}
         <div className="flex justify-between items-start gap-4">
           <div className="flex flex-col flex-shrink-0">
             <p className="text-xs md:text-sm font-medium text-foreground">{datePart}</p>

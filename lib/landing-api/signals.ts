@@ -9,6 +9,9 @@ export interface Signal {
   status: string;
   date: string;
   risk?: string;
+  pictureUrl?: string | null;
+  pictureId?: string | null;
+  pictureBase64?: string | null;
 }
 
 type LatestSignalApiItem = {
@@ -32,6 +35,9 @@ type LatestSignalApiItem = {
   publishedAt?: string | null;
   risk?: string | null;
   riskRewardRatio?: number | null;
+  pictureUrl?: string | null;
+  pictureId?: string | null;
+  pictureBase64?: string | null;
 };
 
 type AbpWrapper<T> = {
@@ -83,6 +89,9 @@ function mapLatestSignal(item: LatestSignalApiItem, index: number): Signal {
     status: getStatus(item),
     date: getDate(item),
     risk: item.risk ?? undefined,
+    pictureUrl: item.pictureUrl ?? null,
+    pictureId: item.pictureId ?? null,
+    pictureBase64: item.pictureBase64 ?? null,
   };
 }
 

@@ -64,6 +64,7 @@ import {
   SignalOutcomeStatus,
   SignalOutcomeSource,
 } from "@/lib/api/client";
+import { SignalDetailDialog } from "@/components/signal/signal-detail-dialog";
 
 type AbpWrapper<T> = { result?: T };
 type AbpWindow = Window & {
@@ -165,12 +166,12 @@ function MobileSkeleton() {
 function DesktopSkeleton() {
   return (
     <>
-          {[1, 2, 3, 4, 5].map((i) => (
+      {[1, 2, 3, 4, 5].map((i) => (
         <TableRow
           key={i}
           className="dark:bg-transparent bg-white dark:hover:bg-white/5 hover:bg-gray-50"
         >
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((j) => (
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((j) => (
             <TableCell key={j} className="text-center h-[72px] px-6 py-8">
               <Skeleton className="h-4 w-16 mx-auto" />
             </TableCell>
@@ -247,6 +248,11 @@ export function OpportunitiesContent() {
     tradingSignalId: number;
     outcomeStatus: SignalOutcomeStatus;
     symbol: string;
+  } | null>(null);
+  const [signalDetailModal, setSignalDetailModal] = useState<{
+    tradingSignalId: number;
+    title: string;
+    description: string;
   } | null>(null);
   const [descriptionModal, setDescriptionModal] = useState<{
     title: string;
@@ -492,7 +498,32 @@ export function OpportunitiesContent() {
     outcomeSource: position.outcomeSource,
     outcomeDeclaredAt: position.outcomeDeclaredAt,
     canDeclareOutcome: position.canDeclareOutcome,
+    pictureUrl: position.pictureUrl,
+    pictureId: position.pictureId,
+    pictureBase64: position.pictureBase64,
   });
+
+  const openSignalDetail = (position: ShowPositionsDto) => {
+    const tradingSignalId = position.tradingSignalId;
+    if (!tradingSignalId) return;
+
+    setSignalDetailModal({
+      tradingSignalId,
+      title: position.symbol || "توضیحات موقعیت",
+      description: position.description
+        ? normalizePersianText(position.description)
+        : "",
+    });
+  };
+
+  const openDescriptionModal = (position: ShowPositionsDto) => {
+    setDescriptionModal({
+      title: position.symbol || "توضیحات موقعیت",
+      description: position.description
+        ? normalizePersianText(position.description)
+        : "",
+    });
+  };
 
   return (
     <div
@@ -796,6 +827,15 @@ export function OpportunitiesContent() {
                             )}
                           </div>
                         )}
+                        <div className="flex justify-center">
+                          <button
+                            type="button"
+                            onClick={() => openSignalDetail(item)}
+                            className="inline-flex items-center justify-center rounded-xl border border-dashed border-[#A87FF3]/35 bg-[#542C85]/10 px-4 py-2 text-xs font-semibold text-[#DCCBFF] transition-colors hover:bg-[#542C85]/18"
+                          >
+                            مشاهده
+                          </button>
+                        </div>
                       </div>
                       {pos.description && (
                         <>
@@ -832,7 +872,7 @@ export function OpportunitiesContent() {
         ) : (
           <div className="overflow-hidden -mx-4 md:mx-0">
             <div className="overflow-x-auto px-4 md:px-0 [&_[data-slot=table-container]]:border-0 [&_[data-slot=table-container]]:rounded-[20px]">
-              <Table className="min-w-[800px] md:min-w-0">
+              <Table className="min-w-[1200px] md:min-w-0">
                 <TableHeader className="h-14">
                   <TableRow>
                     <TableHead className="text-center text-white h-12">
@@ -849,6 +889,9 @@ export function OpportunitiesContent() {
                     </TableHead>
                     <TableHead className="text-center text-white h-12">
                       نمادها
+                    </TableHead>
+                    <TableHead className="text-center text-white h-12">
+                      تصویر
                     </TableHead>
                     <TableHead className="text-center text-white h-12">
                       جهت
@@ -876,7 +919,7 @@ export function OpportunitiesContent() {
                     <TableRow className="dark:bg-transparent bg-white dark:hover:bg-white/5 hover:bg-gray-50">
                       <TableCell
                         className="text-center text-muted-foreground dark:text-white/70 h-[72px] px-6 py-8"
-                      colSpan={11}
+                        colSpan={12}
                       >
                         هیچ داده‌ای یافت نشد.
                       </TableCell>
@@ -904,6 +947,16 @@ export function OpportunitiesContent() {
                             </TableCell>
                             <TableCell className="text-center h-[72px] px-6 py-8">
                               {pos.symbol}
+                            </TableCell>
+                            <TableCell className="text-center h-[72px] px-6 py-8">
+                              <button
+                                type="button"
+                                onClick={() => openSignalDetail(item)}
+                                className="inline-flex items-center justify-center rounded-lg border border-dashed border-[#A87FF3]/35 bg-[#542C85]/10 px-3 py-2 text-xs font-semibold text-[#DCCBFF] transition-colors hover:bg-[#542C85]/18"
+                                title="مشاهده تصویر"
+                              >
+                                مشاهده
+                              </button>
                             </TableCell>
                             <TableCell className="text-center h-[72px] px-6 py-8">
                               <span
@@ -1002,10 +1055,7 @@ export function OpportunitiesContent() {
                               {pos.description ? (
                                 <button
                                   type="button"
-                                  onClick={() => setDescriptionModal({
-                                    title: pos.symbol || "توضیحات موقعیت",
-                                    description: pos.description ?? "",
-                                  })}
+                                  onClick={() => openDescriptionModal(item)}
                                   className="inline-flex items-center gap-1.5 text-xs text-[#A87FF3] hover:text-[#c4a6fc] font-semibold bg-[#A87FF3]/10 hover:bg-[#A87FF3]/20 px-2.5 py-1.5 rounded-lg border border-[#A87FF3]/25 transition-all cursor-pointer"
                                 >
                                   <FileText className="h-3.5 w-3.5" />
@@ -1152,6 +1202,18 @@ export function OpportunitiesContent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <SignalDetailDialog
+        open={signalDetailModal !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSignalDetailModal(null);
+          }
+        }}
+        tradingSignalId={signalDetailModal?.tradingSignalId}
+        title={signalDetailModal?.title}
+        description={signalDetailModal?.description}
+      />
     </div>
   );
 }

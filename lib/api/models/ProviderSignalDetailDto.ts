@@ -1,7 +1,6 @@
 /* generated using openapi-typescript-codegen -- do not edit */
 /* istanbul ignore file */
 /* tslint:disable */
-/* eslint-disable */
 import type { MarketType } from './MarketType';
 import type { SignalOutcomeSource } from './SignalOutcomeSource';
 import type { SignalOutcomeStatus } from './SignalOutcomeStatus';
@@ -18,6 +17,7 @@ export type ProviderSignalDetailDto = {
     riskRewardRatio?: number;
     description?: string | null;
     pictureUrl?: string | null;
+    pictureId?: string | null;
     pictureBase64?: string | null;
     tradingViewAnalysisUrl?: string | null;
     signalStatus?: SignalStatus;
@@ -33,4 +33,3 @@ export type ProviderSignalDetailDto = {
     canConfirmDetectedOutcome?: boolean;
     canDeclareOutcome?: boolean;
 };
-
