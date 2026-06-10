@@ -4,6 +4,9 @@
 /* eslint-disable */
 import type { AppAuthenticateModel } from '../models/AppAuthenticateModel';
 import type { AppRegisterModel } from '../models/AppRegisterModel';
+import type { AppSendOtpModel } from '../models/AppSendOtpModel';
+import type { AppSendOtpResultModel } from '../models/AppSendOtpResultModel';
+import type { AppVerifyOtpModel } from '../models/AppVerifyOtpModel';
 import type { AuthenticateModel } from '../models/AuthenticateModel';
 import type { AuthenticateResultModel } from '../models/AuthenticateResultModel';
 import type { ExternalAuthenticateModel } from '../models/ExternalAuthenticateModel';
@@ -34,12 +37,12 @@ export class TokenAuthService {
     }
     /**
      * @param requestBody
-     * @returns any Success
+     * @returns AuthenticateResultModel Success
      * @throws ApiError
      */
     public static apiTokenauthAppregistersignalproviderPost(
         requestBody?: AppRegisterModel,
-    ): CancelablePromise<any> {
+    ): CancelablePromise<AuthenticateResultModel> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/TokenAuth/AppRegisterSignalProvider',
@@ -58,6 +61,36 @@ export class TokenAuthService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/TokenAuth/AppAuthenticate',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @param requestBody
+     * @returns AppSendOtpResultModel Success
+     * @throws ApiError
+     */
+    public static apiTokenauthAppsendotpPost(
+        requestBody?: AppSendOtpModel,
+    ): CancelablePromise<AppSendOtpResultModel> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/TokenAuth/AppSendOtp',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @param requestBody
+     * @returns AuthenticateResultModel Success
+     * @throws ApiError
+     */
+    public static apiTokenauthAppverifyotpPost(
+        requestBody?: AppVerifyOtpModel,
+    ): CancelablePromise<AuthenticateResultModel> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/TokenAuth/AppVerifyOtp',
             body: requestBody,
             mediaType: 'application/json',
         });

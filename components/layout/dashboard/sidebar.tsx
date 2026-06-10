@@ -23,7 +23,6 @@ import {
 import { cn, toPersianDigits } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { clearAuthSession } from "@/lib/auth-session";
-import { hasSignalCreatorPermission } from "@/lib/auth-session";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -171,13 +170,7 @@ export function DashboardSidebar() {
     !!subscriptionDetails?.hasSubscription &&
     (subscriptionDetails?.remainingDays ?? 0) > 0;
 
-  const navItems = useMemo(
-    () =>
-      hasSignalCreatorPermission()
-        ? defaultNavItems
-        : defaultNavItems.filter((item) => item.path !== "/dashboard/create-signal/"),
-    [],
-  );
+  const navItems = useMemo(() => defaultNavItems, []);
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 

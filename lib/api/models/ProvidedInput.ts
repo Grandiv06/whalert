@@ -2,8 +2,8 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type RequestSubscriptionPaymentInput = {
-    subscriptionPlanId?: number;
-    quantity?: number;
+export type ProvidedInput = {
+    maxResultCount?: number;
+    skipCount?: number;
 };
 

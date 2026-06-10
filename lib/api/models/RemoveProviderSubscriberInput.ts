@@ -2,8 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type RequestSubscriptionPaymentInput = {
-    subscriptionPlanId?: number;
-    quantity?: number;
+export type RemoveProviderSubscriberInput = {
+    followId?: number;
 };
 

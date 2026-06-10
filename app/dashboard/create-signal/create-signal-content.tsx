@@ -18,7 +18,6 @@ import {
   CreateSignalContent as CreateSignalContentPortable,
   type CreateSignalServices,
 } from "@/components/create-signal/create-signal-content";
-import { hasSignalCreatorPermission } from "@/lib/auth-session";
 import { cn } from "@/lib/utils";
 import {
   AlertDialog,
@@ -163,7 +162,6 @@ export function CreateSignalContent({
   const { theme } = useTheme();
   const { setAnalyzing, setLeaveModalRequest, setManualDirty } =
     useCreateSignalLoading();
-  const canCreateSignal = hasSignalCreatorPermission();
   const [isDeclaringStatus, setIsDeclaringStatus] = useState(false);
   const [pendingOutcomeStatus, setPendingOutcomeStatus] =
     useState<SignalOutcomeStatus | null>(null);
@@ -192,7 +190,6 @@ export function CreateSignalContent({
     }
   };
 
-  if (!canCreateSignal) return null;
   const isDark = theme === "dark";
 
   return (

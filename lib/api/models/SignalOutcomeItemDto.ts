@@ -7,7 +7,7 @@ import type { SignalOutcomeSource } from './SignalOutcomeSource';
 import type { SignalOutcomeStatus } from './SignalOutcomeStatus';
 import type { SignalSide } from './SignalSide';
 import type { SignalStatus } from './SignalStatus';
-export type GetProvidedOutPut = {
+export type SignalOutcomeItemDto = {
     tradingSignalId?: number;
     symbol?: string | null;
     market?: MarketType;
@@ -19,13 +19,13 @@ export type GetProvidedOutPut = {
     sl?: number;
     tPs?: Array<number> | null;
     description?: string | null;
-    canConfirmDetectedOutcome?: boolean;
-    canDeclareOutcome?: boolean;
     outcomeStatus?: SignalOutcomeStatus;
     outcomeSource?: SignalOutcomeSource;
     suggestedOutcomeStatus?: SignalOutcomeStatus;
     suggestedOutcomeDetectedAt?: string | null;
     outcomeDeclaredAt?: string | null;
+    canConfirmDetectedOutcome?: boolean;
+    canDeclareOutcome?: boolean;
     signalStatus?: SignalStatus;
     canCancelPending?: boolean;
 };

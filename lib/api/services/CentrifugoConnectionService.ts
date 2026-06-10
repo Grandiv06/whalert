@@ -12,9 +12,9 @@ export class CentrifugoConnectionService {
      * @returns CentrifugoConnectionInfoDto Success
      * @throws ApiError
      */
-    public static apiServicesAppCentrifugoconnectionGetconnectioninfoGet(): CancelablePromise<CentrifugoConnectionInfoDto> {
+    public static apiServicesAppCentrifugoconnectionGetconnectioninfoPost(): CancelablePromise<CentrifugoConnectionInfoDto> {
         return __request(OpenAPI, {
-            method: 'GET',
+            method: 'POST',
             url: '/api/services/app/CentrifugoConnection/GetConnectionInfo',
         });
     }

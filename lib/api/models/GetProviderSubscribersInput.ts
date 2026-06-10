@@ -2,11 +2,10 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { SignalStatus } from './SignalStatus';
-export type MyCreatedSignalsInputDto = {
+export type GetProviderSubscribersInput = {
     maxResultCount?: number;
     skipCount?: number;
     sorting?: string | null;
-    status?: SignalStatus;
+    filter?: string | null;
 };
 
