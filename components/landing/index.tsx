@@ -4,13 +4,11 @@ import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { ContentWrapper } from "@/components/layout/landing/content-wrapper";
 import BlogSection from "./components/blog";
-import Comments from "./components/comments";
 import LandingLogin from "./components/landingLogin";
 import LatestSignal from "./components/latestSignal";
 import PlatformsSection from "./components/platform";
 import Questions from "./components/questions";
 import Tools from "./components/tools";
-import TraderSection from "./components/trader-section";
 import TransparencySection from "./components/TransparencySection";
 import WhySignal from "./components/whySignal";
 import LandingPlans from "./components/plans";
@@ -87,19 +85,11 @@ const LandingPage = () => {
         </div> */}
 
         <ContentWrapper>
-          <TraderSection />
-        </ContentWrapper>
-
-        <ContentWrapper>
           <LatestSignal />
         </ContentWrapper>
 
         <ContentWrapper>
           <LandingPlans />
-        </ContentWrapper>
-
-        <ContentWrapper>
-          <Comments />
         </ContentWrapper>
 
         <ContentWrapper>
