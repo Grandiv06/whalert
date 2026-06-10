@@ -1,7 +1,6 @@
 /* generated using openapi-typescript-codegen -- do not edit */
 /* istanbul ignore file */
 /* tslint:disable */
-/* eslint-disable */
 import type { SignalOutcomeStatus } from './SignalOutcomeStatus';
 import type { SignalSide } from './SignalSide';
 export type GetMySignalForEditOutput = {
@@ -13,7 +12,8 @@ export type GetMySignalForEditOutput = {
     takeProfits?: Array<number> | null;
     description?: string | null;
     pictureUrl?: string | null;
+    pictureId?: string | null;
+    pictureBase64?: string | null;
     outcomeStatus?: SignalOutcomeStatus;
     isEditable?: boolean;
 };
-

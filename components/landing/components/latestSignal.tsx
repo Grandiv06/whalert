@@ -1,17 +1,27 @@
 "use client";
 
+import { useState } from "react";
 import SectionHeader from "./section-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { queryKeys } from "@/config/landing-query-keys";
 import { signalsApi, type Signal } from "@/lib/landing-api/signals";
 import { useQuery } from "@tanstack/react-query";
+import { SignalDetailDialog } from "@/components/signal/signal-detail-dialog";
+import { resolveSignalImage } from "@/lib/signal-image";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 import { Autoplay, Navigation, Pagination } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 
-const SignalCard = ({ signal }: { signal: Signal }) => {
+const SignalCard = ({
+  signal,
+  onOpenDetail,
+}: {
+  signal: Signal;
+  onOpenDetail?: () => void;
+}) => {
+  const imageSrc = resolveSignalImage(signal);
   return (
     <div
       className="relative p-6 rounded-2xl flex flex-col gap-5 min-h-[200px] h-full overflow-hidden border border-violet-500/50 shadow-[0_0_20px_rgba(139,92,246,0.15)]"
@@ -22,6 +32,28 @@ const SignalCard = ({ signal }: { signal: Signal }) => {
           "radial-gradient(ellipse 80% 80% at 50% 50%, #2e1b4b 0%, #1a0f2e 70%), radial-gradient(circle at 20% 30%, rgba(250,204,21,0.08) 0%, transparent 2px), radial-gradient(circle at 80% 70%, rgba(250,204,21,0.06) 0%, transparent 2px), radial-gradient(circle at 50% 50%, rgba(250,204,21,0.05) 0%, transparent 1px)",
       }}
     >
+      {imageSrc ? (
+        <button
+          type="button"
+          onClick={onOpenDetail}
+          className="overflow-hidden rounded-xl border border-white/10 bg-black/20"
+        >
+          <img
+            src={imageSrc}
+            alt="Signal chart"
+            className="h-36 w-full object-contain bg-black/20"
+          />
+        </button>
+      ) : signal.pictureId ? (
+        <button
+          type="button"
+          onClick={onOpenDetail}
+          className="flex h-20 items-center justify-center rounded-xl border border-dashed border-white/15 bg-white/5 px-4 text-xs font-semibold text-white/75 transition-colors hover:bg-white/10"
+        >
+          View chart image
+        </button>
+      ) : null}
+
       <div className="flex items-start justify-between gap-3">
         <span className="text-xl font-bold text-white tracking-tight">
           {signal.symbol}
@@ -73,6 +105,8 @@ const SignalCard = ({ signal }: { signal: Signal }) => {
 };
 
 const LatestSignal = () => {
+  const [detailSignalId, setDetailSignalId] = useState<number | null>(null);
+  const [detailSignalTitle, setDetailSignalTitle] = useState<string>("");
   const {
     data: signals,
     isLoading,
@@ -124,12 +158,30 @@ const LatestSignal = () => {
           >
             {signals.map((signal) => (
               <SwiperSlide key={signal.id}>
-                <SignalCard signal={signal} />
+                <SignalCard
+                  signal={signal}
+                  onOpenDetail={() => {
+                    setDetailSignalId(signal.id);
+                    setDetailSignalTitle(signal.symbol);
+                  }}
+                />
               </SwiperSlide>
             ))}
           </Swiper>
         </div>
       )}
+
+      <SignalDetailDialog
+        open={detailSignalId !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDetailSignalId(null);
+            setDetailSignalTitle("");
+          }
+        }}
+        tradingSignalId={detailSignalId}
+        title={detailSignalTitle}
+      />
     </div>
   );
 };

@@ -1,7 +1,6 @@
 /* generated using openapi-typescript-codegen -- do not edit */
 /* istanbul ignore file */
 /* tslint:disable */
-/* eslint-disable */
 import type { Market } from './Market';
 import type { SignalOutcomeSource } from './SignalOutcomeSource';
 import type { SignalOutcomeStatus } from './SignalOutcomeStatus';
@@ -28,6 +27,8 @@ export type TradingSignal = {
     description?: string | null;
     picture?: string | null;
     pictureUrl?: string | null;
+    pictureId?: string | null;
+    pictureBase64?: string | null;
     signalStatus?: SignalStatus;
     signalVisibility?: SignalVisibility;
     expiresAt?: string;
@@ -42,4 +43,3 @@ export type TradingSignal = {
     signalProviderId?: number | null;
     signalProviderFk?: SignalProvider;
 };
-
