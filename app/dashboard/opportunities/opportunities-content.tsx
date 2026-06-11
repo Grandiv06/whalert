@@ -1,6 +1,12 @@
 "use client";
 
-import { useState, Fragment, useEffect } from "react";
+import {
+  forwardRef,
+  Fragment,
+  useEffect,
+  useState,
+  type ComponentPropsWithoutRef,
+} from "react";
 import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, FileText, ChevronDown, CheckCircle2, XCircle } from "lucide-react";
@@ -213,30 +219,35 @@ function getOutcomeStatusMeta(
   };
 }
 
-function TakeProfitChip({
-  value,
-  count,
-}: {
+type TakeProfitChipProps = ComponentPropsWithoutRef<"button"> & {
   value: string;
   count: number;
-}) {
-  return (
-    <button
-      type="button"
-      className="group flex items-center gap-1.5 rounded-xl border border-[#9C73DE]/45 bg-[#3A2068]/55 px-2.5 py-1 text-[11px] font-bold text-[#EDE3FF] shadow-[0_6px_18px_rgba(40,18,74,0.35)] transition-all hover:scale-[1.02] hover:border-[#B996F2]/65 hover:bg-[#4A2A7E]/65 cursor-pointer"
-    >
-      <span className="tracking-wide">{value}</span>
-      {count > 1 ? (
-        <span
-          dir="ltr"
-          className="inline-flex h-[16px] w-[16px] min-w-[16px] max-w-[16px] max-h-[16px] items-center justify-center rounded-full border border-[#CBAFFF]/55 bg-[#5A3493] font-mono text-[8px] font-extrabold leading-[1] text-center text-[#EFE7FF] shadow-sm select-none transition-colors group-hover:bg-[#6740A4] pt-[0.5px]"
-        >
-          +{count - 1}
-        </span>
-      ) : null}
-    </button>
-  );
-}
+};
+
+const TakeProfitChip = forwardRef<HTMLButtonElement, TakeProfitChipProps>(
+  function TakeProfitChip({ value, count, className = "", ...props }, ref) {
+    return (
+      <button
+        ref={ref}
+        type="button"
+        className={`group flex items-center gap-1.5 rounded-xl border border-[#9C73DE]/45 bg-[#3A2068]/55 px-2.5 py-1 text-[11px] font-bold text-[#EDE3FF] shadow-[0_6px_18px_rgba(40,18,74,0.35)] transition-all hover:scale-[1.02] hover:border-[#B996F2]/65 hover:bg-[#4A2A7E]/65 cursor-pointer ${className}`}
+        {...props}
+      >
+        <span className="tracking-wide">{value}</span>
+        {count > 1 ? (
+          <span
+            dir="ltr"
+            className="inline-flex h-[16px] w-[16px] min-w-[16px] max-w-[16px] max-h-[16px] items-center justify-center rounded-full border border-[#CBAFFF]/55 bg-[#5A3493] font-mono text-[8px] font-extrabold leading-[1] text-center text-[#EFE7FF] shadow-sm select-none transition-colors group-hover:bg-[#6740A4] pt-[0.5px]"
+          >
+            +{count - 1}
+          </span>
+        ) : null}
+      </button>
+    );
+  },
+);
+
+TakeProfitChip.displayName = "TakeProfitChip";
 
 export function OpportunitiesContent() {
   const router = useRouter();
@@ -977,7 +988,7 @@ export function OpportunitiesContent() {
                               <button
                                 type="button"
                                 onClick={() => openSignalDetail(item)}
-                                className="inline-flex items-center justify-center rounded-lg border border-dashed border-[#A87FF3]/35 bg-[#542C85]/10 px-3 py-2 text-xs font-semibold text-[#DCCBFF] transition-colors hover:bg-[#542C85]/18"
+                                className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-dashed border-[#A87FF3]/35 bg-[#542C85]/10 px-3 py-2 text-xs font-semibold text-[#DCCBFF] transition-colors hover:bg-[#542C85]/18"
                                 title="مشاهده تصویر"
                               >
                                 مشاهده
