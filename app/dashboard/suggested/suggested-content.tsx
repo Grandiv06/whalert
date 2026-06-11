@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -24,18 +25,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { PositionCard } from "@/components/charts/position-card";
-import {
-  SearchIcon,
-  EyeIcon,
-  PollVerticalCircleIcon,
-  ExclamationCircleIcon,
-} from "@/components/icons/dashboard-icons";
+import { SearchIcon, ExclamationCircleIcon } from "@/components/icons/dashboard-icons";
 import { Pagination } from "@/components/ui/pagination";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import useDevice from "@/hooks/useDevice";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useQuery } from "@tanstack/react-query";
+import { resolveSignalImage } from "@/lib/signal-image";
 import { normalizePersianText } from "@/lib/utils";
 import {
   UserDashboardService,
@@ -47,6 +44,7 @@ import type { PagedResultDtoOfOfferedPositionsDto } from "@/lib/api/client";
 
 type AbpWrapper<T> = { result?: T };
 type AnalysisStatus = "all" | "followed" | "not-followed";
+type OfferedPositionWithSignalId = OfferedPositionsDto & { tradingSignalId?: number };
 
 interface PositionData {
   id: number;
@@ -113,16 +111,38 @@ export function SuggestedContent() {
   const [analysisStatus, setAnalysisStatus] = useState<AnalysisStatus>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [comingSoonOpen, setComingSoonOpen] = useState(false);
+  const [chartPreviewOpen, setChartPreviewOpen] = useState(false);
+  const [chartPreviewLoading, setChartPreviewLoading] = useState(false);
+  const [chartPreviewError, setChartPreviewError] = useState<string | null>(null);
+  const [selectedPosition, setSelectedPosition] = useState<OfferedPositionsDto | null>(null);
+  const [selectedSignalDetail, setSelectedSignalDetail] = useState<ProviderSignalDetailDto | null>(null);
 
-  const handleExecute = (id: number) => {
-    console.log("Execute position:", id);
-    setComingSoonOpen(true);
-  };
+  const handleShowChart = async (position: OfferedPositionsDto) => {
+    const signalId = (position as OfferedPositionWithSignalId).tradingSignalId;
+    setSelectedPosition(position);
+    setSelectedSignalDetail(null);
+    setChartPreviewError(null);
 
-  const handleShowChart = (id: number) => {
-    console.log("Show chart for position:", id);
-    setComingSoonOpen(true);
+    if (!signalId) {
+      setChartPreviewError("شناسه سیگنال برای این موقعیت در دسترس نیست.");
+      setChartPreviewOpen(true);
+      return;
+    }
+
+    setChartPreviewOpen(true);
+    setChartPreviewLoading(true);
+    try {
+      const res =
+        await UserDashboardService.apiServicesAppUserdashboardGettradingsignaldetailGet(
+          signalId,
+        );
+      const wrapped = res as unknown as AbpWrapper<ProviderSignalDetailDto>;
+      setSelectedSignalDetail(wrapped?.result ?? (res as ProviderSignalDetailDto));
+    } catch {
+      setChartPreviewError("بارگذاری تصویر با خطا مواجه شد.");
+    } finally {
+      setChartPreviewLoading(false);
+    }
   };
 
   const { data, isLoading } = useQuery({
@@ -283,8 +303,7 @@ export function SuggestedContent() {
                     key={index}
                     {...position}
                     tPs={position.tPs}
-                    onExecute={() => handleExecute(position.id)}
-                    onShowChart={() => handleShowChart(position.id)}
+                    onShowChart={() => void handleShowChart(item)}
                   />
                 );
               })
@@ -324,9 +343,6 @@ export function SuggestedContent() {
                       حد سود
                     </TableHead>
                     <TableHead className="text-center text-white h-12">
-                      اجرا
-                    </TableHead>
-                    <TableHead className="text-center text-white h-12">
                       نمایش در نمودار
                     </TableHead>
                   </TableRow>
@@ -338,7 +354,7 @@ export function SuggestedContent() {
                     <TableRow className="dark:bg-transparent bg-white dark:hover:bg-white/5 hover:bg-gray-50">
                       <TableCell
                         className="text-center text-muted-foreground dark:text-white/70 h-[72px] px-6 py-8"
-                        colSpan={11}
+                        colSpan={10}
                       >
                         هیچ داده‌ای یافت نشد.
                       </TableCell>
@@ -440,18 +456,12 @@ export function SuggestedContent() {
                             </TableCell>
                             <TableCell className="text-center h-[72px] px-6 py-8">
                               <button
-                                onClick={() => handleExecute(position.id)}
-                                className="text-white hover:opacity-80 transition-opacity flex justify-center items-center w-full cursor-pointer"
+                                type="button"
+                                onClick={() => void handleShowChart(item)}
+                                className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-dashed border-[#A87FF3]/35 bg-[#542C85]/10 px-3 py-2 text-xs font-semibold text-[#DCCBFF] transition-colors hover:bg-[#542C85]/18"
+                                title="مشاهده تصویر"
                               >
-                                <EyeIcon />
-                              </button>
-                            </TableCell>
-                            <TableCell className="text-center h-[72px] px-6 py-8">
-                              <button
-                                onClick={() => handleShowChart(position.id)}
-                                className="text-white hover:opacity-80 transition-opacity flex justify-center items-center w-full cursor-pointer"
-                              >
-                                <PollVerticalCircleIcon />
+                                مشاهده
                               </button>
                             </TableCell>
                           </TableRow>
@@ -478,16 +488,44 @@ export function SuggestedContent() {
           </div>
         )}
       </div>
-      <Dialog open={comingSoonOpen} onOpenChange={setComingSoonOpen}>
-        <DialogContent className="max-w-sm border-[#8F64D9]/40 bg-[#140728] text-white" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="text-base font-bold text-[#EBDDFF]">
-              قابلیت در حال توسعه
-            </DialogTitle>
-            <DialogDescription className="text-sm text-white/80 leading-7">
-              این قابلیت به‌زودی اضافه می‌شود.
-            </DialogDescription>
-          </DialogHeader>
+      <Dialog open={chartPreviewOpen} onOpenChange={setChartPreviewOpen}>
+        <DialogContent className="w-[calc(100%-1rem)] max-w-3xl overflow-hidden border border-white/10 bg-[#0b071e]/96 p-0 text-white shadow-[0_30px_80px_-24px_rgba(93,49,160,0.45)]" dir="rtl">
+          <div className="p-5">
+            <DialogHeader className="mb-4 text-right">
+              <DialogTitle className="text-base font-bold text-[#EBDDFF]">
+                پیش‌نمایش تصویر
+              </DialogTitle>
+              <DialogDescription className="text-sm text-white/80 leading-7">
+                {selectedSignalDetail?.symbol ||
+                  selectedPosition?.displayName ||
+                  "موقعیت انتخاب‌شده"}
+              </DialogDescription>
+            </DialogHeader>
+
+            {chartPreviewLoading ? (
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-sm text-white/70">
+                در حال بارگذاری تصویر...
+              </div>
+            ) : chartPreviewError ? (
+              <div className="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-6 text-sm text-rose-200">
+                {chartPreviewError}
+              </div>
+            ) : resolveSignalImage(selectedSignalDetail ?? {}) ? (
+              <div className="relative h-[72vh] w-full overflow-hidden rounded-2xl bg-black/30">
+                <Image
+                  src={resolveSignalImage(selectedSignalDetail ?? {}) ?? ""}
+                  alt="Position chart"
+                  fill
+                  className="object-contain"
+                  sizes="(max-width: 768px) 100vw, 768px"
+                />
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-sm text-white/70">
+                برای این مورد تصویر در دسترس نیست.
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

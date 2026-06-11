@@ -1,15 +1,11 @@
 "use client";
 
 import {
-  AparatIcon,
   ArrowLeftIcon,
   CallCallingIcon,
   DirectboxNotifIcon,
-  InstagramIcon,
-  LinkdinIcon,
   LocationIcon,
   TelegramIcon,
-  TwitterIcon,
 } from "@/components/icons/landing-icons";
 import { ContentWrapper } from "@/components/layout/landing/content-wrapper";
 import Image from "next/image";
@@ -158,20 +154,24 @@ const Footer = () => {
 
             <div className="flex items-center gap-4 order-1 sm:order-2">
               <Link href="/">
-                <AparatIcon />
-              </Link>
-              <Link href="/">
-                <LinkdinIcon />
-              </Link>
-              <Link href="/">
-                <InstagramIcon />
-              </Link>
-              <Link href="/">
-                <TwitterIcon />
-              </Link>
-              <Link href="/">
                 <TelegramIcon />
               </Link>
+              <a
+                referrerPolicy="origin"
+                target="_blank"
+                href="https://trustseal.enamad.ir/?id=710784&Code=a3Al6GSZ5AgNeS5JgNfyXrLUTXMUjdWp"
+                className="ml-1 inline-flex shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5 p-2 shadow-[0_8px_24px_rgba(0,0,0,0.18)] transition-colors hover:bg-white/10"
+                aria-label="نماد اعتماد الکترونیکی"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  referrerPolicy="origin"
+                  src="https://trustseal.enamad.ir/logo.aspx?id=710784&Code=a3Al6GSZ5AgNeS5JgNfyXrLUTXMUjdWp"
+                  alt="نماد اعتماد الکترونیکی"
+                  className="h-12 w-auto max-w-[110px] object-contain cursor-pointer"
+                  code="a3Al6GSZ5AgNeS5JgNfyXrLUTXMUjdWp"
+                />
+              </a>
             </div>
           </div>
 

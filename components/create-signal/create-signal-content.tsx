@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
+import html2canvas from "html2canvas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,7 +55,6 @@ import {
 } from "@/components/charts/lightweight-chart";
 import { useDebounce } from "@/hooks/useDebounce";
 import type { IChartApi } from "lightweight-charts";
-
 type AbpWrapper<T> = { result?: T };
 
 type LeaveModalRequest = { type: "navigate"; target: string } | { type: "back" };
@@ -75,11 +75,55 @@ type FetchDataFromImageFromUrlResultDto = {
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
 async function captureElementImageBase64(
+  element: HTMLDivElement | null,
   chart: IChartApi | null,
 ): Promise<string | null> {
-  if (!chart) return null;
-  await new Promise((resolve) => requestAnimationFrame(resolve));
-  const canvas = chart.takeScreenshot(true, false);
+  if (!element && !chart) return null;
+
+  const captureFullWrapper = async () => {
+    if (!element) return null;
+
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    return html2canvas(element, {
+      backgroundColor: null,
+      useCORS: true,
+      scale: Math.max(window.devicePixelRatio || 1, 2),
+      scrollX: 0,
+      scrollY: 0,
+      width: element.scrollWidth,
+      height: element.scrollHeight,
+      windowWidth: element.scrollWidth,
+      windowHeight: element.scrollHeight,
+      onclone: (clonedDocument) => {
+        const clonedElement = clonedDocument.getElementById("signal-chart-capture-area");
+        if (!clonedElement) return;
+        clonedElement.style.overflow = "visible";
+        clonedElement.style.width = `${element.scrollWidth}px`;
+        clonedElement.style.height = `${element.scrollHeight}px`;
+        clonedElement.style.maxWidth = "none";
+        clonedElement.style.maxHeight = "none";
+      },
+    });
+  };
+
+  const captureChartOnly = async () => {
+    if (!chart) return null;
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    return chart.takeScreenshot(true, false);
+  };
+
+  let canvas: HTMLCanvasElement | null = null;
+  try {
+    canvas = (await captureFullWrapper()) ?? (await captureChartOnly());
+  } catch (error) {
+    console.warn(
+      "Full chart screenshot capture failed, falling back to chart screenshot.",
+      error,
+    );
+    canvas = await captureChartOnly();
+  }
+
+  if (!canvas) return null;
   const dataUrl = canvas.toDataURL("image/png");
   if ((dataUrl.length * 3) / 4 > MAX_IMAGE_BYTES) {
     throw new Error("Chart screenshot is too large. Please try again.");
@@ -1690,7 +1734,10 @@ export function CreateSignalContent({
     setIsPublishing(true);
     setPublishError("");
     try {
-      const imageBase64 = await captureElementImageBase64(chartApiRef.current);
+      const imageBase64 = await captureElementImageBase64(
+        manualChartCaptureRef.current,
+        chartApiRef.current,
+      );
       if (!imageBase64) {
         throw new Error("Chart screenshot could not be captured. Please try again.");
       }

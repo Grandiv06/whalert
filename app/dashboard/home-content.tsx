@@ -34,7 +34,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { SignalCardProps } from "@/components/charts/signal-card";
 import { normalizePersianText } from "@/lib/utils";
-import { resolveSignalImage } from "@/lib/signal-image";
 
 type AbpWrapper<T> = { result?: T };
 
@@ -238,9 +237,6 @@ export function HomeContent() {
                         نمادها
                       </TableHead>
                       <TableHead className="text-center text-white h-12">
-                        تصویر
-                      </TableHead>
-                      <TableHead className="text-center text-white h-12">
                         جهت
                       </TableHead>
                       <TableHead className="text-center text-white h-12">
@@ -258,10 +254,10 @@ export function HomeContent() {
                     {isLoading && <DesktopSkeleton />}
                     {!isLoading && items.length === 0 && (
                       <TableRow className="dark:bg-transparent bg-white dark:hover:bg-white/5 hover:bg-gray-50">
-                        <TableCell
-                          className="text-center text-muted-foreground dark:text-white/70 h-[72px] px-6 py-8"
-                          colSpan={10}
-                        >
+                          <TableCell
+                            className="text-center text-muted-foreground dark:text-white/70 h-[72px] px-6 py-8"
+                            colSpan={9}
+                          >
                           هیچ داده‌ای یافت نشد.
                         </TableCell>
                       </TableRow>
@@ -292,38 +288,6 @@ export function HomeContent() {
                           </TableCell>
                           <TableCell className="text-center h-[72px] px-6 py-8">
                             {normalizePersianText(signal.symbol || "-")}
-                          </TableCell>
-                          <TableCell className="text-center h-[72px] px-6 py-8">
-                            {resolveSignalImage(signal) ? (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setDetailSignalId(signal.tradingSignalId ?? null);
-                                  setDetailSignalTitle(signal.symbol || "سیگنال");
-                                }}
-                                className="inline-flex w-full max-w-[120px] overflow-hidden rounded-lg border border-white/10 bg-black/20"
-                                title="مشاهده تصویر"
-                              >
-                                <img
-                                  src={resolveSignalImage(signal) ?? ""}
-                                  alt="Signal chart"
-                                  className="h-14 w-full object-contain bg-black/20"
-                                />
-                              </button>
-                            ) : signal.pictureId ? (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setDetailSignalId(signal.tradingSignalId ?? null);
-                                  setDetailSignalTitle(signal.symbol || "سیگنال");
-                                }}
-                                className="inline-flex items-center justify-center rounded-lg border border-dashed border-[#A87FF3]/35 bg-[#542C85]/10 px-3 py-2 text-xs font-semibold text-[#DCCBFF] transition-colors hover:bg-[#542C85]/18"
-                              >
-                                View chart image
-                              </button>
-                            ) : (
-                              <span className="text-white/30">-</span>
-                            )}
                           </TableCell>
                           <TableCell className="text-center h-[72px] px-6 py-8">
                             <span

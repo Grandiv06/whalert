@@ -12,7 +12,6 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { UserDashboardService, type TradingSignalDetailDto } from "@/lib/api/client";
 import { resolveSignalImage } from "@/lib/signal-image";
-import { X } from "lucide-react";
 
 type AbpWrapper<T> = { result?: T };
 
@@ -168,14 +167,6 @@ export function SignalDetailDialog({
 
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="max-w-[96vw] border border-white/10 bg-black/95 p-0 text-white">
-          <button
-            type="button"
-            onClick={() => setPreviewOpen(false)}
-            className="absolute left-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/50 text-white/80 transition-colors hover:bg-white/10 hover:text-white"
-            aria-label="بستن پیش‌نمایش"
-          >
-            <X className="h-4 w-4" />
-          </button>
           {imageSrc ? (
             <img
               src={imageSrc}
