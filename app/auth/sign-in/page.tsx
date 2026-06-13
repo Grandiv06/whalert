@@ -17,6 +17,14 @@ export default function SignInPage() {
     if (token) {
       router.replace("/dashboard");
     }
+
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const phoneNumber = params.get("phoneNumber");
+      if (phoneNumber) {
+        setFormData((prev) => ({ ...prev, email: phoneNumber }));
+      }
+    }
   }, [router]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -138,6 +146,12 @@ export default function SignInPage() {
               {errors.password && (
                 <p className="text-red-400 text-sm mt-1">{errors.password}</p>
               )}
+              <Link
+                href="/auth/forgot-password"
+                className="mt-2 block w-fit text-sm text-white/50 hover:text-white/80 transition-colors"
+              >
+                رمز عبور خود را فراموش کرده‌اید؟
+              </Link>
             </div>
 
             <button
