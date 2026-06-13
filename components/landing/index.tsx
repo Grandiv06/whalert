@@ -3,7 +3,6 @@
 import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { ContentWrapper } from "@/components/layout/landing/content-wrapper";
-import BlogSection from "./components/blog";
 import LandingLogin from "./components/landingLogin";
 import LatestSignal from "./components/latestSignal";
 import PlatformsSection from "./components/platform";
@@ -94,10 +93,6 @@ const LandingPage = () => {
 
         <ContentWrapper>
           <Questions />
-        </ContentWrapper>
-
-        <ContentWrapper>
-          <BlogSection />
         </ContentWrapper>
       </div>
     </div>
