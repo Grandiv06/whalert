@@ -73,6 +73,48 @@ type FetchDataFromImageFromUrlResultDto = {
 };
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const SIGNAL_IMAGE_ASPECT_RATIO = 16 / 9;
+
+function cropCanvasToSignalAspectRatio(canvas: HTMLCanvasElement) {
+  const sourceWidth = canvas.width;
+  const sourceHeight = canvas.height;
+  if (!sourceWidth || !sourceHeight) return canvas;
+
+  const sourceAspectRatio = sourceWidth / sourceHeight;
+  const outputWidth =
+    sourceAspectRatio > SIGNAL_IMAGE_ASPECT_RATIO
+      ? Math.round(sourceHeight * SIGNAL_IMAGE_ASPECT_RATIO)
+      : sourceWidth;
+  const outputHeight =
+    sourceAspectRatio > SIGNAL_IMAGE_ASPECT_RATIO
+      ? sourceHeight
+      : Math.round(sourceWidth / SIGNAL_IMAGE_ASPECT_RATIO);
+
+  if (outputWidth === sourceWidth && outputHeight === sourceHeight) {
+    return canvas;
+  }
+
+  const outputCanvas = document.createElement("canvas");
+  outputCanvas.width = outputWidth;
+  outputCanvas.height = outputHeight;
+
+  const context = outputCanvas.getContext("2d");
+  if (!context) return canvas;
+
+  context.drawImage(
+    canvas,
+    Math.round((sourceWidth - outputWidth) / 2),
+    Math.round((sourceHeight - outputHeight) / 2),
+    outputWidth,
+    outputHeight,
+    0,
+    0,
+    outputWidth,
+    outputHeight,
+  );
+
+  return outputCanvas;
+}
 
 async function captureElementImageBase64(
   element: HTMLDivElement | null,
@@ -124,7 +166,7 @@ async function captureElementImageBase64(
   }
 
   if (!canvas) return null;
-  const dataUrl = canvas.toDataURL("image/png");
+  const dataUrl = cropCanvasToSignalAspectRatio(canvas).toDataURL("image/png");
   if ((dataUrl.length * 3) / 4 > MAX_IMAGE_BYTES) {
     throw new Error("Chart screenshot is too large. Please try again.");
   }
