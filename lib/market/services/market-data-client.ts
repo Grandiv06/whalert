@@ -71,7 +71,7 @@ export async function getHistoricalCandles(
 ): Promise<CandlesApiResponse> {
   if (symbol === "XAUUSD" || symbol === "MAZAANE") {
     try {
-      const series = symbol === "XAUUSD" ? GoldPriceSeries._0 : GoldPriceSeries._1;
+      const series = symbol === "XAUUSD" ? GoldPriceSeries._3 : GoldPriceSeries._1;
       const timeframeMinutesMap: Record<string, number> = {
         "1m": 1,
         "5m": 5,

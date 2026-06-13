@@ -40,7 +40,7 @@ const createSignalServices: CreateSignalServices = {
         "1d": 1440,
       };
       const intervalMinutes = timeframeMinutesMap[timeframe] ?? 15;
-      const series = symbol === "XAUUSD" ? GoldPriceSeries._0 : GoldPriceSeries._1;
+      const series = symbol === "XAUUSD" ? GoldPriceSeries._3 : GoldPriceSeries._1;
 
       const candlesRaw = await GoldPriceService.apiServicesAppGoldpriceGetgoldpricecandlesGet(
         series,
