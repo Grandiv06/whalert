@@ -22,7 +22,7 @@ import {
 } from "@/lib/api/client";
 import { cn, toPersianDigits } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { clearAuthSession } from "@/lib/auth-session";
+import { clearAuthSession, hasSignalCreatorPermission } from "@/lib/auth-session";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -489,6 +489,12 @@ export function DashboardSidebar() {
             className="flex-1 px-3 space-y-2 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent py-3 transition-all duration-500 ease-in-out"
           >
             {navItems.map((item) => {
+              if (
+                item.path === "/dashboard/create-signal/" &&
+                !hasSignalCreatorPermission()
+              ) {
+                return null;
+              }
               const isProviderDetailsOpportunitiesPage =
                 pathname === "/dashboard/opportunities/" &&
                 searchParams.has("signalProviderId");

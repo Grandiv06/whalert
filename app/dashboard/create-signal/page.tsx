@@ -1,10 +1,16 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { redirect, useSearchParams } from "next/navigation";
+import { hasSignalCreatorPermission } from "@/lib/auth-session";
 import { CreateSignalContent } from "./create-signal-content";
 
 export default function CreateSignalPage() {
   const searchParams = useSearchParams();
+  const canAccessCreateSignal = hasSignalCreatorPermission();
+
+  if (!canAccessCreateSignal) {
+    redirect("/dashboard/");
+  }
 
   const initialManualEditDraft =
     searchParams.get("edit") === "1"

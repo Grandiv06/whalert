@@ -142,10 +142,6 @@ export function AnalysisContent() {
     const query = new URLSearchParams({
       signalProviderId: String(effectiveProviderId),
     });
-    const normalizedName = name.trim();
-    if (normalizedName) {
-      query.set("providerName", normalizedName);
-    }
     router.push(`/dashboard/opportunities?${query.toString()}`);
   };
 
