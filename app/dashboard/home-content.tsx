@@ -166,9 +166,21 @@ function mapSignalToCardProps(signal: ShowPositionsDto): SignalCardProps {
     entry: signal.entryPrice?.toString() || "-",
     stopLoss: signal.sl?.toString() || "-",
     takeProfit: signal.tPs?.length ? String(signal.tPs[0]) : "-",
+    tPs: signal.tPs ?? [],
     pictureUrl: signal.pictureUrl ?? null,
     pictureId: signal.pictureId ?? null,
     pictureBase64: signal.pictureBase64 ?? null,
+    description: signal.description
+      ? normalizePersianText(signal.description)
+      : null,
+    statusLabel: getOutcomeStatusMeta(
+      signal.outcomeStatus,
+      signal.outcomeSource,
+    ).label,
+    statusClassName: getOutcomeStatusMeta(
+      signal.outcomeStatus,
+      signal.outcomeSource,
+    ).className,
   };
 }
 
@@ -272,6 +284,18 @@ export function HomeContent() {
                     onViewImage={() => {
                       setDetailSignalId(signal.tradingSignalId ?? null);
                       setDetailSignalTitle(signal.symbol || "سیگنال");
+                      setDetailSignalDescription(
+                        signal.description
+                          ? normalizePersianText(signal.description)
+                          : "",
+                      );
+                    }}
+                    onViewDescription={() => {
+                      if (!signal.description) return;
+                      setDescriptionModal({
+                        title: signal.symbol || "توضیحات موقعیت",
+                        description: normalizePersianText(signal.description),
+                      });
                     }}
                   />
                 ))}

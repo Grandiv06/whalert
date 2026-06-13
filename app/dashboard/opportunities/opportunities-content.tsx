@@ -881,7 +881,7 @@ export function OpportunitiesContent() {
                           onClick={() => openSignalDetail(item)}
                           className="inline-flex w-full items-center justify-center rounded-xl border border-dashed border-[#A87FF3]/35 bg-[#542C85]/10 px-4 py-2.5 text-xs font-semibold text-[#DCCBFF] transition-colors hover:bg-[#542C85]/18"
                         >
-                          مشاهده جزئیات
+                          مشاهده عکس
                         </button>
                       </div>
                       <div className="h-px bg-white/10 my-3" />

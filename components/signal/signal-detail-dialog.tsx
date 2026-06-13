@@ -99,13 +99,13 @@ export function SignalDetailDialog({
                     <button
                       type="button"
                       onClick={() => setPreviewOpen(true)}
-                      className="block w-full cursor-pointer"
+                      className="block aspect-video w-full cursor-pointer bg-black/30"
                       title="نمایش تمام صفحه"
                     >
                       <img
                         src={imageSrc}
                         alt="Signal chart"
-                        className="max-h-[420px] w-full object-contain bg-black/30"
+                        className="h-full w-full object-contain"
                       />
                     </button>
                   ) : detail?.pictureId ? (
