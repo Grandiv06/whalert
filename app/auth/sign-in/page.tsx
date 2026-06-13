@@ -4,7 +4,12 @@ import { Lock, Mail } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ApiError, TokenAuthService } from "@/lib/api/client";
+import {
+  ApiError,
+  TokenAuthService,
+  UserDashboardService,
+  type UserSubscriptionPlanDetailsDto,
+} from "@/lib/api/client";
 import { storeAuthSession } from "@/lib/auth-session";
 
 function getSignInErrorMessage(error: unknown) {
@@ -21,6 +26,24 @@ function getSignInErrorMessage(error: unknown) {
   return "ورود با خطا مواجه شد. دوباره تلاش کنید.";
 }
 
+type AbpWrapper<T> = { result?: T };
+
+function unwrapAbp<T>(res: unknown): T {
+  const wrapped = res as AbpWrapper<T>;
+  return (wrapped?.result ?? res) as T;
+}
+
+function hasActiveSubscription(details?: UserSubscriptionPlanDetailsDto | null) {
+  if (!details?.hasSubscription) return false;
+  if (typeof details.remainingDays === "number") {
+    return details.remainingDays > 0;
+  }
+  if (details.endDateUtc) {
+    return new Date(details.endDateUtc).getTime() > Date.now();
+  }
+  return false;
+}
+
 export default function SignInPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -29,7 +52,20 @@ export default function SignInPage() {
     const token =
       typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
     if (token) {
-      router.replace("/dashboard/analysis/");
+      void (async () => {
+        try {
+          const res =
+            await UserDashboardService.apiServicesAppUserdashboardGetmysubscriptionplandetailsGet();
+          const subscriptionDetails = unwrapAbp<UserSubscriptionPlanDetailsDto>(res);
+          router.replace(
+            hasActiveSubscription(subscriptionDetails)
+              ? "/dashboard/"
+              : "/dashboard/analysis/",
+          );
+        } catch {
+          router.replace("/dashboard/");
+        }
+      })();
     }
   }, [router]);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -77,7 +113,14 @@ export default function SignInPage() {
           refreshToken: result?.refreshToken,
           expireInSeconds: result?.expireInSeconds,
         });
-        router.push("/dashboard/analysis/");
+        const subscriptionRes =
+          await UserDashboardService.apiServicesAppUserdashboardGetmysubscriptionplandetailsGet();
+        const subscriptionDetails = unwrapAbp<UserSubscriptionPlanDetailsDto>(subscriptionRes);
+        router.push(
+          hasActiveSubscription(subscriptionDetails)
+            ? "/dashboard/"
+            : "/dashboard/analysis/",
+        );
       } else {
         setErrors({ submit: "ورود موفق بود اما توکن دریافت نشد." });
       }

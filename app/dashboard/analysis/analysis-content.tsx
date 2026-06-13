@@ -296,7 +296,7 @@ export function AnalysisContent() {
 
       {isMounted && followToasts.length > 0 &&
         createPortal(
-          <div className="fixed bottom-6 right-6 z-[99999] flex w-[min(92vw,360px)] flex-col gap-2">
+          <div className="fixed bottom-6 inset-x-4 sm:inset-x-auto sm:right-6 z-[99999] flex w-auto sm:w-[min(92vw,360px)] flex-col gap-2">
             {followToasts.map((toast) => {
               const elapsed = nowMs - toast.createdAt;
               const remainingMs = Math.max(0, toast.durationMs - elapsed);
