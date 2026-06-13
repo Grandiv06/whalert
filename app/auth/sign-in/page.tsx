@@ -107,7 +107,7 @@ export default function SignInPage() {
             onSubmit={handleSubmit}
           >
             {errors.submit && (
-              <p className="text-red-400 text-sm bg-red-500/10 rounded-xl px-4 py-2 border border-red-500/30">
+              <p className="w-full md:w-9/12 text-red-400 text-sm bg-red-500/10 rounded-xl px-4 py-2 border border-red-500/30">
                 {errors.submit}
               </p>
             )}
