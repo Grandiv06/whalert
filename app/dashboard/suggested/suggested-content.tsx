@@ -105,7 +105,7 @@ const DesktopSkeleton = () => (
         key={i}
         className="dark:bg-transparent bg-white dark:hover:bg-white/5 hover:bg-gray-50"
       >
-        {[...Array(11)].map((_, j) => (
+        {[...Array(10)].map((_, j) => (
           <TableCell key={j} className="text-center h-[72px] px-6 py-8">
             <Skeleton className="h-4 w-12 mx-auto" />
           </TableCell>
@@ -326,7 +326,7 @@ export function SuggestedContent() {
         ) : (
           <div className="overflow-hidden -mx-4 md:mx-0">
             <div className="overflow-x-auto px-4 md:px-0 [&_[data-slot=table-container]]:border-0 [&_[data-slot=table-container]]:rounded-[20px]">
-              <Table className="min-w-[800px] md:min-w-0">
+              <Table className="min-w-[1000px]">
                 <TableHeader className="h-14">
                   <TableRow>
                     <TableHead className="text-center text-white h-12">
