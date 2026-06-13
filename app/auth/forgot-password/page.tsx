@@ -1,9 +1,18 @@
 "use client";
 
-import { ArrowRight, CheckCircle2, KeyRound, Lock, Phone, ShieldCheck } from "lucide-react";
+import {
+  ArrowRight,
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  KeyRound,
+  Lock,
+  Phone,
+  ShieldCheck,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ApiError, TokenAuthService } from "@/lib/api/client";
 
@@ -18,6 +27,7 @@ type ToastItem = {
 };
 
 const RESEND_SECONDS = 60;
+const OTP_LENGTH = 5;
 
 function toEnglishDigits(value: string) {
   return value
@@ -53,10 +63,15 @@ function maskPhoneNumber(phoneNumber: string) {
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
+  const otpInputRefs = useRef<Array<HTMLInputElement | null>>([]);
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [otp, setOtp] = useState("");
+  const [otpDigits, setOtpDigits] = useState<string[]>(() =>
+    Array.from({ length: OTP_LENGTH }, () => ""),
+  );
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [currentStep, setCurrentStep] = useState<Step>(1);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -84,8 +99,20 @@ export default function ForgotPasswordPage() {
     return () => window.clearInterval(timer);
   }, [toasts.length]);
 
+  useEffect(() => {
+    if (currentStep !== 2) return;
+    window.setTimeout(() => {
+      otpInputRefs.current[0]?.focus();
+    }, 0);
+  }, [currentStep]);
+
   const inputClass = (hasError: boolean, hasLeftPadding = false) =>
     `w-full md:w-9/12 px-4 py-3 sm:py-4 pr-10 ${hasLeftPadding ? "pl-10" : ""} rounded-xl bg-[#2e165b]/80 border text-white text-sm sm:text-base placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-[#542C85]/30 text-right transition-all ${
+      hasError ? "border-red-500" : "border-[#542C85]/20 focus:border-[#542C85]/40"
+    }`;
+
+  const passwordInputClass = (hasError: boolean) =>
+    `w-full px-4 py-3 sm:py-4 pr-10 pl-12 rounded-xl bg-[#2e165b]/80 border text-white text-sm sm:text-base placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-[#542C85]/30 text-right transition-all ${
       hasError ? "border-red-500" : "border-[#542C85]/20 focus:border-[#542C85]/40"
     }`;
 
@@ -99,6 +126,87 @@ export default function ForgotPasswordPage() {
       ...prev,
       { id, message, kind, createdAt: Date.now(), durationMs: 4000 },
     ].slice(-3));
+  };
+
+  const resetOtpInputs = () => {
+    setOtpDigits(Array.from({ length: OTP_LENGTH }, () => ""));
+    window.setTimeout(() => {
+      otpInputRefs.current[0]?.focus();
+    }, 0);
+  };
+
+  const focusOtpInput = (index: number) => {
+    window.setTimeout(() => {
+      otpInputRefs.current[index]?.focus();
+      otpInputRefs.current[index]?.select();
+    }, 0);
+  };
+
+  const fillOtpDigits = (digits: string[], startIndex = 0) => {
+    const next = [...otpDigits];
+    digits.slice(0, OTP_LENGTH - startIndex).forEach((digit, offset) => {
+      next[startIndex + offset] = digit;
+    });
+    const joinedOtp = next.join("");
+
+    setOtpDigits(next);
+
+    const nextIndex = Math.min(startIndex + digits.length, OTP_LENGTH - 1);
+    focusOtpInput(nextIndex);
+
+    if (!loading && joinedOtp.length === OTP_LENGTH && next.every(Boolean)) {
+      window.setTimeout(() => {
+        void verifyOtp(joinedOtp);
+      }, 0);
+    }
+  };
+
+  const handleOtpChange = (index: number, value: string) => {
+    clearMessages();
+    const digits = toEnglishDigits(value).replace(/\D/g, "").slice(0, OTP_LENGTH).split("");
+
+    if (digits.length > 1) {
+      fillOtpDigits(digits, index);
+      return;
+    }
+
+    const next = [...otpDigits];
+    next[index] = digits[0] ?? "";
+    const joinedOtp = next.join("");
+
+    setOtpDigits(next);
+
+    if (digits[0] && index < OTP_LENGTH - 1) {
+      focusOtpInput(index + 1);
+    }
+
+    if (!loading && joinedOtp.length === OTP_LENGTH && next.every(Boolean)) {
+      window.setTimeout(() => {
+        void verifyOtp(joinedOtp);
+      }, 0);
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Backspace" && !otpDigits[index] && index > 0) {
+      event.preventDefault();
+      const next = [...otpDigits];
+      next[index - 1] = "";
+      setOtpDigits(next);
+      focusOtpInput(index - 1);
+    }
+  };
+
+  const handleOtpPaste = (index: number, event: React.ClipboardEvent<HTMLInputElement>) => {
+    event.preventDefault();
+    clearMessages();
+    const digits = toEnglishDigits(event.clipboardData.getData("text"))
+      .replace(/\D/g, "")
+      .slice(0, OTP_LENGTH)
+      .split("");
+    if (digits.length > 0) {
+      fillOtpDigits(digits, index);
+    }
   };
 
   const sendOtp = async (isResend = false) => {
@@ -121,6 +229,7 @@ export default function ForgotPasswordPage() {
         phoneNumber: normalizedPhone,
       });
       setPhoneNumber(normalizedPhone);
+      resetOtpInputs();
       pushToast(
         isResend ? "کد تایید دوباره ارسال شد." : "کد تایید ارسال شد.",
         "success",
@@ -136,12 +245,13 @@ export default function ForgotPasswordPage() {
     }
   };
 
-  const verifyOtp = async () => {
+  const verifyOtp = async (otpValue = otpDigits.join("")) => {
     clearMessages();
-    const normalizedOtp = toEnglishDigits(otp).replace(/\D/g, "");
+    const normalizedOtp = toEnglishDigits(otpValue).replace(/\D/g, "");
 
-    if (!normalizedOtp) {
-      setErrorMessage("کد تایید الزامی است.");
+    if (normalizedOtp.length !== OTP_LENGTH) {
+      setErrorMessage("کد تایید ۵ رقمی را کامل وارد کنید.");
+      focusOtpInput(Math.min(normalizedOtp.length, OTP_LENGTH - 1));
       return;
     }
 
@@ -158,16 +268,17 @@ export default function ForgotPasswordPage() {
 
       if (result?.isOtpValid === false) {
         setErrorMessage("کد تایید وارد شده صحیح نیست.");
+        resetOtpInputs();
         return;
       }
 
-      setOtp(normalizedOtp);
       pushToast("کد تایید با موفقیت بررسی شد.", "success");
       setCurrentStep(3);
     } catch (error) {
       setErrorMessage(
         getErrorMessage(error, "کد تایید صحیح نیست یا منقضی شده است."),
       );
+      resetOtpInputs();
     } finally {
       setLoading(false);
     }
@@ -200,7 +311,7 @@ export default function ForgotPasswordPage() {
       });
       pushToast("رمز عبور شما با موفقیت تغییر کرد.", "success");
       setPhoneNumber("");
-      setOtp("");
+      resetOtpInputs();
       setPassword("");
       setConfirmPassword("");
       setCurrentStep(1);
@@ -317,24 +428,38 @@ export default function ForgotPasswordPage() {
                 <p className="w-full md:w-9/12 text-sm text-white/60">
                   کد تایید به {maskPhoneNumber(phoneNumber)} ارسال شد.
                 </p>
-                <div className="relative">
-                  <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-white/50">
-                    <ShieldCheck className="w-5 h-5" />
+                <div className="w-full md:w-9/12">
+                  <div dir="ltr" className="flex items-center justify-between gap-2 sm:gap-3">
+                    {otpDigits.map((digit, index) => (
+                      <input
+                        key={index}
+                        ref={(node) => {
+                          otpInputRefs.current[index] = node;
+                        }}
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete={index === 0 ? "one-time-code" : "off"}
+                        maxLength={1}
+                        aria-label={`رقم ${index + 1} کد تایید`}
+                        className={`h-12 w-11 rounded-xl border bg-[#2e165b]/80 text-center text-lg font-bold text-white outline-none transition-all placeholder:text-white/50 focus:ring-2 focus:ring-[#542C85]/30 sm:h-14 sm:w-14 sm:text-xl ${
+                          errorMessage
+                            ? "border-red-500"
+                            : "border-[#542C85]/20 focus:border-[#542C85]/40"
+                        }`}
+                        value={digit}
+                        disabled={loading}
+                        onChange={(event) => handleOtpChange(index, event.target.value)}
+                        onKeyDown={(event) => handleOtpKeyDown(index, event)}
+                        onPaste={(event) => handleOtpPaste(index, event)}
+                      />
+                    ))}
                   </div>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    dir="ltr"
-                    className={inputClass(!!errorMessage)}
-                    placeholder="کد تایید"
-                    value={otp}
-                    disabled={loading}
-                    onChange={(event) => {
-                      setOtp(toEnglishDigits(event.target.value).replace(/\D/g, ""));
-                      clearMessages();
-                    }}
-                  />
+                  {loading ? (
+                    <div className="mt-3 flex items-center gap-2 text-xs text-white/50">
+                      <ShieldCheck className="h-4 w-4 animate-pulse" />
+                      در حال بررسی کد تایید...
+                    </div>
+                  ) : null}
                 </div>
                 {errorMessage ? (
                   <p className="w-full md:w-9/12 text-red-400 text-xs mt-2 pr-1">
@@ -366,15 +491,15 @@ export default function ForgotPasswordPage() {
 
             {currentStep === 3 ? (
               <div className="space-y-4">
-                <div className="relative">
-                  <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-white/50">
+                <div className="relative w-full md:w-9/12">
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/50">
                     <Lock className="w-5 h-5" />
                   </div>
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     autoComplete="new-password"
                     dir="ltr"
-                    className={inputClass(!!errorMessage)}
+                    className={passwordInputClass(!!errorMessage)}
                     placeholder="رمز عبور جدید"
                     value={password}
                     disabled={loading}
@@ -383,16 +508,24 @@ export default function ForgotPasswordPage() {
                       clearMessages();
                     }}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center text-white/50 hover:text-white/80 transition-colors focus:outline-none cursor-pointer"
+                    aria-label={showPassword ? "مخفی کردن رمز عبور" : "نمایش رمز عبور"}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
-                <div className="relative">
-                  <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-white/50">
+                <div className="relative w-full md:w-9/12">
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/50">
                     <KeyRound className="w-5 h-5" />
                   </div>
                   <input
-                    type="password"
+                    type={showConfirmPassword ? "text" : "password"}
                     autoComplete="new-password"
                     dir="ltr"
-                    className={inputClass(!!errorMessage)}
+                    className={passwordInputClass(!!errorMessage)}
                     placeholder="تکرار رمز عبور جدید"
                     value={confirmPassword}
                     disabled={loading}
@@ -401,15 +534,15 @@ export default function ForgotPasswordPage() {
                       clearMessages();
                     }}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((prev) => !prev)}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center text-white/50 hover:text-white/80 transition-colors focus:outline-none cursor-pointer"
+                    aria-label={showConfirmPassword ? "مخفی کردن رمز عبور" : "نمایش رمز عبور"}
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() => goToStep(2)}
-                  className="w-fit text-sm text-white/50 transition-colors hover:text-white/80 disabled:opacity-60"
-                >
-                  بازگشت به تایید کد
-                </button>
               </div>
             ) : null}
 
