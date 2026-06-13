@@ -4,9 +4,18 @@ import { ArrowRight, CheckCircle2, KeyRound, Lock, Phone, ShieldCheck } from "lu
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { ApiError, TokenAuthService } from "@/lib/api/client";
 
 type Step = 1 | 2 | 3;
+type ToastKind = "success" | "error";
+type ToastItem = {
+  id: number;
+  message: string;
+  kind: ToastKind;
+  createdAt: number;
+  durationMs: number;
+};
 
 const RESEND_SECONDS = 60;
 
@@ -39,8 +48,7 @@ function getErrorMessage(error: unknown, fallback: string) {
 }
 
 function maskPhoneNumber(phoneNumber: string) {
-  if (phoneNumber.length < 7) return phoneNumber;
-  return `${phoneNumber.slice(0, 4)}xxx${phoneNumber.slice(-4)}`;
+  return phoneNumber;
 }
 
 export default function ForgotPasswordPage() {
@@ -52,8 +60,9 @@ export default function ForgotPasswordPage() {
   const [currentStep, setCurrentStep] = useState<Step>(1);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
   const [resendTimer, setResendTimer] = useState(0);
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const [nowMs, setNowMs] = useState(() => Date.now());
 
   useEffect(() => {
     if (resendTimer <= 0) return;
@@ -63,6 +72,18 @@ export default function ForgotPasswordPage() {
     return () => window.clearTimeout(timer);
   }, [resendTimer]);
 
+  useEffect(() => {
+    if (toasts.length === 0) return;
+    const timer = window.setInterval(() => {
+      const current = Date.now();
+      setNowMs(current);
+      setToasts((prev) =>
+        prev.filter((toast) => current - toast.createdAt < toast.durationMs),
+      );
+    }, 200);
+    return () => window.clearInterval(timer);
+  }, [toasts.length]);
+
   const inputClass = (hasError: boolean, hasLeftPadding = false) =>
     `w-full md:w-9/12 px-4 py-3 sm:py-4 pr-10 ${hasLeftPadding ? "pl-10" : ""} rounded-xl bg-[#2e165b]/80 border text-white text-sm sm:text-base placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-[#542C85]/30 text-right transition-all ${
       hasError ? "border-red-500" : "border-[#542C85]/20 focus:border-[#542C85]/40"
@@ -70,7 +91,14 @@ export default function ForgotPasswordPage() {
 
   const clearMessages = () => {
     setErrorMessage("");
-    setSuccessMessage("");
+  };
+
+  const pushToast = (message: string, kind: ToastKind) => {
+    const id = Date.now() + Math.floor(Math.random() * 1000);
+    setToasts((prev) => [
+      ...prev,
+      { id, message, kind, createdAt: Date.now(), durationMs: 4000 },
+    ].slice(-3));
   };
 
   const sendOtp = async (isResend = false) => {
@@ -93,8 +121,9 @@ export default function ForgotPasswordPage() {
         phoneNumber: normalizedPhone,
       });
       setPhoneNumber(normalizedPhone);
-      setSuccessMessage(
+      pushToast(
         isResend ? "کد تایید دوباره ارسال شد." : "کد تایید ارسال شد.",
+        "success",
       );
       setCurrentStep(2);
       setResendTimer(RESEND_SECONDS);
@@ -133,7 +162,7 @@ export default function ForgotPasswordPage() {
       }
 
       setOtp(normalizedOtp);
-      setSuccessMessage("کد تایید با موفقیت بررسی شد.");
+      pushToast("کد تایید با موفقیت بررسی شد.", "success");
       setCurrentStep(3);
     } catch (error) {
       setErrorMessage(
@@ -169,7 +198,7 @@ export default function ForgotPasswordPage() {
         phoneNumber: resetPhoneNumber,
         password,
       });
-      setSuccessMessage("رمز عبور شما با موفقیت تغییر کرد.");
+      pushToast("رمز عبور شما با موفقیت تغییر کرد.", "success");
       setPhoneNumber("");
       setOtp("");
       setPassword("");
@@ -227,15 +256,17 @@ export default function ForgotPasswordPage() {
             </p>
           </div>
 
-          <div className="mb-6 flex w-full md:w-9/12 lg:w-1/2 gap-2">
-            {[1, 2, 3].map((step) => (
-              <div
-                key={step}
-                className={`h-1.5 flex-1 rounded-full ${
-                  currentStep >= step ? "bg-[#8b5cf6]" : "bg-white/15"
-                }`}
-              />
-            ))}
+          <div className="mb-6 w-full lg:w-1/2">
+            <div className="flex w-full md:w-9/12 gap-2">
+              {[1, 2, 3].map((step) => (
+                <div
+                  key={step}
+                  className={`h-1.5 flex-1 rounded-full ${
+                    currentStep >= step ? "bg-[#8b5cf6]" : "bg-white/15"
+                  }`}
+                />
+              ))}
+            </div>
           </div>
 
           <form
@@ -243,13 +274,6 @@ export default function ForgotPasswordPage() {
             onSubmit={handleSubmit}
             noValidate
           >
-            {successMessage ? (
-              <p className="w-full md:w-9/12 flex items-center gap-2 text-emerald-300 text-sm bg-emerald-500/10 rounded-xl px-4 py-2 border border-emerald-500/30">
-                <CheckCircle2 className="h-4 w-4 shrink-0" />
-                {successMessage}
-              </p>
-            ) : null}
-
             {errorMessage && currentStep === 3 ? (
               <p className="w-full md:w-9/12 text-red-400 text-sm bg-red-500/10 rounded-xl px-4 py-2 border border-red-500/30">
                 {errorMessage}
@@ -415,6 +439,51 @@ export default function ForgotPasswordPage() {
           خوش آمدید
         </span>
       </div>
+
+      {typeof document !== "undefined" && toasts.length > 0
+        ? createPortal(
+            <div className="fixed bottom-6 right-6 z-[99999] flex w-[min(92vw,360px)] flex-col gap-2">
+              {toasts.map((toast) => {
+                const elapsed = nowMs - toast.createdAt;
+                const remainingMs = Math.max(0, toast.durationMs - elapsed);
+                const remainingSec = Math.max(0, Math.ceil(remainingMs / 1000));
+                const progressPercent = Math.max(0, (remainingMs / toast.durationMs) * 100);
+
+                return (
+                  <div
+                    key={toast.id}
+                    className={`relative overflow-hidden rounded-xl border px-3 py-2.5 text-sm shadow-lg backdrop-blur-md transition-all duration-300 ${
+                      toast.kind === "success"
+                        ? "border-[#A87FF3]/40 bg-[#542C85]/25 text-white"
+                        : "border-[#A87FF3]/30 bg-[#2F1A4D]/60 text-white/90"
+                    }`}
+                  >
+                    <div className="flex items-start gap-2">
+                      {toast.kind === "success" ? (
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#CDB7FF]" />
+                      ) : null}
+                      <div className="min-w-0 flex-1">
+                        <p className="leading-6 font-medium">{toast.message}</p>
+                      </div>
+                      <span className="shrink-0 rounded-md bg-black/25 px-1.5 py-0.5 text-[11px] font-medium">
+                        {remainingSec}s
+                      </span>
+                    </div>
+                    <div className="mt-2 h-1 w-full rounded-full bg-white/10">
+                      <div
+                        className={`h-full rounded-full transition-[width] duration-200 ${
+                          toast.kind === "success" ? "bg-[#A87FF3]" : "bg-[#7C4DCC]"
+                        }`}
+                        style={{ width: `${progressPercent}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }
