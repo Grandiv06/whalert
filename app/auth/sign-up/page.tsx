@@ -68,7 +68,7 @@ function SignUpForm() {
     const token =
       typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
     if (token) {
-      router.replace("/dashboard");
+      router.replace("/dashboard/analysis/");
     }
   }, [router]);
 

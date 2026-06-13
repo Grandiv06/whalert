@@ -67,6 +67,7 @@ import {
   SignalSide,
   SignalProviderService,
   ProviderShowcaseService,
+  type SignalProviderInfoDto,
   SignalOutcomeStatus,
   SignalOutcomeSource,
 } from "@/lib/api/client";
@@ -354,6 +355,39 @@ export function OpportunitiesContent() {
     ...noCacheQueryOptions,
   });
 
+  const { data: providerInfo } = useQuery({
+    queryKey: ["signal-provider-info", selectedProviderId],
+    queryFn: async () => {
+      if (!selectedProviderId) return null;
+      const res =
+        await UserDashboardService.apiServicesAppUserdashboardGetallsignalproviderinfoPost(
+          {
+            skipCount: 0,
+            maxResultCount: 1000,
+            sorting: "name asc",
+          },
+        );
+      const wrapped = res as AbpWrapper<{
+        items?: SignalProviderInfoDto[];
+      }>;
+      return (
+        wrapped?.result ??
+        res
+      ) as {
+        items?: SignalProviderInfoDto[];
+      };
+    },
+    enabled: Boolean(selectedProviderId),
+    ...noCacheQueryOptions,
+  });
+
+  const providerDisplayName =
+    normalizePersianText(
+      providerInfo?.items?.find(
+        (item) => item.signalProviderId === selectedProviderId,
+      )?.name || "",
+    ).trim() || "—";
+
   useEffect(() => {
     if (!selectedProviderId) {
       router.replace("/404");
@@ -522,11 +556,6 @@ export function OpportunitiesContent() {
   const totalCount = positionsData?.totalCount ?? 0;
   const totalPages = Math.ceil(totalCount / pageSize) || 0;
   const startIndex = (currentPage - 1) * pageSize;
-  const providerDisplayName =
-    normalizePersianText(items[0]?.displayName || "").trim() ||
-    (selectedProviderId
-      ? `کاربر ${selectedProviderId.toLocaleString("fa-IR")}`
-      : "");
 
   const mapPosition = (position: ShowPositionsDto, index: number) => ({
     id: index,

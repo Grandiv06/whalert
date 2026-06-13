@@ -29,7 +29,7 @@ export default function SignInPage() {
     const token =
       typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
     if (token) {
-      router.replace("/dashboard");
+      router.replace("/dashboard/analysis/");
     }
   }, [router]);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -77,7 +77,7 @@ export default function SignInPage() {
           refreshToken: result?.refreshToken,
           expireInSeconds: result?.expireInSeconds,
         });
-        router.push("/dashboard");
+        router.push("/dashboard/analysis/");
       } else {
         setErrors({ submit: "ورود موفق بود اما توکن دریافت نشد." });
       }
