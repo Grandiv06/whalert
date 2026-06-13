@@ -28,5 +28,7 @@ export type GetProvidedOutPut = {
     outcomeDeclaredAt?: string | null;
     signalStatus?: SignalStatus;
     canCancelPending?: boolean;
+    pictureUrl?: string | null;
+    pictureId?: string | null;
 };
 

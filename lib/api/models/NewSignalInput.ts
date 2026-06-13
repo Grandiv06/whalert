@@ -8,6 +8,8 @@ export type NewSignalInput = {
     entryPoint?: number | null;
     sl?: number | null;
     tPs?: Array<number> | null;
+    pictureId?: string | null;
+    pictureToken?: string | null;
     picture?: string | null;
     description?: string | null;
     side?: SignalSide;

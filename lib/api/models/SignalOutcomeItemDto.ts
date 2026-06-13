@@ -28,5 +28,7 @@ export type SignalOutcomeItemDto = {
     canDeclareOutcome?: boolean;
     signalStatus?: SignalStatus;
     canCancelPending?: boolean;
+    pictureUrl?: string | null;
+    pictureId?: string | null;
 };
 

@@ -66,6 +66,7 @@ import {
   MarketType,
   SignalSide,
   SignalProviderService,
+  ProviderShowcaseService,
   SignalOutcomeStatus,
   SignalOutcomeSource,
 } from "@/lib/api/client";
@@ -350,10 +351,9 @@ export function OpportunitiesContent() {
     queryKey: ["monthlyProfitLossChart", selectedProviderId],
     queryFn: async () => {
       const res =
-        await UserDashboardService.apiServicesAppUserdashboardGetmonthlyprofitlosschartPost(
+        await ProviderShowcaseService.apiServicesAppProvidershowcaseGetmonthlyprofitlosschartPost(
           {
             dayCount: 0,
-            userId: selectedProviderId,
             signalProviderId: selectedProviderId,
           },
         );
@@ -383,10 +383,9 @@ export function OpportunitiesContent() {
     queryKey: ["performanceByAssetChart", selectedProviderId],
     queryFn: async () => {
       const res =
-        await UserDashboardService.apiServicesAppUserdashboardGetperformancebyassetchartPost(
+        await ProviderShowcaseService.apiServicesAppProvidershowcaseGetperformancebyassetchartPost(
           {
             dayCount: 0,
-            userId: selectedProviderId,
             signalProviderId: selectedProviderId,
           },
         );
@@ -424,10 +423,9 @@ export function OpportunitiesContent() {
       queryKey: ["rewardToRiskChart", selectedProviderId],
       queryFn: async () => {
         const res =
-          await UserDashboardService.apiServicesAppUserdashboardGetrewardtoriskchartPost(
+          await ProviderShowcaseService.apiServicesAppProvidershowcaseGetrewardtoriskchartPost(
             {
               dayCount: 0,
-              userId: selectedProviderId,
               signalProviderId: selectedProviderId,
             },
           );

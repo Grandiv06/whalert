@@ -9,6 +9,8 @@ export type SubmitSignalFromUserInputDto = {
     stopLoss?: number | null;
     takeProfits?: Array<number> | null;
     description?: string | null;
+    pictureId?: string | null;
+    pictureToken?: string | null;
     imageBase64?: string | null;
 };
 
