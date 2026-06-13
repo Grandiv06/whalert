@@ -4,8 +4,22 @@ import { Lock, Mail } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { TokenAuthService } from "@/lib/api/client";
+import { ApiError, TokenAuthService } from "@/lib/api/client";
 import { storeAuthSession } from "@/lib/auth-session";
+
+function getSignInErrorMessage(error: unknown) {
+  if (error instanceof ApiError) {
+    const body = error.body as {
+      error?: { message?: string; details?: string };
+      message?: string;
+    };
+    const rawMessage = body?.error?.message || body?.error?.details || body?.message;
+    if (rawMessage === "Invalid user name or password") {
+      return "نام کاربری یا رمز عبور نامعتبر است.";
+    }
+  }
+  return "ورود با خطا مواجه شد. دوباره تلاش کنید.";
+}
 
 export default function SignInPage() {
   const router = useRouter();
@@ -16,14 +30,6 @@ export default function SignInPage() {
       typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
     if (token) {
       router.replace("/dashboard");
-    }
-
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const phoneNumber = params.get("phoneNumber");
-      if (phoneNumber) {
-        setFormData((prev) => ({ ...prev, email: phoneNumber }));
-      }
     }
   }, [router]);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -75,8 +81,8 @@ export default function SignInPage() {
       } else {
         setErrors({ submit: "ورود موفق بود اما توکن دریافت نشد." });
       }
-    } catch {
-      setErrors({ submit: "ورود با خطا مواجه شد. دوباره تلاش کنید." });
+    } catch (error) {
+      setErrors({ submit: getSignInErrorMessage(error) });
     } finally {
       setLoading(false);
     }

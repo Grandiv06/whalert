@@ -52,7 +52,18 @@ function getErrorMessage(error: unknown, fallback: string) {
       error?: { message?: string; details?: string };
       message?: string;
     };
-    return body?.error?.message || body?.error?.details || body?.message || fallback;
+    const rawMessage =
+      body?.error?.message || body?.error?.details || body?.message || fallback;
+
+    if (rawMessage === "No active user found for this phone number.") {
+      return "برای این شماره تلفن کاربری فعال پیدا نشد.";
+    }
+
+    if (rawMessage === "Please wait before requesting a new code.") {
+      return "لطفا قبل از درخواست کد جدید کمی صبر کنید.";
+    }
+
+    return rawMessage;
   }
   return fallback;
 }
@@ -367,7 +378,7 @@ export default function ForgotPasswordPage() {
             </p>
           </div>
 
-          <div className="mb-6 w-full lg:w-1/2">
+          <div className="mb-6 hidden w-full lg:w-1/2">
             <div className="flex w-full md:w-9/12 gap-2">
               {[1, 2, 3].map((step) => (
                 <div
@@ -386,7 +397,7 @@ export default function ForgotPasswordPage() {
             noValidate
           >
             {errorMessage && currentStep === 3 ? (
-              <p className="w-full md:w-9/12 text-red-400 text-sm bg-red-500/10 rounded-xl px-4 py-2 border border-red-500/30">
+              <p className="w-full md:w-9/12 text-red-300 text-sm leading-6">
                 {errorMessage}
               </p>
             ) : null}
