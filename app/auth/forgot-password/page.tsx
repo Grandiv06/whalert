@@ -424,12 +424,12 @@ export default function ForgotPasswordPage() {
             ) : null}
 
             {currentStep === 2 ? (
-              <div className="space-y-3">
+              <div className="space-y-5 pt-2 pb-2">
                 <p className="w-full md:w-9/12 text-sm text-white/60">
                   کد تایید به {maskPhoneNumber(phoneNumber)} ارسال شد.
                 </p>
-                <div className="w-full md:w-9/12">
-                  <div dir="ltr" className="flex items-center justify-between gap-2 sm:gap-3">
+                <div className="w-full md:w-9/12 py-2 sm:py-3">
+                  <div dir="ltr" className="mx-auto flex w-fit items-center justify-center gap-2.5 sm:gap-4">
                     {otpDigits.map((digit, index) => (
                       <input
                         key={index}
@@ -441,10 +441,10 @@ export default function ForgotPasswordPage() {
                         autoComplete={index === 0 ? "one-time-code" : "off"}
                         maxLength={1}
                         aria-label={`رقم ${index + 1} کد تایید`}
-                        className={`h-12 w-11 rounded-xl border bg-[#2e165b]/80 text-center text-lg font-bold text-white outline-none transition-all placeholder:text-white/50 focus:ring-2 focus:ring-[#542C85]/30 sm:h-14 sm:w-14 sm:text-xl ${
+                        className={`h-14 w-12 shrink-0 rounded-2xl border bg-[#3b1f70]/95 text-center text-xl font-bold text-white shadow-[0_0_0_1px_rgba(255,255,255,0.04)] outline-none transition-all placeholder:text-white/50 focus:ring-2 focus:ring-[#8b5cf6]/45 sm:h-14 sm:w-14 sm:text-xl ${
                           errorMessage
                             ? "border-red-500"
-                            : "border-[#542C85]/20 focus:border-[#542C85]/40"
+                            : "border-white/15 focus:border-[#8b5cf6]/70"
                         }`}
                         value={digit}
                         disabled={loading}
@@ -455,7 +455,7 @@ export default function ForgotPasswordPage() {
                     ))}
                   </div>
                   {loading ? (
-                    <div className="mt-3 flex items-center gap-2 text-xs text-white/50">
+                    <div className="mt-4 flex items-center gap-2 text-xs text-white/50">
                       <ShieldCheck className="h-4 w-4 animate-pulse" />
                       در حال بررسی کد تایید...
                     </div>
