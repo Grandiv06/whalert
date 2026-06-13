@@ -165,7 +165,13 @@ const LatestSignal = () => {
             }}
             loop={signals.length > 1}
             loopAdditionalSlides={carouselSignals.length}
-            pagination={{ clickable: true }}
+            pagination={{
+              clickable: true,
+              renderBullet: (index, className) => {
+                if (index >= signals.length) return "";
+                return `<span class="${className}"></span>`;
+              },
+            }}
             watchOverflow
             observer
             observeParents
