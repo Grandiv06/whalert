@@ -15,7 +15,6 @@ export interface PositionCardProps {
   stopLoss: string;
   takeProfit: string;
   tPs?: Array<string | number>;
-  onExecute?: () => void;
   onShowChart?: () => void;
   hasChartImage?: boolean;
 }
@@ -31,7 +30,6 @@ export function PositionCard({
   stopLoss,
   takeProfit,
   tPs,
-  onExecute,
   onShowChart,
   hasChartImage = true,
 }: PositionCardProps) {
@@ -118,25 +116,15 @@ export function PositionCard({
             </div>
           </div>
         </div>
-        <div className="flex gap-3 pt-2">
+        <div className="pt-2">
           <button
-            onClick={onExecute}
-            className="flex-1 px-4 py-2.5 rounded-xl border border-white text-white text-xs md:text-sm font-medium hover:bg-white/10 transition-colors"
+            type="button"
+            onClick={hasChartImage ? onShowChart : undefined}
+            disabled={!hasChartImage}
+            className="w-full rounded-xl border border-dashed border-[#A87FF3]/35 bg-[#542C85]/10 px-4 py-2.5 text-xs font-semibold text-[#DCCBFF] transition-colors hover:bg-[#542C85]/18 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/[0.02] disabled:text-white/35"
           >
-            اجرا
+            مشاهده عکس
           </button>
-          {hasChartImage ? (
-            <button
-              onClick={onShowChart}
-              className="flex-1 rounded-xl border border-dashed border-[#A87FF3]/35 bg-[#542C85]/10 px-4 py-2.5 text-xs font-semibold text-[#DCCBFF] transition-colors hover:bg-[#542C85]/18"
-            >
-              مشاهده عکس
-            </button>
-          ) : (
-            <span className="flex-1 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-2.5 text-center text-xs font-semibold text-white/35">
-              بدون تصویر
-            </span>
-          )}
         </div>
       </CardContent>
     </Card>
