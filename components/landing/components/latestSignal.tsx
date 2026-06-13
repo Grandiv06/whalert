@@ -9,9 +9,8 @@ import { useQuery } from "@tanstack/react-query";
 import { SignalDetailDialog } from "@/components/signal/signal-detail-dialog";
 import { resolveSignalImage } from "@/lib/signal-image";
 import "swiper/css";
-import "swiper/css/navigation";
 import "swiper/css/pagination";
-import { Autoplay, Navigation, Pagination } from "swiper/modules";
+import { Autoplay, Pagination } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 
 const SignalCard = ({
@@ -24,6 +23,7 @@ const SignalCard = ({
   const imageSrc = resolveSignalImage(signal);
   return (
     <div
+      dir="rtl"
       className="relative p-6 rounded-2xl flex flex-col gap-5 min-h-[200px] h-full overflow-hidden border border-violet-500/50 shadow-[0_0_20px_rgba(139,92,246,0.15)]"
       style={{
         background:
@@ -115,6 +115,12 @@ const LatestSignal = () => {
     queryKey: queryKeys.signals.list(),
     queryFn: signalsApi.getAll,
   });
+  const carouselSignals = signals?.length
+    ? Array.from(
+        { length: Math.max(signals.length, 9) },
+        (_, index) => signals[index % signals.length],
+      )
+    : [];
 
   return (
     <div className="w-full">
@@ -140,24 +146,34 @@ const LatestSignal = () => {
       ) : !signals || signals.length === 0 ? (
         <div className="text-center py-8 text-white/70">سیگنالی یافت نشد</div>
       ) : (
-        <div className="py-12">
+        <div className="py-12 overflow-hidden">
           <Swiper
-            modules={[Navigation, Pagination, Autoplay]}
+            modules={[Pagination, Autoplay]}
+            dir="ltr"
             spaceBetween={16}
             slidesPerView={1}
-            centeredSlides={true}
-            autoplay={{ delay: 2500, disableOnInteraction: false }}
             breakpoints={{
-              640: { slidesPerView: 2, centeredSlides: true },
-              1024: { slidesPerView: 3, centeredSlides: true },
+              640: { slidesPerView: 2 },
+              1024: { slidesPerView: 3 },
             }}
-            loop={true}
-            centerInsufficientSlides={true}
+            centeredSlides={false}
+            speed={700}
+            autoplay={{
+              delay: 2200,
+              disableOnInteraction: false,
+              pauseOnMouseEnter: false,
+            }}
+            loop={signals.length > 1}
+            loopAdditionalSlides={carouselSignals.length}
             pagination={{ clickable: true }}
-            className="latest-signals-swiper"
+            watchOverflow
+            observer
+            observeParents
+            updateOnWindowResize
+            className="latest-signals-swiper mx-auto max-w-[1080px]"
           >
-            {signals.map((signal) => (
-              <SwiperSlide key={signal.id}>
+            {carouselSignals.map((signal, index) => (
+              <SwiperSlide key={`${signal.id}-${index}`} className="!h-auto">
                 <SignalCard
                   signal={signal}
                   onOpenDetail={() => {
