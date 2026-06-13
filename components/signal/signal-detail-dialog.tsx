@@ -5,7 +5,6 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -39,7 +38,6 @@ export function SignalDetailDialog({
   onOpenChange,
   tradingSignalId,
   title,
-  description,
 }: SignalDetailDialogProps) {
   const [previewOpen, setPreviewOpen] = useState(false);
 
@@ -81,9 +79,6 @@ export function SignalDetailDialog({
               <DialogTitle className="text-xl font-bold text-white">
                 {imageTitle}
               </DialogTitle>
-              <DialogDescription className="text-white/70 leading-7">
-                {description || detail?.description || "جزئیات سیگنال"}
-              </DialogDescription>
             </DialogHeader>
 
             {isLoading ? (
@@ -93,72 +88,29 @@ export function SignalDetailDialog({
                 بارگذاری جزئیات سیگنال با خطا مواجه شد. لطفاً دوباره تلاش کنید.
               </div>
             ) : (
-              <div className="space-y-5">
-                <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/20">
-                  {imageSrc ? (
-                    <button
-                      type="button"
-                      onClick={() => setPreviewOpen(true)}
-                      className="block aspect-video w-full cursor-pointer bg-black/30"
-                      title="نمایش تمام صفحه"
-                    >
-                      <img
-                        src={imageSrc}
-                        alt="Signal chart"
-                        className="h-full w-full object-contain"
-                      />
-                    </button>
-                  ) : detail?.pictureId ? (
-                    <div className="flex min-h-[220px] items-center justify-center px-4 text-center text-sm text-white/70">
-                      تصویر این سیگنال در دسترس نیست.
-                    </div>
-                  ) : (
-                    <div className="flex min-h-[220px] items-center justify-center px-4 text-center text-sm text-white/70">
-                      هیچ تصویر چارتی برای این سیگنال موجود نیست.
-                    </div>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-1 gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 md:grid-cols-3">
-                  <div>
-                    <p className="text-xs text-white/45">نماد</p>
-                    <p className="mt-1 text-sm font-semibold text-white">
-                      {detail?.symbol || "-"}
-                    </p>
+              <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/20">
+                {imageSrc ? (
+                  <button
+                    type="button"
+                    onClick={() => setPreviewOpen(true)}
+                    className="block aspect-video w-full cursor-pointer bg-black/30"
+                    title="نمایش تمام صفحه"
+                  >
+                    <img
+                      src={imageSrc}
+                      alt="Signal chart"
+                      className="h-full w-full object-contain"
+                    />
+                  </button>
+                ) : detail?.pictureId ? (
+                  <div className="flex min-h-[220px] items-center justify-center px-4 text-center text-sm text-white/70">
+                    تصویر این سیگنال در دسترس نیست.
                   </div>
-                  <div>
-                    <p className="text-xs text-white/45">ورود</p>
-                    <p className="mt-1 text-sm font-semibold text-white">
-                      {typeof detail?.entryPrice === "number"
-                        ? detail.entryPrice.toLocaleString("en-US")
-                        : "-"}
-                    </p>
+                ) : (
+                  <div className="flex min-h-[220px] items-center justify-center px-4 text-center text-sm text-white/70">
+                    هیچ تصویر چارتی برای این سیگنال موجود نیست.
                   </div>
-                  <div>
-                    <p className="text-xs text-white/45">حد ضرر</p>
-                    <p className="mt-1 text-sm font-semibold text-white">
-                      {typeof detail?.stopLoss === "number"
-                        ? detail.stopLoss.toLocaleString("en-US")
-                        : "-"}
-                    </p>
-                  </div>
-                </div>
-
-                {detail?.takeProfits?.length ? (
-                  <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                    <p className="text-xs text-white/45">حد سودها</p>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {detail.takeProfits.map((tp, idx) => (
-                        <span
-                          key={`${idx}-${tp}`}
-                          className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-200"
-                        >
-                          TP{idx + 1}: {tp?.toLocaleString("en-US") ?? "-"}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
+                )}
               </div>
             )}
           </div>
