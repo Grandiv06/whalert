@@ -19,6 +19,7 @@ export interface PositionCardProps {
   tPs?: Array<string | number>;
   onExecute?: () => void;
   onShowChart?: () => void;
+  hasChartImage?: boolean;
 }
 
 export function PositionCard({
@@ -33,6 +34,7 @@ export function PositionCard({
   tPs,
   onExecute,
   onShowChart,
+  hasChartImage = true,
 }: PositionCardProps) {
   return (
     <Card className="w-full bg-[#02000B]/30 border-white/5" dir="rtl">
@@ -115,12 +117,18 @@ export function PositionCard({
           >
             اجرا
           </button>
-          <button
-            onClick={onShowChart}
-            className="flex-1 px-4 py-2.5 rounded-xl border border-white text-white text-xs md:text-sm font-medium hover:bg-white/10 transition-colors"
-          >
-            نمایش در نمودار
-          </button>
+          {hasChartImage ? (
+            <button
+              onClick={onShowChart}
+              className="flex-1 px-4 py-2.5 rounded-xl border border-white text-white text-xs md:text-sm font-medium hover:bg-white/10 transition-colors"
+            >
+              نمایش در نمودار
+            </button>
+          ) : (
+            <span className="flex-1 px-4 py-2.5 rounded-xl border border-white/10 text-center text-xs md:text-sm font-semibold text-white/35">
+              بدون تصویر
+            </span>
+          )}
         </div>
       </CardContent>
     </Card>

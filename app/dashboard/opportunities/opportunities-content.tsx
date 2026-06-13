@@ -73,6 +73,11 @@ import {
 import { SignalDetailDialog } from "@/components/signal/signal-detail-dialog";
 
 type AbpWrapper<T> = { result?: T };
+type SignalImageFields = {
+  pictureUrl?: string | null;
+  pictureId?: string | null;
+  pictureBase64?: string | null;
+};
 type AbpWindow = Window & {
   abp?: {
     event?: {
@@ -218,6 +223,14 @@ function getOutcomeStatusMeta(
     className:
       "text-[10px] font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20",
   };
+}
+
+function hasSignalImage(signal: SignalImageFields) {
+  return Boolean(
+    signal.pictureUrl?.trim() ||
+      signal.pictureId?.trim() ||
+      signal.pictureBase64?.trim(),
+  );
 }
 
 type TakeProfitChipProps = ComponentPropsWithoutRef<"button"> & {
@@ -871,9 +884,9 @@ export function OpportunitiesContent() {
                           مشاهده جزئیات
                         </button>
                       </div>
-                      {pos.description && (
+                      <div className="h-px bg-white/10 my-3" />
+                      {pos.description ? (
                         <>
-                          <div className="h-px bg-white/10 my-3" />
                           <button
                             type="button"
                             onClick={() => toggleRow(pos.id)}
@@ -897,6 +910,10 @@ export function OpportunitiesContent() {
                             </div>
                           )}
                         </>
+                      ) : (
+                        <p className="text-xs font-semibold text-white/35">
+                          بدون توضیحات
+                        </p>
                       )}
                     </CardContent>
                   </Card>
@@ -983,14 +1000,20 @@ export function OpportunitiesContent() {
                               {pos.symbol}
                             </TableCell>
                             <TableCell className="text-center h-[72px] px-6 py-8">
-                              <button
-                                type="button"
-                                onClick={() => openSignalDetail(item)}
-                                className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-dashed border-[#A87FF3]/35 bg-[#542C85]/10 px-3 py-2 text-xs font-semibold text-[#DCCBFF] transition-colors hover:bg-[#542C85]/18"
-                                title="مشاهده تصویر"
-                              >
-                                مشاهده
-                              </button>
+                              {hasSignalImage(pos) ? (
+                                <button
+                                  type="button"
+                                  onClick={() => openSignalDetail(item)}
+                                  className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-dashed border-[#A87FF3]/35 bg-[#542C85]/10 px-3 py-2 text-xs font-semibold text-[#DCCBFF] transition-colors hover:bg-[#542C85]/18"
+                                  title="مشاهده تصویر"
+                                >
+                                  مشاهده
+                                </button>
+                              ) : (
+                                <span className="text-xs font-semibold text-white/35">
+                                  بدون تصویر
+                                </span>
+                              )}
                             </TableCell>
                             <TableCell className="text-center h-[72px] px-6 py-8">
                               <span
@@ -1078,7 +1101,9 @@ export function OpportunitiesContent() {
                                   <span>مشاهده</span>
                                 </button>
                               ) : (
-                                <span className="text-white/30">-</span>
+                                <span className="text-xs font-semibold text-white/35">
+                                  بدون توضیحات
+                                </span>
                               )}
                             </TableCell>
                           </TableRow>
