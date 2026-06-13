@@ -198,7 +198,6 @@ export type { GetEditionEditOutput } from './models/GetEditionEditOutput';
 export type { GetEditionTenantStatisticsOutput } from './models/GetEditionTenantStatisticsOutput';
 export type { GetExpiringTenantsOutput } from './models/GetExpiringTenantsOutput';
 export type { GetGeneralStatsOutput } from './models/GetGeneralStatsOutput';
-export type { GetHomepageSignalsInput } from './models/GetHomepageSignalsInput';
 export type { GetHomepageSignalsOutput } from './models/GetHomepageSignalsOutput';
 export type { GetIncomeStatisticsDataOutput } from './models/GetIncomeStatisticsDataOutput';
 export type { GetLanguageForEditOutput } from './models/GetLanguageForEditOutput';
