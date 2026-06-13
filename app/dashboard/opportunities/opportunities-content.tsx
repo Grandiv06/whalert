@@ -8,7 +8,7 @@ import {
   type ComponentPropsWithoutRef,
 } from "react";
 import { createPortal } from "react-dom";
-import { useRouter, useSearchParams } from "next/navigation";
+import { notFound, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, FileText, ChevronDown, CheckCircle2, XCircle } from "lucide-react";
 import {
   AlertDialog,
@@ -393,7 +393,7 @@ export function OpportunitiesContent() {
 
   useEffect(() => {
     if (!selectedProviderId) {
-      router.replace("/404");
+      notFound();
       return;
     }
 
