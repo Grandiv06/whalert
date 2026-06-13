@@ -4,6 +4,7 @@ import { Lock, Mail } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   ApiError,
   TokenAuthService,
@@ -46,6 +47,7 @@ function hasActiveSubscription(details?: UserSubscriptionPlanDetailsDto | null) 
 
 export default function SignInPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [formData, setFormData] = useState({ email: "", password: "" });
 
   useEffect(() => {
@@ -113,6 +115,7 @@ export default function SignInPage() {
           refreshToken: result?.refreshToken,
           expireInSeconds: result?.expireInSeconds,
         });
+        queryClient.clear();
         const subscriptionRes =
           await UserDashboardService.apiServicesAppUserdashboardGetmysubscriptionplandetailsGet();
         const subscriptionDetails = unwrapAbp<UserSubscriptionPlanDetailsDto>(subscriptionRes);

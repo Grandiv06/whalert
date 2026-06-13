@@ -208,6 +208,7 @@ export function DashboardSidebar() {
     } catch {
       // ignore; clear local state anyway
     }
+    queryClient.clear();
     clearAuthSession();
     setIsMobileMenuOpen(false);
     setLogoutModalOpen(false);
