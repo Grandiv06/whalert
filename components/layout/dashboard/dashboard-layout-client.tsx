@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useSidebar } from "@/contexts/sidebar-context";
 import { DashboardSidebar } from "./sidebar";
 import { DashboardHeader } from "./dashboard-header";
 import { cn } from "@/lib/utils";
-import { ensureValidAccessToken } from "@/lib/auth-session";
+import {
+  ensureValidAccessToken,
+  hasSignalCreatorPermission,
+} from "@/lib/auth-session";
 
 export function DashboardLayoutClient({
   children,
@@ -14,8 +17,11 @@ export function DashboardLayoutClient({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { isCollapsed } = useSidebar();
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
+  const isCreateSignalRoute = pathname === "/dashboard/create-signal/";
+  const canAccessCreateSignal = hasSignalCreatorPermission();
 
   useEffect(() => {
     let isMounted = true;
@@ -38,6 +44,23 @@ export function DashboardLayoutClient({
       isMounted = false;
     };
   }, [router]);
+
+  if (isCreateSignalRoute && !canAccessCreateSignal) {
+    router.replace("/dashboard/");
+    return (
+      <div
+        className="flex min-h-screen w-full flex-col items-center justify-center gap-6 dark-bg-gradient"
+        dir="rtl"
+      >
+        <div
+          className="h-14 w-14 animate-spin rounded-full border-4 border-[#542C85]/25 border-t-[#542C85] border-r-[#8445C2]"
+          role="status"
+          aria-label="در حال انتقال"
+        />
+        <p className="text-sm font-medium text-white/70">در حال انتقال...</p>
+      </div>
+    );
+  }
 
   if (isAuthorized === null) {
     return (

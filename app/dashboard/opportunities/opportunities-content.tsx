@@ -3,12 +3,13 @@
 import {
   forwardRef,
   Fragment,
+  useMemo,
   useEffect,
   useState,
   type ComponentPropsWithoutRef,
 } from "react";
 import { createPortal } from "react-dom";
-import { notFound, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, FileText, ChevronDown, CheckCircle2, XCircle } from "lucide-react";
 import {
   AlertDialog,
@@ -68,9 +69,11 @@ import {
   SignalProviderService,
   ProviderShowcaseService,
   type SignalProviderInfoDto,
+  type CurrentUserProfileEditDto,
   SignalOutcomeStatus,
   SignalOutcomeSource,
 } from "@/lib/api/client";
+import { ProfileService } from "@/lib/api/client";
 import { SignalDetailDialog } from "@/components/signal/signal-detail-dialog";
 
 type AbpWrapper<T> = { result?: T };
@@ -310,6 +313,7 @@ export function OpportunitiesContent() {
   const [toasts, setToasts] = useState<Array<{ id: number; message: string; kind: "success" | "error"; createdAt: number; durationMs: number }>>([]);
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [isMounted, setIsMounted] = useState(false);
+  const [resolutionError, setResolutionError] = useState<string | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
@@ -339,14 +343,15 @@ export function OpportunitiesContent() {
   const { data: positionsData, isLoading, refetch } = useQuery({
     queryKey: ["showPositions", currentPage, pageSize, selectedProviderId],
     queryFn: async () => {
+      const providerId = selectedProviderId!;
       const res =
         await UserDashboardService.apiServicesAppUserdashboardShowpositionsPost(
           {
             skipCount: (currentPage - 1) * pageSize,
             maxResultCount: pageSize,
             sorting: "date desc",
-            userId: selectedProviderId,
-            signalProviderId: selectedProviderId,
+            userId: providerId,
+            signalProviderId: providerId,
           },
         );
       const wrapped = res as unknown as AbpWrapper<{
@@ -384,28 +389,97 @@ export function OpportunitiesContent() {
     ...noCacheQueryOptions,
   });
 
-  const providerDisplayName =
-    normalizePersianText(
-      providerInfo?.items?.find(
-        (item) => item.signalProviderId === selectedProviderId,
-      )?.name || "",
-    ).trim() || "—";
+  const { data: currentProfile } = useQuery({
+    queryKey: ["currentUserProfileForProviderResolution"],
+    queryFn: async () => {
+      const res =
+        await ProfileService.apiServicesAppProfileGetcurrentuserprofileforeditGet();
+      const wrapped = res as AbpWrapper<CurrentUserProfileEditDto>;
+      return wrapped?.result ?? res;
+    },
+    ...noCacheQueryOptions,
+  });
+
+  const providerList = providerInfo?.items ?? [];
+  const currentUserDisplay = normalizePersianText(
+    [currentProfile?.name, currentProfile?.surname].filter(Boolean).join(" "),
+  )
+    .trim()
+    .toLowerCase();
+  const currentUserName = normalizePersianText(currentProfile?.userName ?? "")
+    .trim()
+    .toLowerCase();
+
+  const resolvedProvider = useMemo(() => {
+    if (!selectedProviderId) return null;
+    const byId = providerList.find(
+      (item) => item.signalProviderId === selectedProviderId,
+    );
+    if (byId) return byId;
+
+    const byCurrentUser =
+      providerList.find((item) =>
+        normalizePersianText(item.name ?? "")
+          .trim()
+          .toLowerCase()
+          .includes(currentUserDisplay),
+      ) ??
+      providerList.find((item) =>
+        normalizePersianText(item.name ?? "")
+          .trim()
+          .toLowerCase()
+          .includes(currentUserName),
+      );
+    return byCurrentUser ?? null;
+  }, [currentUserDisplay, currentUserName, providerList, selectedProviderId]);
+  const effectiveProviderId = resolvedProvider?.signalProviderId ?? selectedProviderId;
+  const resolvedProviderName = normalizePersianText(resolvedProvider?.name || "")
+    .trim()
+    .toLowerCase();
+  const isOwnProvider = Boolean(
+    resolvedProvider &&
+      (resolvedProviderName === currentUserDisplay ||
+        resolvedProviderName === currentUserName),
+  );
 
   useEffect(() => {
-    if (!selectedProviderId) {
-      notFound();
+    if (!selectedProviderId) return;
+
+    if (isOwnProvider) {
+      router.replace("/dashboard/analysis/");
       return;
     }
 
-    if (!searchParams.has("providerName")) {
+    if (!resolvedProvider) {
+      if (providerInfo && currentProfile) {
+        setResolutionError(
+          "پروایدر مورد نظر پیدا نشد. لطفا آدرس را بررسی کنید یا از صفحه پیشخوان یا مشاهده تحلیل وارد شوید.",
+        );
+      }
       return;
     }
 
-    const query = new URLSearchParams({
-      signalProviderId: String(selectedProviderId),
-    });
-    router.replace(`/dashboard/opportunities?${query.toString()}`);
-  }, [router, searchParams, selectedProviderId]);
+    const query = new URLSearchParams(searchParams.toString());
+    query.delete("providerName");
+    query.set("signalProviderId", String(resolvedProvider.signalProviderId));
+
+    const nextUrl = `/dashboard/opportunities/?${query.toString()}`;
+    const currentUrl = `/dashboard/opportunities/?${searchParams.toString()}`;
+      if (nextUrl !== currentUrl) {
+        router.replace(nextUrl);
+      }
+  }, [
+    currentProfile,
+    isOwnProvider,
+    providerInfo,
+    resolvedProvider,
+    router,
+    searchParams,
+    selectedProviderId,
+  ]);
+
+  const providerDisplayName =
+    normalizePersianText(resolvedProvider?.name || "").trim() || "—";
 
   const { data: monthlyPLResponse, isLoading: isMonthlyPLLoading } = useQuery({
     queryKey: ["monthlyProfitLossChart", selectedProviderId],
@@ -646,7 +720,19 @@ export function OpportunitiesContent() {
       className="p-4 md:p-6 w-full max-w-full overflow-x-hidden space-y-8"
       dir="rtl"
     >
-      {selectedProviderId && (
+      {isOwnProvider ? (
+        <div className="flex min-h-[50vh] items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-10 text-white/80">
+          در حال انتقال به صفحه تحلیل...
+        </div>
+      ) : null}
+
+      {resolutionError ? (
+        <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-rose-200">
+          {resolutionError}
+        </div>
+      ) : null}
+
+      {effectiveProviderId && !resolutionError && !isOwnProvider && (
         <div className="relative overflow-hidden rounded-2xl border border-[#A87FF3]/25 bg-gradient-to-l from-[#241244]/85 via-[#1A1036]/80 to-[#0B0620]/85 px-4 py-4 md:px-6 md:py-5">
           <div className="pointer-events-none absolute -top-20 -left-16 h-44 w-44 rounded-full bg-[#7C4DCC]/25 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-14 -right-10 h-36 w-36 rounded-full bg-[#3A7BFF]/20 blur-3xl" />
@@ -788,7 +874,7 @@ export function OpportunitiesContent() {
       {/* Table */}
       <div className="space-y-4">
         <h2 className="text-xl font-bold text-white">
-          {selectedProviderId && providerDisplayName
+          {effectiveProviderId && providerDisplayName
             ? `گزارش موقعیت‌های ${providerDisplayName}`
             : "گزارش موقعیت‌ها"}
         </h2>
