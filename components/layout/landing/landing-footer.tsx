@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   ArrowLeftIcon,
   CallCallingIcon,
@@ -10,6 +11,59 @@ import {
 import { ContentWrapper } from "@/components/layout/landing/content-wrapper";
 import Image from "next/image";
 import Link from "next/link";
+
+function NewsletterForm() {
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!message) return;
+    const timer = window.setTimeout(() => setMessage(null), 2500);
+    return () => window.clearTimeout(timer);
+  }, [message]);
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const normalizedEmail = email.trim();
+
+    if (!normalizedEmail) {
+      setMessage("ایمیل را وارد کنید.");
+      return;
+    }
+
+    setMessage("ایمیل شما با موفقیت ثبت شد.");
+    setEmail("");
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+      <div className="bg-white/20 w-full rounded-lg px-2 h-12 flex items-center justify-between">
+        <input
+          className="w-full h-full rounded-lg p-2 border-none outline-none bg-transparent placeholder:text-white/70"
+          type="email"
+          value={email}
+          onChange={(event) => {
+            setEmail(event.target.value);
+            if (message) setMessage(null);
+          }}
+          placeholder="ایمیل خود را وارد کنید."
+          dir="ltr"
+        />
+        <button
+          type="submit"
+          className="w-7 h-7 flex items-center justify-center bg-white/20 rounded-lg shrink-0"
+          aria-label="ثبت ایمیل"
+        >
+          <ArrowLeftIcon className="text-white w-full h-full" />
+        </button>
+      </div>
+      {message ? (
+        <p className="text-xs font-medium text-white/80 px-1">{message}</p>
+      ) : null}
+    </form>
+  );
+}
+
 const Footer = () => {
   const handleScrollToTop = () => {
     if (typeof window !== "undefined") {
@@ -110,16 +164,7 @@ const Footer = () => {
 
                   <p className="text-lg text-white/50">خبرنامه</p>
                 </div>
-                <div className="bg-white/20 w-full rounded-lg px-2 h-12 flex items-center justify-between">
-                  <input
-                    className="w-full h-full rounded-lg p-2 border-none outline-none"
-                    type="email"
-                    placeholder="ایمیل خود را وارد کنید."
-                  />
-                  <div className="w-7 h-7 flex items-center justify-center bg-white/20 rounded-lg">
-                    <ArrowLeftIcon className="text-white w-full h-full" />
-                  </div>
-                </div>
+                <NewsletterForm />
               </div>
             </div>
           </div>
@@ -185,16 +230,7 @@ const Footer = () => {
 
                 <p className="text-lg text-white/50">خبرنامه</p>
               </div>
-              <div className="bg-white/20 w-full rounded-lg px-2 h-12 flex items-center justify-between">
-                <input
-                  className="w-full h-full rounded-lg p-2 border-none outline-none"
-                  type="email"
-                  placeholder="ایمیل خود را وارد کنید."
-                />
-                <div className="w-7 h-7 flex items-center justify-center bg-white rounded-lg">
-                  <ArrowLeftIcon className="text-primary-400 m-1 w-full h-full" />
-                </div>
-              </div>
+              <NewsletterForm />
             </div>
           </div>
         </div>
