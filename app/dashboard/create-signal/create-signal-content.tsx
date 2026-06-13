@@ -77,12 +77,12 @@ const createSignalServices: CreateSignalServices = {
       };
     }
 
-    return PriceService.apiServicesAppPriceGetdynamicpriceGet(
+    return PriceService.apiServicesAppPriceGetdynamicpricePost({
       symbol,
-      timeframe,
-      fromIso,
-      toIso,
-    );
+      timeFrame: timeframe,
+      fromDate: fromIso,
+      toDate: toIso,
+    });
   },
   fetchDataFromImageFromUrl: (payload) =>
     AiServiceService.apiServicesAppAiserviceFetchdatafromimagefromurlPost(payload),

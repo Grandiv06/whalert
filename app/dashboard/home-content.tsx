@@ -138,10 +138,13 @@ function getOutcomeStatusMeta(
 }
 
 function hasSignalImage(signal: SignalImageFields) {
+  const signalWithBase64 = signal as SignalImageFields & {
+    pictureBase64?: string | null;
+  };
   return Boolean(
     signal.pictureUrl?.trim() ||
       signal.pictureId?.trim() ||
-      signal.pictureBase64?.trim(),
+      signalWithBase64.pictureBase64?.trim(),
   );
 }
 
@@ -169,7 +172,7 @@ function mapSignalToCardProps(signal: ShowPositionsDto): SignalCardProps {
     tPs: signal.tPs ?? [],
     pictureUrl: signal.pictureUrl ?? null,
     pictureId: signal.pictureId ?? null,
-    pictureBase64: signal.pictureBase64 ?? null,
+    pictureBase64: (signal as SignalImageFields & { pictureBase64?: string | null }).pictureBase64 ?? null,
     description: signal.description
       ? normalizePersianText(signal.description)
       : null,

@@ -40,6 +40,7 @@ import {
   SignalSide,
 } from "@/lib/api/client";
 import type { OfferedPositionsDto } from "@/lib/api/client";
+import type { ProviderSignalDetailDto } from "@/lib/api/client";
 import type { PagedResultDtoOfOfferedPositionsDto } from "@/lib/api/client";
 
 type AbpWrapper<T> = { result?: T };
