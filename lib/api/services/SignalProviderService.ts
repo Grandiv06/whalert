@@ -25,9 +25,11 @@ import type { RemoveProviderSubscriberInput } from '../models/RemoveProviderSubs
 import type { SetDeliveryChannelInput } from '../models/SetDeliveryChannelInput';
 import type { SetProviderTeamAccountPasswordInput } from '../models/SetProviderTeamAccountPasswordInput';
 import type { SignalOutcomeWorkbenchOutput } from '../models/SignalOutcomeWorkbenchOutput';
+import type { SignalSide } from '../models/SignalSide';
 import type { UpdateProviderSettingsInput } from '../models/UpdateProviderSettingsInput';
 import type { UpdateProviderSubscriberInput } from '../models/UpdateProviderSubscriberInput';
 import type { UpdateProviderTeamAccountInput } from '../models/UpdateProviderTeamAccountInput';
+import type { UploadSignalPictureOutput } from '../models/UploadSignalPictureOutput';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -290,6 +292,48 @@ export class SignalProviderService {
             url: '/api/services/app/SignalProvider/AddNewSignal',
             body: requestBody,
             mediaType: 'application/json',
+        });
+    }
+    /**
+     * @param formData
+     * @returns any Success
+     * @throws ApiError
+     */
+    public static apiServicesAppSignalproviderAddnewsignalwithpicturePost(
+        formData?: {
+            Symbol?: string;
+            EntryPoint?: number;
+            Sl?: number;
+            TPs?: string;
+            PictureId?: string;
+            PictureToken?: string;
+            Description?: string;
+            Side?: SignalSide;
+            Picture?: Blob;
+        },
+    ): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/services/app/SignalProvider/AddNewSignalWithPicture',
+            formData: formData,
+            mediaType: 'multipart/form-data',
+        });
+    }
+    /**
+     * @param formData
+     * @returns UploadSignalPictureOutput Success
+     * @throws ApiError
+     */
+    public static apiServicesAppSignalproviderUploadsignalpicturePost(
+        formData?: {
+            file?: Blob;
+        },
+    ): CancelablePromise<UploadSignalPictureOutput> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/services/app/SignalProvider/UploadSignalPicture',
+            formData: formData,
+            mediaType: 'multipart/form-data',
         });
     }
     /**

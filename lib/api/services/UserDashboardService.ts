@@ -31,12 +31,14 @@ import type { PagedResultDtoOfShowPositionsDto } from '../models/PagedResultDtoO
 import type { PagedResultDtoOfSignalProviderInfoDto } from '../models/PagedResultDtoOfSignalProviderInfoDto';
 import type { PositionViewInput } from '../models/PositionViewInput';
 import type { ReferralInput } from '../models/ReferralInput';
+import type { RegisterPositionInput } from '../models/RegisterPositionInput';
 import type { SettingInput } from '../models/SettingInput';
 import type { ShowPositionInputDto } from '../models/ShowPositionInputDto';
 import type { SignalProviderInfoInput } from '../models/SignalProviderInfoInput';
 import type { SubmitSignalFromUserInputDto } from '../models/SubmitSignalFromUserInputDto';
 import type { TelegramConnectLinkOutput } from '../models/TelegramConnectLinkOutput';
 import type { TradingSignalDetailDto } from '../models/TradingSignalDetailDto';
+import type { UploadSignalPictureOutput } from '../models/UploadSignalPictureOutput';
 import type { UserSubscriptionPlanDetailsDto } from '../models/UserSubscriptionPlanDetailsDto';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
@@ -145,6 +147,21 @@ export class UserDashboardService {
         });
     }
     /**
+     * @param requestBody
+     * @returns any Success
+     * @throws ApiError
+     */
+    public static apiServicesAppUserdashboardRegistersignalpositionPost(
+        requestBody?: RegisterPositionInput,
+    ): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/services/app/UserDashboard/RegisterSignalPosition',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
      * @returns string Success
      * @throws ApiError
      */
@@ -167,6 +184,31 @@ export class UserDashboardService {
             url: '/api/services/app/UserDashboard/SubmitSignalFromUserInput',
             body: requestBody,
             mediaType: 'application/json',
+        });
+    }
+    /**
+     * @param formData
+     * @returns any Success
+     * @throws ApiError
+     */
+    public static apiServicesAppUserdashboardSubmitsignalfromuserinputwithpicturePost(
+        formData?: {
+            Direction?: string;
+            Symbol?: string;
+            EntryPoint?: number;
+            StopLoss?: number;
+            TakeProfits?: string;
+            Description?: string;
+            PictureId?: string;
+            PictureToken?: string;
+            Picture?: Blob;
+        },
+    ): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/services/app/UserDashboard/SubmitSignalFromUserInputWithPicture',
+            formData: formData,
+            mediaType: 'multipart/form-data',
         });
     }
     /**
@@ -201,6 +243,23 @@ export class UserDashboardService {
     }
     /**
      * @param formData
+     * @returns UploadSignalPictureOutput Success
+     * @throws ApiError
+     */
+    public static apiServicesAppUserdashboardUploadsignalpicturePost(
+        formData?: {
+            file?: Blob;
+        },
+    ): CancelablePromise<UploadSignalPictureOutput> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/services/app/UserDashboard/UploadSignalPicture',
+            formData: formData,
+            mediaType: 'multipart/form-data',
+        });
+    }
+    /**
+     * @param formData
      * @returns boolean Success
      * @throws ApiError
      */
@@ -212,23 +271,6 @@ export class UserDashboardService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/services/app/UserDashboard/UploadAndApplyProfilePicture',
-            formData: formData,
-            mediaType: 'multipart/form-data',
-        });
-    }
-    /**
-     * @param formData
-     * @returns boolean Success
-     * @throws ApiError
-     */
-    public static apiServicesAppUserdashboardUploadsignalpicturePost(
-        formData?: {
-            file?: Blob;
-        },
-    ): CancelablePromise<boolean> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/services/app/UserDashboard/UploadSignalPicture',
             formData: formData,
             mediaType: 'multipart/form-data',
         });

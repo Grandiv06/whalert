@@ -1,6 +1,7 @@
 /* generated using openapi-typescript-codegen -- do not edit */
 /* istanbul ignore file */
 /* tslint:disable */
+/* eslint-disable */
 import type { SignalSide } from './SignalSide';
 import type { SignalStatus } from './SignalStatus';
 import type { SignalVisibility } from './SignalVisibility';
@@ -15,11 +16,10 @@ export type CreateOrEditTradingSignalDto = {
     picture?: string | null;
     pictureToken?: string | null;
     pictureUrl?: string | null;
-    pictureId?: string | null;
-    pictureBase64?: string | null;
     signalStatus?: SignalStatus;
     signalVisibility?: SignalVisibility;
     expiresAt?: string;
     marketId?: number | null;
     signalProviderId?: number | null;
 };
+

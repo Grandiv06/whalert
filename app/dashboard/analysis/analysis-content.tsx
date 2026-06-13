@@ -12,11 +12,9 @@ import { CheckCircle2, XCircle } from "lucide-react";
 import {
   UserDashboardService,
   FollowUnfollowFilter,
-  SessionService,
 } from "@/lib/api/client";
 import type { SignalProviderInfoDto } from "@/lib/api/client";
 import type { PagedResultDtoOfSignalProviderInfoDto } from "@/lib/api/client";
-import type { GetCurrentLoginInformationsOutput } from "@/lib/api/client";
 import { getApiBaseUrl } from "@/config/env";
 
 type AbpWrapper<T> = { result?: T };
@@ -133,34 +131,13 @@ export function AnalysisContent() {
     },
   });
 
-  const { data: currentLoginInfo } = useQuery({
-    queryKey: ["currentLoginInfo"],
-    queryFn: async () => {
-      const res =
-        await SessionService.apiServicesAppSessionGetcurrentlogininformationsGet();
-      const wrapped = res as unknown as AbpWrapper<GetCurrentLoginInformationsOutput>;
-      return wrapped?.result ?? res;
-    },
-  });
-
   const filteredProfiles = (data?.items ?? []) as ExtendedSignalProviderInfoDto[];
   const handleViewDetails = (
     id: number,
     name: string,
     signalProviderId?: number,
-    profileId?: number,
   ) => {
     if (!Number.isFinite(id) || id <= 0) return;
-    const currentUserId = currentLoginInfo?.user?.id;
-    if (
-      currentUserId &&
-      (currentUserId === id ||
-        currentUserId === signalProviderId ||
-        currentUserId === profileId)
-    ) {
-      router.push("/dashboard/opportunities");
-      return;
-    }
     const effectiveProviderId = signalProviderId ?? id;
     const query = new URLSearchParams({
       signalProviderId: String(effectiveProviderId),
@@ -296,8 +273,7 @@ export function AnalysisContent() {
             </div>
           ) : (
             filteredProfiles.map((profile, index) => {
-              const { id, signalProviderId, profileId, ...cardProps } =
-                mapToCardProps(profile);
+              const { id, signalProviderId, ...cardProps } = mapToCardProps(profile);
               return (
                 <ProfileCard
                   key={`${id}-${index}`}
@@ -307,7 +283,6 @@ export function AnalysisContent() {
                       id,
                       cardProps.name,
                       signalProviderId,
-                      profileId,
                     )
                   }
                   onFollow={() => handleFollow(id, cardProps.name)}

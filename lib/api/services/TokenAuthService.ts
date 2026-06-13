@@ -4,8 +4,11 @@
 /* eslint-disable */
 import type { AppAuthenticateModel } from '../models/AppAuthenticateModel';
 import type { AppRegisterModel } from '../models/AppRegisterModel';
+import type { AppResetPasswordByPhoneModel } from '../models/AppResetPasswordByPhoneModel';
+import type { AppResetPasswordByPhoneResultModel } from '../models/AppResetPasswordByPhoneResultModel';
 import type { AppSendOtpModel } from '../models/AppSendOtpModel';
 import type { AppSendOtpResultModel } from '../models/AppSendOtpResultModel';
+import type { AppVerifyForgotPasswordOtpResultModel } from '../models/AppVerifyForgotPasswordOtpResultModel';
 import type { AppVerifyOtpModel } from '../models/AppVerifyOtpModel';
 import type { AuthenticateModel } from '../models/AuthenticateModel';
 import type { AuthenticateResultModel } from '../models/AuthenticateResultModel';
@@ -91,6 +94,51 @@ export class TokenAuthService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/TokenAuth/AppVerifyOtp',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @param requestBody
+     * @returns AppSendOtpResultModel Success
+     * @throws ApiError
+     */
+    public static apiTokenauthAppsendforgotpasswordotpPost(
+        requestBody?: AppSendOtpModel,
+    ): CancelablePromise<AppSendOtpResultModel> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/TokenAuth/AppSendForgotPasswordOtp',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @param requestBody
+     * @returns AppVerifyForgotPasswordOtpResultModel Success
+     * @throws ApiError
+     */
+    public static apiTokenauthAppverifyforgotpasswordotpPost(
+        requestBody?: AppVerifyOtpModel,
+    ): CancelablePromise<AppVerifyForgotPasswordOtpResultModel> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/TokenAuth/AppVerifyForgotPasswordOtp',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @param requestBody
+     * @returns AppResetPasswordByPhoneResultModel Success
+     * @throws ApiError
+     */
+    public static apiTokenauthAppresetpasswordbyphonePost(
+        requestBody?: AppResetPasswordByPhoneModel,
+    ): CancelablePromise<AppResetPasswordByPhoneResultModel> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/TokenAuth/AppResetPasswordByPhone',
             body: requestBody,
             mediaType: 'application/json',
         });

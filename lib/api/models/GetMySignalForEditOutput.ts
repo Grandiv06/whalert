@@ -1,6 +1,7 @@
 /* generated using openapi-typescript-codegen -- do not edit */
 /* istanbul ignore file */
 /* tslint:disable */
+/* eslint-disable */
 import type { SignalOutcomeStatus } from './SignalOutcomeStatus';
 import type { SignalSide } from './SignalSide';
 export type GetMySignalForEditOutput = {
@@ -17,3 +18,4 @@ export type GetMySignalForEditOutput = {
     outcomeStatus?: SignalOutcomeStatus;
     isEditable?: boolean;
 };
+

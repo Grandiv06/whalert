@@ -5,6 +5,7 @@
 import type { MarketType } from './MarketType';
 import type { SignalSide } from './SignalSide';
 export type OfferedPositionsDto = {
+    tradingSignalId?: number;
     market?: MarketType;
     displayName?: string | null;
     side?: SignalSide;
@@ -13,5 +14,7 @@ export type OfferedPositionsDto = {
     entryPrice?: number;
     sl?: number;
     tPs?: Array<number> | null;
+    pictureUrl?: string | null;
+    pictureId?: string | null;
 };
 

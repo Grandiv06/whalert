@@ -1,6 +1,7 @@
 /* generated using openapi-typescript-codegen -- do not edit */
 /* istanbul ignore file */
 /* tslint:disable */
+/* eslint-disable */
 import type { MarketType } from './MarketType';
 import type { SignalOutcomeSource } from './SignalOutcomeSource';
 import type { SignalOutcomeStatus } from './SignalOutcomeStatus';
@@ -12,9 +13,6 @@ export type ShowPositionsDto = {
     signalProviderId?: number | null;
     displayName?: string | null;
     description?: string | null;
-    pictureUrl?: string | null;
-    pictureId?: string | null;
-    pictureBase64?: string | null;
     side?: SignalSide;
     date?: string;
     datePersian?: string | null;
@@ -25,5 +23,7 @@ export type ShowPositionsDto = {
     entryPrice?: number;
     sl?: number;
     tPs?: Array<number> | null;
-    takeProfits?: Array<number> | null;
+    pictureUrl?: string | null;
+    pictureId?: string | null;
 };
+
