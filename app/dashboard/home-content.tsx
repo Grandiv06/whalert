@@ -46,6 +46,11 @@ import { normalizePersianText } from "@/lib/utils";
 import { FileText } from "lucide-react";
 
 type AbpWrapper<T> = { result?: T };
+type SignalImageFields = {
+  pictureUrl?: string | null;
+  pictureId?: string | null;
+  pictureBase64?: string | null;
+};
 
 const TIME_FILTER_MAP: Record<string, FollowedOfferStatusTimeFilter> = {
   "24h": FollowedOfferStatusTimeFilter._0,
@@ -130,6 +135,14 @@ function getOutcomeStatusMeta(
     className:
       "text-[10px] font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20",
   };
+}
+
+function hasSignalImage(signal: SignalImageFields) {
+  return Boolean(
+    signal.pictureUrl?.trim() ||
+      signal.pictureId?.trim() ||
+      signal.pictureBase64?.trim(),
+  );
 }
 
 function mapSignalToCardProps(signal: ShowPositionsDto): SignalCardProps {
@@ -353,22 +366,28 @@ export function HomeContent() {
                             {normalizePersianText(signal.symbol || "-")}
                           </TableCell>
                           <TableCell className="text-center h-[72px] px-6 py-8">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setDetailSignalId(signal.tradingSignalId ?? null);
-                                setDetailSignalTitle(signal.symbol || "سیگنال");
-                                setDetailSignalDescription(
-                                  signal.description
-                                    ? normalizePersianText(signal.description)
-                                    : "",
-                                );
-                              }}
-                              className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-dashed border-[#A87FF3]/35 bg-[#542C85]/10 px-3 py-2 text-xs font-semibold text-[#DCCBFF] transition-colors hover:bg-[#542C85]/18"
-                              title="مشاهده تصویر"
-                            >
-                              مشاهده
-                            </button>
+                            {hasSignalImage(signal as SignalImageFields) ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setDetailSignalId(signal.tradingSignalId ?? null);
+                                  setDetailSignalTitle(signal.symbol || "سیگنال");
+                                  setDetailSignalDescription(
+                                    signal.description
+                                      ? normalizePersianText(signal.description)
+                                      : "",
+                                  );
+                                }}
+                                className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-dashed border-[#A87FF3]/35 bg-[#542C85]/10 px-3 py-2 text-xs font-semibold text-[#DCCBFF] transition-colors hover:bg-[#542C85]/18"
+                                title="مشاهده تصویر"
+                              >
+                                مشاهده
+                              </button>
+                            ) : (
+                              <span className="text-xs font-semibold text-white/35">
+                                بدون تصویر
+                              </span>
+                            )}
                           </TableCell>
                           <TableCell className="text-center h-[72px] px-6 py-8">
                             <span
@@ -483,7 +502,9 @@ export function HomeContent() {
                                 <span>مشاهده</span>
                               </button>
                             ) : (
-                              <span className="text-white/30">-</span>
+                              <span className="text-xs font-semibold text-white/35">
+                                بدون توضیحات
+                              </span>
                             )}
                           </TableCell>
                         </TableRow>

@@ -45,6 +45,9 @@ import type { PagedResultDtoOfOfferedPositionsDto } from "@/lib/api/client";
 type AbpWrapper<T> = { result?: T };
 type AnalysisStatus = "all" | "followed" | "not-followed";
 type OfferedPositionWithSignalId = OfferedPositionsDto & { tradingSignalId?: number };
+type OfferedPositionImageFields = OfferedPositionsDto & {
+  pictureBase64?: string | null;
+};
 
 interface PositionData {
   id: number;
@@ -59,6 +62,15 @@ interface PositionData {
   stopLoss: string;
   takeProfit: string;
   tPs: Array<string | number>;
+  hasImage: boolean;
+}
+
+function hasPositionImage(position: OfferedPositionImageFields) {
+  return Boolean(
+    position.pictureUrl?.trim() ||
+      position.pictureId?.trim() ||
+      position.pictureBase64?.trim(),
+  );
 }
 
 const MobileSkeleton = () => (
@@ -227,6 +239,7 @@ export function SuggestedContent() {
           ? position.tPs[0].toString()
           : "-",
       tPs: (position.tPs ?? []) as Array<string | number>,
+      hasImage: hasPositionImage(position as OfferedPositionImageFields),
     };
   };
 
@@ -303,6 +316,7 @@ export function SuggestedContent() {
                     key={index}
                     {...position}
                     tPs={position.tPs}
+                    hasChartImage={position.hasImage}
                     onShowChart={() => void handleShowChart(item)}
                   />
                 );
@@ -455,14 +469,20 @@ export function SuggestedContent() {
                               )}
                             </TableCell>
                             <TableCell className="text-center h-[72px] px-6 py-8">
-                              <button
-                                type="button"
-                                onClick={() => void handleShowChart(item)}
-                                className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-dashed border-[#A87FF3]/35 bg-[#542C85]/10 px-3 py-2 text-xs font-semibold text-[#DCCBFF] transition-colors hover:bg-[#542C85]/18"
-                                title="مشاهده تصویر"
-                              >
-                                مشاهده
-                              </button>
+                              {position.hasImage ? (
+                                <button
+                                  type="button"
+                                  onClick={() => void handleShowChart(item)}
+                                  className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-dashed border-[#A87FF3]/35 bg-[#542C85]/10 px-3 py-2 text-xs font-semibold text-[#DCCBFF] transition-colors hover:bg-[#542C85]/18"
+                                  title="مشاهده تصویر"
+                                >
+                                  مشاهده
+                                </button>
+                              ) : (
+                                <span className="text-xs font-semibold text-white/35">
+                                  بدون تصویر
+                                </span>
+                              )}
                             </TableCell>
                           </TableRow>
                         );
