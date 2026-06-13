@@ -279,17 +279,11 @@ export function OpportunitiesContent() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const signalProviderIdParam = searchParams.get("signalProviderId");
-  const providerNameParam = searchParams.get("providerName");
   const parsedSignalProviderId = Number(signalProviderIdParam);
   const selectedProviderId =
     Number.isFinite(parsedSignalProviderId) && parsedSignalProviderId > 0
       ? parsedSignalProviderId
       : undefined;
-  const providerDisplayName =
-    normalizePersianText(providerNameParam || "").trim() ||
-    (selectedProviderId
-      ? `کاربر ${selectedProviderId.toLocaleString("fa-IR")}`
-      : "");
 
   // States for outcome submission
   const [isSubmittingOutcome, setIsSubmittingOutcome] = useState<Record<number, boolean>>({});
@@ -359,6 +353,22 @@ export function OpportunitiesContent() {
     },
     ...noCacheQueryOptions,
   });
+
+  useEffect(() => {
+    if (!selectedProviderId) {
+      router.replace("/404");
+      return;
+    }
+
+    if (!searchParams.has("providerName")) {
+      return;
+    }
+
+    const query = new URLSearchParams({
+      signalProviderId: String(selectedProviderId),
+    });
+    router.replace(`/dashboard/opportunities?${query.toString()}`);
+  }, [router, searchParams, selectedProviderId]);
 
   const { data: monthlyPLResponse, isLoading: isMonthlyPLLoading } = useQuery({
     queryKey: ["monthlyProfitLossChart", selectedProviderId],
@@ -512,6 +522,11 @@ export function OpportunitiesContent() {
   const totalCount = positionsData?.totalCount ?? 0;
   const totalPages = Math.ceil(totalCount / pageSize) || 0;
   const startIndex = (currentPage - 1) * pageSize;
+  const providerDisplayName =
+    normalizePersianText(items[0]?.displayName || "").trim() ||
+    (selectedProviderId
+      ? `کاربر ${selectedProviderId.toLocaleString("fa-IR")}`
+      : "");
 
   const mapPosition = (position: ShowPositionsDto, index: number) => ({
     id: index,

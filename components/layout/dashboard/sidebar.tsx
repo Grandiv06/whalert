@@ -69,7 +69,6 @@ function profileImageSrc(raw: string | null | undefined): string | null {
 const defaultNavItems: NavItem[] = [
   { label: "پیشخوان", path: "/dashboard/", iconName: "dashboard" },
   { label: "اشتراک من", path: "/dashboard/subscription/", iconName: "calendar" },
-  { label: "ایجاد سیگنال", path: "/dashboard/create-signal/", iconName: "plus" },
   { label: "مشاهده تحلیل", path: "/dashboard/analysis/", iconName: "trending" },
   {
     label: "موقعیت های پیشنهادی",
