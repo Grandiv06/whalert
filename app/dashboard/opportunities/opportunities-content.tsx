@@ -227,10 +227,13 @@ function getOutcomeStatusMeta(
 }
 
 function hasSignalImage(signal: SignalImageFields) {
+  const signalWithBase64 = signal as SignalImageFields & {
+    pictureBase64?: string | null;
+  };
   return Boolean(
     signal.pictureUrl?.trim() ||
       signal.pictureId?.trim() ||
-      signal.pictureBase64?.trim(),
+      signalWithBase64.pictureBase64?.trim(),
   );
 }
 
@@ -407,11 +410,12 @@ export function OpportunitiesContent() {
   const { data: monthlyPLResponse, isLoading: isMonthlyPLLoading } = useQuery({
     queryKey: ["monthlyProfitLossChart", selectedProviderId],
     queryFn: async () => {
+      const providerId = selectedProviderId!;
       const res =
         await ProviderShowcaseService.apiServicesAppProvidershowcaseGetmonthlyprofitlosschartPost(
           {
             dayCount: 0,
-            signalProviderId: selectedProviderId,
+            signalProviderId: providerId,
           },
         );
       const wrapped = res as unknown as AbpWrapper<{
@@ -439,11 +443,12 @@ export function OpportunitiesContent() {
   } = useQuery({
     queryKey: ["performanceByAssetChart", selectedProviderId],
     queryFn: async () => {
+      const providerId = selectedProviderId!;
       const res =
         await ProviderShowcaseService.apiServicesAppProvidershowcaseGetperformancebyassetchartPost(
           {
             dayCount: 0,
-            signalProviderId: selectedProviderId,
+            signalProviderId: providerId,
           },
         );
       const wrapped = res as unknown as AbpWrapper<{
@@ -477,13 +482,14 @@ export function OpportunitiesContent() {
 
   const { data: rewardRiskResponse, isLoading: isRewardRiskLoading } = useQuery(
     {
-      queryKey: ["rewardToRiskChart", selectedProviderId],
-      queryFn: async () => {
-        const res =
+    queryKey: ["rewardToRiskChart", selectedProviderId],
+    queryFn: async () => {
+      const providerId = selectedProviderId!;
+      const res =
           await ProviderShowcaseService.apiServicesAppProvidershowcaseGetrewardtoriskchartPost(
             {
               dayCount: 0,
-              signalProviderId: selectedProviderId,
+              signalProviderId: providerId,
             },
           );
         const wrapped = res as unknown as AbpWrapper<{
@@ -557,53 +563,61 @@ export function OpportunitiesContent() {
   const totalPages = Math.ceil(totalCount / pageSize) || 0;
   const startIndex = (currentPage - 1) * pageSize;
 
-  const mapPosition = (position: ShowPositionsDto, index: number) => ({
-    id: index,
-    row: startIndex + index + 1,
-    time: position.date
-      ? new Date(position.date)
-          .toLocaleDateString("fa-IR", {
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-            hour: "2-digit",
-            minute: "2-digit",
-          })
-          .replace(",", " - ")
-      : "-",
-    analysisModel: normalizePersianText(position.displayName || "-"),
-    market: position.market === MarketType._1 ? "CRYPTO" : "FOREX",
-    symbol: normalizePersianText(position.symbol || "-"),
-    direction: position.side === SignalSide._1 ? "BUY" : "SELL",
-    entry: position.entryPrice?.toString() || "-",
-    stopLoss: position.sl?.toString() || "-",
-    takeProfits: position.tPs?.length
-      ? position.tPs
-      : position.takeProfits?.length
-        ? position.takeProfits
-        : [],
-    takeProfit:
-      position.tPs?.length
-        ? position.tPs[0].toString()
-        : position.takeProfits?.length
-          ? position.takeProfits[0].toString()
+  const mapPosition = (position: ShowPositionsDto, index: number) => {
+    const positionWithTakeProfits = position as ShowPositionsDto & {
+      takeProfits?: number[] | null;
+      pictureBase64?: string | null;
+    };
+
+    return {
+      id: index,
+      row: startIndex + index + 1,
+      time: position.date
+        ? new Date(position.date)
+            .toLocaleDateString("fa-IR", {
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit",
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+            .replace(",", " - ")
         : "-",
-    tPs:
-      position.tPs?.length
+      analysisModel: normalizePersianText(position.displayName || "-"),
+      market: position.market === MarketType._1 ? "CRYPTO" : "FOREX",
+      symbol: normalizePersianText(position.symbol || "-"),
+      direction: position.side === SignalSide._1 ? "BUY" : "SELL",
+      entry: position.entryPrice?.toString() || "-",
+      stopLoss: position.sl?.toString() || "-",
+      takeProfits: position.tPs?.length
         ? position.tPs
-        : position.takeProfits?.length
-          ? position.takeProfits
+        : positionWithTakeProfits.takeProfits?.length
+          ? positionWithTakeProfits.takeProfits
           : [],
-    description: position.description ? normalizePersianText(position.description) : null,
-    tradingSignalId: position.tradingSignalId,
-    outcomeStatus: position.outcomeStatus,
-    outcomeSource: position.outcomeSource,
-    outcomeDeclaredAt: position.outcomeDeclaredAt,
-    canDeclareOutcome: position.canDeclareOutcome,
-    pictureUrl: position.pictureUrl,
-    pictureId: position.pictureId,
-    pictureBase64: position.pictureBase64,
-  });
+      takeProfit: position.tPs?.length
+        ? position.tPs[0].toString()
+        : positionWithTakeProfits.takeProfits?.length
+          ? positionWithTakeProfits.takeProfits[0].toString()
+          : "-",
+      tPs: position.tPs?.length
+        ? position.tPs
+        : positionWithTakeProfits.takeProfits?.length
+          ? positionWithTakeProfits.takeProfits
+          : [],
+      description: position.description
+        ? normalizePersianText(position.description)
+        : null,
+      tradingSignalId: position.tradingSignalId,
+      outcomeStatus: position.outcomeStatus,
+      outcomeSource: position.outcomeSource,
+      outcomeDeclaredAt: position.outcomeDeclaredAt,
+      canDeclareOutcome: position.canDeclareOutcome,
+      pictureUrl: position.pictureUrl,
+      pictureId: position.pictureId,
+      pictureBase64:
+        (position as SignalImageFields & { pictureBase64?: string | null }).pictureBase64,
+    };
+  };
 
   const openSignalDetail = (position: ShowPositionsDto) => {
     const tradingSignalId = position.tradingSignalId;

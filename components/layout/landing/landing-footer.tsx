@@ -214,7 +214,6 @@ const Footer = () => {
                   src="https://trustseal.enamad.ir/logo.aspx?id=710784&Code=a3Al6GSZ5AgNeS5JgNfyXrLUTXMUjdWp"
                   alt="نماد اعتماد الکترونیکی"
                   className="h-12 w-auto max-w-[110px] object-contain cursor-pointer"
-                  code="a3Al6GSZ5AgNeS5JgNfyXrLUTXMUjdWp"
                 />
               </a>
             </div>
