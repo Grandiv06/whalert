@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { ArrowIcon } from "@/components/icons/landing-icons";
 import { Button } from "@/components/landing/ui/button/button";
 import { useRouter } from "next/navigation";
@@ -9,13 +10,26 @@ const TitleDesc = ({
   titleDesc,
   description,
   btnTitle,
+  loggedInBtnTitle,
+  btnHref = "/auth/sign-up",
+  loggedInBtnHref = "/dashboard/create-signal",
 }: {
   title: string;
   titleDesc?: string;
   description: string;
   btnTitle: string;
+  loggedInBtnTitle?: string;
+  btnHref?: string;
+  loggedInBtnHref?: string;
 }) => {
   const router = useRouter();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+    setIsLoggedIn(Boolean(token));
+  }, []);
 
   return (
     <div className="flex flex-col gap-4 w-full">
@@ -41,9 +55,9 @@ const TitleDesc = ({
         reverse
         className="text-white"
         icon={<ArrowIcon className="w-5 h-5 text-primary-450" />}
-        onClick={() => router.push("/auth/sign-up")}
+        onClick={() => router.push(isLoggedIn ? loggedInBtnHref : btnHref)}
       >
-        {btnTitle}
+        {isLoggedIn ? loggedInBtnTitle ?? btnTitle : btnTitle}
       </Button>
     </div>
   );

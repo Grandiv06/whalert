@@ -17,11 +17,11 @@ export interface LandingStatItem {
 }
 
 export const defaultStats: LandingStatItem[] = [
-  { id: 1, title: "سیگنال‌های منتشر شده", desc: "۹۸٪" },
-  { id: 2, title: "نرخ موفقیت", desc: "۹۲٪" },
-  { id: 3, title: "کاربران فعال", desc: "۸۵٪" },
-  { id: 4, title: "رضایت کاربران", desc: "۹۸٪" },
-  { id: 5, title: "سال فعالیت", desc: "۵+" },
+  { id: 1, title: "گزارش عملکرد", desc: "انتشار ماهانه" },
+  { id: 2, title: "آرشیو سیگنال‌ها", desc: "قابل بررسی در داشبورد" },
+  { id: 3, title: "Risk/Reward", desc: "۱.۵-۲" },
+  { id: 4, title: "نرخ موفقیت تقریبی", desc: "۶۵%-۵۵%" },
+  { id: 5, title: "سیگنال‌های ماهانه", desc: "۲۵-۳۵" },
 ];
 
 export interface LandingUserItem {
