@@ -7,7 +7,7 @@ export default function LandingLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="min-h-screen bg-[#1a0c35]" dir="rtl">
+    <div className="min-h-screen overflow-hidden bg-[#1a0c35] text-white" dir="rtl">
       <LandingHeader />
       <main>{children}</main>
       <LandingFooter />

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -93,6 +94,12 @@ function pickStatusColor(status?: string | number | null): string {
 export function SubscriptionContent() {
   const [showAllPayments, setShowAllPayments] = useState(false);
   const [isPlansModalOpen, setIsPlansModalOpen] = useState(false);
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get("openPlans") !== "1") return;
+    setIsPlansModalOpen(true);
+  }, [searchParams]);
 
   const { data: subscriptionDetails, isLoading: detailsLoading } = useQuery({
     queryKey: ["mySubscriptionPlanDetails"],

@@ -27,8 +27,10 @@ export interface ProfileCardProps {
   successRate: number;
   failureRate: number;
   isFollowed?: boolean;
+  canFollow?: boolean;
   onViewDetails?: () => void;
   onFollow?: () => void | Promise<void>;
+  onFollowBlocked?: () => void;
   onUnfollow?: () => void | Promise<void>;
   onSettings?: () => void;
   className?: string;
@@ -44,8 +46,10 @@ export function ProfileCard({
   successRate,
   failureRate,
   isFollowed = false,
+  canFollow = true,
   onViewDetails,
   onFollow,
+  onFollowBlocked,
   onUnfollow,
   onSettings,
   className,
@@ -61,6 +65,10 @@ export function ProfileCard({
 
   const handleFollowClick = async () => {
     if (!onFollow || isFollowPending || isUnfollowPending) return;
+    if (!canFollow) {
+      onFollowBlocked?.();
+      return;
+    }
     try {
       setIsFollowPending(true);
       await onFollow();
@@ -200,8 +208,8 @@ export function ProfileCard({
                 <button
                   onClick={handleFollowClick}
                   disabled={isFollowPending || isUnfollowPending}
+                  aria-label={canFollow ? "دنبال کردن" : "اشتراک فعال ندارید"}
                   className="w-10 h-10 flex items-center justify-center rounded-lg bg-[#542C85] text-white transition-all duration-200 hover:opacity-90 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
-                  aria-label="دنبال کردن"
                 >
                   {isFollowPending ? (
                     <Loader2 className="w-5 h-5 animate-spin" />

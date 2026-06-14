@@ -4,17 +4,19 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { ProfileCard } from "@/components/ui/profile-card";
+import { Button } from "@/components/ui/button";
 import { SearchIcon } from "@/components/icons/dashboard-icons";
 import { Input } from "@/components/ui/input";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useQuery } from "@tanstack/react-query";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import {
   UserDashboardService,
   FollowUnfollowFilter,
 } from "@/lib/api/client";
 import type { SignalProviderInfoDto } from "@/lib/api/client";
 import type { PagedResultDtoOfSignalProviderInfoDto } from "@/lib/api/client";
+import type { UserSubscriptionPlanDetailsDto } from "@/lib/api/client";
 import { getApiBaseUrl } from "@/config/env";
 
 type AbpWrapper<T> = { result?: T };
@@ -26,6 +28,8 @@ type FollowToast = {
   kind: FollowToastKind;
   createdAt: number;
   durationMs: number;
+  actionLabel?: string;
+  actionHref?: string;
 };
 
 interface ExtendedSignalProviderInfoDto extends SignalProviderInfoDto {
@@ -104,6 +108,22 @@ export function AnalysisContent() {
     ].slice(-3));
   };
 
+  const pushSubscriptionBlockedToast = () => {
+    const id = Date.now() + Math.floor(Math.random() * 1000);
+    setFollowToasts((prev) => [
+      ...prev,
+      {
+        id,
+        message: "شما اشتراک فعال ندارید.",
+        kind: "error",
+        createdAt: Date.now(),
+        durationMs: 8000,
+        actionLabel: "مشاهده پلن‌ها",
+        actionHref: "/dashboard/subscription?openPlans=1",
+      },
+    ].slice(-3));
+  };
+
   const { data, isLoading, refetch } = useQuery({
     queryKey: [
       "signalProviders",
@@ -131,6 +151,21 @@ export function AnalysisContent() {
     },
   });
 
+  const { data: subscriptionDetails } = useQuery({
+    queryKey: ["analysis-my-subscription"],
+    queryFn: async () => {
+      const res =
+        await UserDashboardService.apiServicesAppUserdashboardGetmysubscriptionplandetailsGet();
+      const wrapped = res as unknown as AbpWrapper<UserSubscriptionPlanDetailsDto>;
+      return wrapped?.result ?? res;
+    },
+  });
+
+  const hasActiveSubscription =
+    !!subscriptionDetails?.hasSubscription &&
+    !!subscriptionDetails?.endDateUtc &&
+    new Date(subscriptionDetails.endDateUtc).getTime() > Date.now();
+
   const filteredProfiles = (data?.items ?? []) as ExtendedSignalProviderInfoDto[];
   const handleViewDetails = (
     id: number,
@@ -147,6 +182,10 @@ export function AnalysisContent() {
 
   const handleFollow = async (id: number, name: string) => {
     if (!Number.isFinite(id) || id <= 0) return;
+    if (!hasActiveSubscription) {
+      pushSubscriptionBlockedToast();
+      return;
+    }
     try {
       await UserDashboardService.apiServicesAppUserdashboardFollowunfollowsignalproviderPost(
         { id, signalProviderId: id } as unknown as { id: number },
@@ -282,7 +321,9 @@ export function AnalysisContent() {
                     )
                   }
                   onFollow={() => handleFollow(id, cardProps.name)}
+                  onFollowBlocked={pushSubscriptionBlockedToast}
                   onUnfollow={() => handleUnfollow(id, cardProps.name)}
+                  canFollow={hasActiveSubscription}
                 />
               );
             })
@@ -292,7 +333,7 @@ export function AnalysisContent() {
 
       {isMounted && followToasts.length > 0 &&
         createPortal(
-          <div className="fixed bottom-6 inset-x-4 sm:inset-x-auto sm:right-6 z-[99999] flex w-auto sm:w-[min(92vw,360px)] flex-col gap-2">
+          <div className="fixed bottom-4 inset-x-3 sm:inset-x-auto sm:right-6 z-[99999] flex w-auto sm:w-[min(92vw,360px)] flex-col gap-2">
             {followToasts.map((toast) => {
               const elapsed = nowMs - toast.createdAt;
               const remainingMs = Math.max(0, toast.durationMs - elapsed);
@@ -302,22 +343,29 @@ export function AnalysisContent() {
               return (
                 <div
                   key={toast.id}
-                className={`relative overflow-hidden rounded-xl border px-3 py-2.5 text-sm shadow-lg backdrop-blur-md ${
-                  toast.kind === "success"
-                    ? "border-[#A87FF3]/40 bg-[#542C85]/25 text-white"
-                    : "border-[#A87FF3]/30 bg-[#2F1A4D]/60 text-white/90"
-                }`}
-              >
+                  className={`relative overflow-hidden rounded-2xl border px-4 py-3 text-sm shadow-lg backdrop-blur-md ${
+                    toast.kind === "success"
+                      ? "border-[#A87FF3]/40 bg-[#542C85]/25 text-white"
+                      : "border-[#A87FF3]/30 bg-[#2F1A4D]/60 text-white/90"
+                  }`}
+                >
                   <div className="flex items-start gap-2">
-                    {toast.kind === "success" ? (
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-                    ) : (
-                      <XCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="leading-6">{toast.message}</p>
+                    <div className="min-w-0 flex-1 flex flex-wrap items-center gap-2">
+                      {toast.actionLabel && toast.actionHref && (
+                        <Button
+                          type="button"
+                          onClick={() => router.push(toast.actionHref!)}
+                          className="h-9 shrink-0 rounded-full border border-white/20 bg-gradient-to-r from-white via-[#F4EEFF] to-[#E7D8FF] px-4 text-[12px] font-bold text-[#542C85] shadow-[0_8px_18px_rgba(255,255,255,0.10)] hover:from-white hover:via-white hover:to-[#F0E2FF] hover:text-[#4A2180] cursor-pointer"
+                        >
+                          {toast.actionLabel}
+                        </Button>
+                      )}
+                      {toast.kind === "success" && (
+                        <CheckCircle2 className="h-4 w-4 shrink-0" />
+                      )}
+                      <p className="leading-7 text-[14px]">{toast.message}</p>
                     </div>
-                    <span className="shrink-0 rounded-md bg-black/25 px-1.5 py-0.5 text-[11px] font-medium">
+                    <span className="shrink-0 rounded-md bg-black/25 px-2 py-0.5 text-[11px] font-medium">
                       {remainingSec}s
                     </span>
                   </div>
