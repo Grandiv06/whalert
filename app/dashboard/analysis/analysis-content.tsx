@@ -350,7 +350,13 @@ export function AnalysisContent() {
                   }`}
                 >
                   <div className="flex items-start gap-2">
-                    <div className="min-w-0 flex-1 flex flex-wrap items-center gap-2">
+                    <div className="min-w-0 flex-1 flex flex-wrap items-center gap-2" dir="rtl">
+                      {toast.kind === "success" && (
+                        <CheckCircle2 className="h-4 w-4 shrink-0" />
+                      )}
+                      <p className="leading-7 text-[14px] text-right" dir="rtl">
+                        {toast.message}
+                      </p>
                       {toast.actionLabel && toast.actionHref && (
                         <Button
                           type="button"
@@ -360,10 +366,6 @@ export function AnalysisContent() {
                           {toast.actionLabel}
                         </Button>
                       )}
-                      {toast.kind === "success" && (
-                        <CheckCircle2 className="h-4 w-4 shrink-0" />
-                      )}
-                      <p className="leading-7 text-[14px]">{toast.message}</p>
                     </div>
                     <span className="shrink-0 rounded-md bg-black/25 px-2 py-0.5 text-[11px] font-medium">
                       {remainingSec}s
