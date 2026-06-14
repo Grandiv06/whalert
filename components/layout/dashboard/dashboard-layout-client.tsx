@@ -45,8 +45,12 @@ export function DashboardLayoutClient({
     };
   }, [router]);
 
-  if (isCreateSignalRoute && !canAccessCreateSignal) {
+  useEffect(() => {
+    if (!isCreateSignalRoute || canAccessCreateSignal) return;
     router.replace("/dashboard/");
+  }, [canAccessCreateSignal, isCreateSignalRoute, router]);
+
+  if (isCreateSignalRoute && !canAccessCreateSignal) {
     return (
       <div
         className="flex min-h-screen w-full flex-col items-center justify-center gap-6 dark-bg-gradient"

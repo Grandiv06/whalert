@@ -115,7 +115,7 @@ export function AnalysisContent() {
       {
         id,
         message: "شما اشتراک فعال ندارید.",
-        kind: "error",
+        kind: "error" as FollowToastKind,
         createdAt: Date.now(),
         durationMs: 8000,
         actionLabel: "مشاهده پلن‌ها",
