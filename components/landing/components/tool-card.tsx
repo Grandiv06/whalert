@@ -13,7 +13,7 @@ const ToolCard = ({
     <div
       className="relative p-6 rounded-3xl flex flex-col gap-3 min-h-[180px] overflow-hidden"
       style={{
-        backgroundColor: "#2B2349",
+        backgroundColor: "rgba(174, 119, 213, 0.1)",
         backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.03) 1px, transparent 0)`,
         backgroundSize: "24px 24px",
       }}
@@ -44,8 +44,8 @@ const ToolCard = ({
 
       {/* Text - right-aligned (RTL) */}
       <div className="flex flex-col gap-2 text-right mt-14">
-        <h3 className="text-xl font-bold text-white">{title}</h3>
-        <p className="text-sm text-white/90 leading-relaxed">{description}</p>
+        <h3 className="text-lg font-bold text-white">{title}</h3>
+        <p className="text-[12px] text-white/90 leading-relaxed">{description}</p>
       </div>
     </div>
   );
