@@ -23,9 +23,7 @@ import "swiper/css/pagination";
 import {
   SubscriptionPurchaseService,
   SubscriptionDashboardService,
-  UserDashboardService,
   type SubscriptionPlanCatalogItemDto,
-  type UserSubscriptionPlanDetailsDto,
 } from "@/lib/api/client";
 
 type GoldPlan = {
@@ -81,13 +79,6 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
       SubscriptionDashboardService.apiServicesAppSubscriptiondashboardGetactivesubscriptionplansGet(),
   });
 
-  const { data: subscriptionDetailsResponse } = useQuery({
-    queryKey: ["mySubscriptionPlanDetails-for-purchase-guard"],
-    enabled: isLoggedIn,
-    queryFn: () =>
-      UserDashboardService.apiServicesAppUserdashboardGetmysubscriptionplandetailsGet(),
-  });
-
   const normalizedPlansResponse = plansResponse as
     | SubscriptionPlanCatalogItemDto[]
     | AbpWrapper<SubscriptionPlanCatalogItemDto[]>
@@ -98,15 +89,6 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
     : Array.isArray(normalizedPlansResponse?.result)
       ? normalizedPlansResponse.result
       : [];
-
-  const subscriptionDetails = unwrapAbp<UserSubscriptionPlanDetailsDto>(
-    subscriptionDetailsResponse,
-  );
-
-  const hasActiveSubscription =
-    !!subscriptionDetails?.hasSubscription &&
-    !!subscriptionDetails?.endDateUtc &&
-    new Date(subscriptionDetails.endDateUtc).getTime() > Date.now();
 
   const plans: GoldPlan[] = plansFromApi.map((plan) => ({
     id: plan.id ?? 0,
@@ -181,7 +163,6 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
       router.push(`/auth/sign-in?redirect=${encodeURIComponent(redirectUrl)}`);
       return;
     }
-    if (hasActiveSubscription) return;
     setSelectedPlan(plan);
     setConfirmOpen(true);
   };
@@ -367,16 +348,11 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
                       <Button
                         type="button"
                         onClick={() => openConfirm(plan)}
-                        disabled={
-                          (isLoggedIn && pendingPlanId === plan.id) ||
-                          (isLoggedIn && hasActiveSubscription)
-                        }
+                        disabled={isLoggedIn && pendingPlanId === plan.id}
                         className={`w-full cursor-pointer ${showHeader ? "rounded-3xl h-12 text-base" : "rounded-2xl h-10 text-sm"} ${theme.button}`}
                       >
                         {!isLoggedIn
                           ? "ورود به اکانت"
-                          : hasActiveSubscription
-                            ? "اشتراک فعال دارید"
                           : pendingPlanId === plan.id
                             ? "در حال انتقال..."
                             : plan.ctaText}
@@ -572,16 +548,11 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
                             <Button
                               type="button"
                               onClick={() => openConfirm(plan)}
-                              disabled={
-                                (isLoggedIn && pendingPlanId === plan.id) ||
-                                (isLoggedIn && hasActiveSubscription)
-                              }
+                              disabled={isLoggedIn && pendingPlanId === plan.id}
                               className={`w-full cursor-pointer rounded-2xl h-10 text-sm ${theme.button}`}
                             >
                               {!isLoggedIn
                                 ? "ورود به اکانت"
-                                : hasActiveSubscription
-                                  ? "اشتراک فعال دارید"
                                 : pendingPlanId === plan.id
                                   ? "در حال انتقال..."
                                   : plan.ctaText}
