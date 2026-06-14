@@ -285,7 +285,7 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
             return (
               <Card
                 key={plan.id}
-                className={`relative overflow-hidden ${showHeader ? "rounded-4xl border h-[640px]" : "rounded-3xl border h-[640px]"} transition-all duration-300 group ${theme.cardBg} shadow-[0_16px_40px_rgba(7,2,20,0.45)] hover:shadow-[0_20px_52px_rgba(11,4,28,0.55)] flex flex-col`}
+                className={`relative overflow-hidden ${showHeader ? "rounded-4xl border h-[700px]" : "rounded-3xl border h-[700px]"} transition-all duration-300 group ${theme.cardBg} shadow-[0_16px_40px_rgba(7,2,20,0.45)] hover:shadow-[0_20px_52px_rgba(11,4,28,0.55)] flex flex-col`}
               >
                 <div className="absolute inset-0 pointer-events-none">
                   <div
@@ -321,7 +321,7 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
                       <p className="text-xs mt-1.5 text-white/65">پرداخت ماهانه</p>
                     </div>
 
-                    <ul className={`${showHeader ? "space-y-2 text-sm min-h-[170px]" : "space-y-1.5 text-[12px] min-h-[150px]"} text-white/85 flex-1`}>
+                    <ul className={`${showHeader ? "space-y-2 text-sm min-h-[194px]" : "space-y-1.5 text-[12px] min-h-[170px]"} text-white/85 flex-1`}>
                       {plan.features.map((feature) => (
                         <li
                           key={feature}
@@ -340,7 +340,7 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
                       )}
                     </ul>
 
-                    <p className={`text-white/70 leading-5 border-t border-white/10 ${showHeader ? "text-xs md:text-sm pt-3 mt-1 min-h-[48px]" : "text-[11px] pt-2 mt-0.5 min-h-[40px]"}`}>
+                    <p className={`text-white/70 leading-5 border-t border-white/10 ${showHeader ? "text-xs md:text-sm pt-3 mt-1 min-h-[64px]" : "text-[11px] pt-2 mt-0.5 min-h-[48px]"}`}>
                       {plan.footerText}
                     </p>
 
@@ -485,7 +485,7 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
                 return (
                   <SwiperSlide key={plan.id} className="overflow-visible py-2">
                     <Card
-                      className={`relative overflow-hidden rounded-3xl border transition-[opacity,border-color] duration-200 ${theme.cardBg} w-full h-full min-h-[620px] shadow-[0_8px_18px_rgba(7,2,20,0.28)] flex flex-col will-change-transform ${mobileActiveClasses}`}
+                      className={`relative overflow-hidden rounded-3xl border transition-[opacity,border-color] duration-200 ${theme.cardBg} w-full h-full min-h-[670px] shadow-[0_8px_18px_rgba(7,2,20,0.28)] flex flex-col will-change-transform ${mobileActiveClasses}`}
                     >
                       <div className="absolute inset-0 pointer-events-none hidden sm:block">
                         <div
@@ -521,7 +521,7 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
                             <p className="text-xs mt-1.5 text-white/65">پرداخت ماهانه</p>
                           </div>
 
-                          <ul className="space-y-1.5 text-[12px] text-white/85 flex-1 min-h-[150px]">
+                          <ul className="space-y-1.5 text-[12px] text-white/85 flex-1 min-h-[170px]">
                             {plan.features.map((feature) => (
                               <li
                                 key={feature}
@@ -540,7 +540,7 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
                             )}
                           </ul>
 
-                          <p className="text-white/70 leading-5 border-t border-white/10 text-[11px] pt-2 mt-0.5 min-h-[40px]">
+                          <p className="text-white/70 leading-5 border-t border-white/10 text-[11px] pt-2 mt-0.5 min-h-[48px]">
                             {plan.footerText}
                           </p>
 
