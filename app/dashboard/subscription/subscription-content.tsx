@@ -150,7 +150,7 @@ export function SubscriptionContent() {
               onClick={() => setIsPlansModalOpen(true)}
               className="rounded-2xl bg-[#542C85] hover:bg-[#6b3ca8] text-white border-0 h-11 px-6 w-full md:w-auto cursor-pointer"
             >
-              نمایش پلن‌ها
+              مشاهده ی اشتراک ها
             </Button>
           </div>
         </div>
@@ -179,7 +179,7 @@ export function SubscriptionContent() {
                     onClick={() => setIsPlansModalOpen(true)}
                     className="mt-4 rounded-2xl bg-[#542C85] hover:bg-[#6b3ca8] text-white border-0 cursor-pointer"
                   >
-                    نمایش پلن‌ها
+                    مشاهده ی اشتراک ها
                   </Button>
                 </div>
               ) : (

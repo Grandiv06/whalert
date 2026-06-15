@@ -28,6 +28,7 @@ import { PositionCard } from "@/components/charts/position-card";
 import { SearchIcon, ExclamationCircleIcon } from "@/components/icons/dashboard-icons";
 import { Pagination } from "@/components/ui/pagination";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import useDevice from "@/hooks/useDevice";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -38,6 +39,7 @@ import {
   UserDashboardService,
   MarketType as ApiMarketType,
   SignalSide,
+  type UserSubscriptionPlanDetailsDto,
 } from "@/lib/api/client";
 import type { OfferedPositionsDto } from "@/lib/api/client";
 import type { ProviderSignalDetailDto } from "@/lib/api/client";
@@ -188,6 +190,24 @@ export function SuggestedContent() {
     },
   });
 
+  const { data: subscriptionDetails } = useQuery({
+    queryKey: ["suggested-my-subscription"],
+    queryFn: async () => {
+      const res =
+        await UserDashboardService.apiServicesAppUserdashboardGetmysubscriptionplandetailsGet();
+      const wrapped = res as AbpWrapper<UserSubscriptionPlanDetailsDto>;
+      return wrapped?.result ?? res;
+    },
+  });
+
+  const hasActiveSubscription =
+    !!subscriptionDetails?.hasSubscription &&
+    !!subscriptionDetails?.endDateUtc &&
+    new Date(subscriptionDetails.endDateUtc).getTime() > Date.now();
+  const emptyStateMessage = hasActiveSubscription
+    ? "هیچ داده‌ای یافت نشد."
+    : "برای مشاهده موقعیت‌های کاربران دنبال شده نیاز به اشتراک فعال دارید";
+
   const totalItems = (data as { totalCount?: number })?.totalCount ?? 0;
   const totalPages = Math.ceil(totalItems / pageSize) || 0;
   const paginatedData = (data?.items ?? []) as OfferedPositionsDto[];
@@ -306,8 +326,13 @@ export function SuggestedContent() {
             {isLoading ? (
               <MobileSkeleton />
             ) : paginatedData.length === 0 ? (
-              <div className="text-center text-white/70 py-8">
-                هیچ داده‌ای یافت نشد.
+              <div className="text-center text-white/70 py-8 space-y-4">
+                <p>{emptyStateMessage}</p>
+                {!hasActiveSubscription && (
+                  <Button asChild size="sm" className="bg-[#6D3CAC] hover:bg-[#7A4BB9] text-white">
+                    <a href="/dashboard/subscription?openPlans=1">مشاهده ی اشتراک ها</a>
+                  </Button>
+                )}
               </div>
             ) : (
               paginatedData.map((item: OfferedPositionsDto, index: number) => {
@@ -371,7 +396,20 @@ export function SuggestedContent() {
                         className="text-center text-muted-foreground dark:text-white/70 h-[72px] px-6 py-8"
                         colSpan={10}
                       >
-                        هیچ داده‌ای یافت نشد.
+                        <div className="space-y-4">
+                          <p>{emptyStateMessage}</p>
+                          {!hasActiveSubscription && (
+                            <Button
+                              asChild
+                              size="sm"
+                              className="bg-[#6D3CAC] hover:bg-[#7A4BB9] text-white"
+                            >
+                              <a href="/dashboard/subscription?openPlans=1">
+                                مشاهده ی اشتراک ها
+                              </a>
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ) : (

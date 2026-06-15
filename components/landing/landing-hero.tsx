@@ -3,9 +3,16 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeftIcon, ZapIcon } from "@/components/icons/landing-icons";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { getAccessToken } from "@/lib/auth-session";
 
 export function LandingHero() {
   const router = useRouter();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    setIsLoggedIn(Boolean(getAccessToken()));
+  }, []);
 
   return (
     <div className="flex flex-col gap-2">
@@ -20,20 +27,24 @@ export function LandingHero() {
       <div className="w-full max-w-sm sm:max-w-none sm:w-fit mx-auto my-6 sm:my-8 md:my-11 flex flex-col sm:flex-row gap-3 sm:gap-5 items-center justify-center px-2">
         <Button
           size="lg"
-          onClick={() => router.push("/dashboard/create-signal")}
+          onClick={() =>
+            router.push(isLoggedIn ? "/dashboard/create-signal" : "/auth/sign-up")
+          }
           className="gap-2 h-[50px] px-6 rounded-full bg-[#542C85] hover:bg-[#542C85]/90 text-white"
         >
-          دریافت اولین سیگنال
+          {isLoggedIn ? "دریافت اولین سیگنال" : "ثبت‌نام رایگان"}
           <ArrowLeftIcon size={20} className="w-5 h-5" />
         </Button>
         <Button
           size="lg"
           variant="outline"
-          onClick={() => router.push("/auth/sign-up")}
+          onClick={() =>
+            router.push(isLoggedIn ? "/dashboard/create-signal" : "/auth/sign-up")
+          }
           className="gap-2 h-[50px] px-6 rounded-full border-white/30 bg-white/10 hover:bg-white/20 text-white"
         >
           <ZapIcon size={20} className="w-5 h-5" />
-          مشاهده سیگنال ها
+          {isLoggedIn ? "دریافت سیگنال" : "مشاهده سیگنال ها"}
         </Button>
       </div>
     </div>

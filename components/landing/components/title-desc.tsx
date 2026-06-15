@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ArrowIcon } from "@/components/icons/landing-icons";
 import { Button } from "@/components/landing/ui/button/button";
 import { useRouter } from "next/navigation";
+import { getAccessToken } from "@/lib/auth-session";
 
 const TitleDesc = ({
   title,
@@ -26,9 +27,7 @@ const TitleDesc = ({
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
-    setIsLoggedIn(Boolean(token));
+    setIsLoggedIn(Boolean(getAccessToken()));
   }, []);
 
   return (

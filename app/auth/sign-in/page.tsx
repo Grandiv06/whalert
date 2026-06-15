@@ -11,7 +11,7 @@ import {
   UserDashboardService,
   type UserSubscriptionPlanDetailsDto,
 } from "@/lib/api/client";
-import { storeAuthSession } from "@/lib/auth-session";
+import { getAccessToken, storeAuthSession } from "@/lib/auth-session";
 
 function getSignInErrorMessage(error: unknown) {
   if (error instanceof ApiError) {
@@ -51,9 +51,7 @@ export default function SignInPage() {
   const [formData, setFormData] = useState({ email: "", password: "" });
 
   useEffect(() => {
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
-    if (token) {
+    if (getAccessToken()) {
       void (async () => {
         try {
           const res =

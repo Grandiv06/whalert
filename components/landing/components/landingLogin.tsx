@@ -4,9 +4,16 @@ import { ArrowIcon } from "@/components/icons/landing-icons";
 import { Button } from "@/components/landing/ui/button/button";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { getAccessToken } from "@/lib/auth-session";
 
 const LandingLogin = () => {
   const router = useRouter();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    setIsLoggedIn(Boolean(getAccessToken()));
+  }, []);
   return (
     <div id="home" className="flex flex-col gap-2">
       <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl text-center font-extrabold flex flex-wrap justify-center gap-x-2 gap-y-1 mx-auto px-1 text-white">
@@ -27,9 +34,11 @@ const LandingLogin = () => {
           reverse
           className="text-white"
           icon={<ArrowIcon className="w-8 h-8 p-2 text-white rounded-full bg-primary-450" />}
-          onClick={() => router.push("/dashboard/create-signal")}
+          onClick={() =>
+            router.push(isLoggedIn ? "/dashboard/create-signal" : "/auth/sign-up")
+          }
         >
-          دریافت اولین سیگنال
+          {isLoggedIn ? "دریافت اولین سیگنال" : "ثبت‌نام رایگان"}
         </Button>
         <Button
           size="lg"
@@ -43,9 +52,11 @@ const LandingLogin = () => {
               className="shrink-0"
             />
           }
-          onClick={() => router.push("/auth/sign-up")}
+          onClick={() =>
+            router.push(isLoggedIn ? "/dashboard/analysis" : "/auth/sign-up")
+          }
         >
-          مشاهده سیگنال ها
+          {isLoggedIn ? "مشاهده تحلیل" : "مشاهده سیگنال ها"}
         </Button>
       </div>
     </div>

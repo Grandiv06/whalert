@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { TokenAuthService, ApiError } from "@/lib/api/client";
+import { getAccessToken } from "@/lib/auth-session";
 
 export default function SignUpPage() {
   return (
@@ -65,9 +66,7 @@ function SignUpForm() {
   }, [searchParams]);
 
   useEffect(() => {
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
-    if (token) {
+    if (getAccessToken()) {
       router.replace("/dashboard/");
     }
   }, [router]);
