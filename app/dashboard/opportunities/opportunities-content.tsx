@@ -38,6 +38,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   Popover,
   PopoverTrigger,
@@ -70,6 +71,7 @@ import {
   ProviderShowcaseService,
   type SignalProviderInfoDto,
   type CurrentUserProfileEditDto,
+  type UserSubscriptionPlanDetailsDto,
   SignalOutcomeStatus,
   SignalOutcomeSource,
 } from "@/lib/api/client";
@@ -400,6 +402,22 @@ export function OpportunitiesContent() {
     ...noCacheQueryOptions,
   });
 
+  const { data: subscriptionDetails } = useQuery({
+    queryKey: ["opportunities-my-subscription"],
+    queryFn: async () => {
+      const res =
+        await UserDashboardService.apiServicesAppUserdashboardGetmysubscriptionplandetailsGet();
+      const wrapped = res as AbpWrapper<UserSubscriptionPlanDetailsDto>;
+      return wrapped?.result ?? res;
+    },
+    ...noCacheQueryOptions,
+  });
+
+  const hasActiveSubscription =
+    !!subscriptionDetails?.hasSubscription &&
+    !!subscriptionDetails?.endDateUtc &&
+    new Date(subscriptionDetails.endDateUtc).getTime() > Date.now();
+
   const providerList = providerInfo?.items ?? [];
   const currentUserDisplay = normalizePersianText(
     [currentProfile?.name, currentProfile?.surname].filter(Boolean).join(" "),
@@ -480,6 +498,9 @@ export function OpportunitiesContent() {
 
   const providerDisplayName =
     normalizePersianText(resolvedProvider?.name || "").trim() || "—";
+  const emptyStateMessage = hasActiveSubscription
+    ? "هیچ داده‌ای یافت نشد."
+    : "برای مشاهده ی موقعیت های کاربر اشتراک فعال نیاز دارید";
 
   const { data: monthlyPLResponse, isLoading: isMonthlyPLLoading } = useQuery({
     queryKey: ["monthlyProfitLossChart", selectedProviderId],
@@ -883,8 +904,13 @@ export function OpportunitiesContent() {
           <div className="space-y-4">
             {isLoading && <MobileSkeleton />}
             {!isLoading && items.length === 0 && (
-              <div className="text-center text-muted-foreground dark:text-white/70 py-8">
-                هیچ داده‌ای یافت نشد.
+              <div className="text-center text-muted-foreground dark:text-white/70 py-8 space-y-4">
+                <p>{emptyStateMessage}</p>
+                {!hasActiveSubscription && (
+                  <Button asChild size="sm" className="bg-[#6D3CAC] hover:bg-[#7A4BB9] text-white">
+                      <a href="/dashboard/subscription?openPlans=1">مشاهده ی اشتراک ها</a>
+                  </Button>
+                )}
               </div>
             )}
             {!isLoading &&
@@ -1116,7 +1142,20 @@ export function OpportunitiesContent() {
                         className="text-center text-muted-foreground dark:text-white/70 h-[72px] px-6 py-8"
                         colSpan={12}
                       >
-                        هیچ داده‌ای یافت نشد.
+                        <div className="space-y-4">
+                          <p>{emptyStateMessage}</p>
+                          {!hasActiveSubscription && (
+                            <Button
+                              asChild
+                              size="sm"
+                              className="bg-[#6D3CAC] hover:bg-[#7A4BB9] text-white"
+                            >
+                              <a href="/dashboard/subscription?openPlans=1">
+                                مشاهده ی اشتراک ها
+                              </a>
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   )}

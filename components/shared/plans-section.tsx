@@ -25,6 +25,7 @@ import {
   SubscriptionDashboardService,
   type SubscriptionPlanCatalogItemDto,
 } from "@/lib/api/client";
+import { getAccessToken } from "@/lib/auth-session";
 
 type GoldPlan = {
   id: number;
@@ -68,9 +69,7 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
   const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
-    setIsLoggedIn(Boolean(token));
+    setIsLoggedIn(Boolean(getAccessToken()));
   }, []);
 
   const { data: plansResponse, isLoading } = useQuery({

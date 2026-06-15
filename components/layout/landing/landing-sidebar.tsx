@@ -11,6 +11,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { LayoutDashboard, X } from "lucide-react";
 import { UserIcon } from "@/components/icons/landing-icons";
+import { getAccessToken } from "@/lib/auth-session";
 
 interface LandingSidebarProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ interface LandingSidebarProps {
 export function LandingSidebar({ isOpen, onClose, isLoggedIn = false }: LandingSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const [loggedIn, setLoggedIn] = React.useState(isLoggedIn);
 
   useEffect(() => {
     if (isOpen) {
@@ -32,6 +34,10 @@ export function LandingSidebar({ isOpen, onClose, isLoggedIn = false }: LandingS
       document.body.style.overflow = "";
     };
   }, [isOpen]);
+
+  useEffect(() => {
+    setLoggedIn(Boolean(getAccessToken()));
+  }, []);
 
   const handleSmoothNavigate = (
     event: React.MouseEvent<HTMLAnchorElement>,
@@ -134,7 +140,7 @@ export function LandingSidebar({ isOpen, onClose, isLoggedIn = false }: LandingS
         </nav>
 
         <div className="shrink-0 p-4 pt-2 border-t border-[#542C85]/20">
-          {isLoggedIn ? (
+          {loggedIn ? (
             <Button
               onClick={() => {
                 onClose();

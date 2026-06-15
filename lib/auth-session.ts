@@ -16,7 +16,8 @@ export function getAccessToken(): string | null {
   if (typeof window === "undefined") return null;
   return (
     localStorage.getItem(ACCESS_TOKEN_KEY) ??
-    sessionStorage.getItem(ACCESS_TOKEN_KEY)
+    sessionStorage.getItem(ACCESS_TOKEN_KEY) ??
+    readCookie(ACCESS_TOKEN_KEY)
   );
 }
 
@@ -44,6 +45,23 @@ function isBrowser(): boolean {
 function readStorage(key: string): string | null {
   if (!isBrowser()) return null;
   return localStorage.getItem(key) ?? sessionStorage.getItem(key);
+}
+
+function readCookie(key: string): string | null {
+  if (!isBrowser()) return null;
+  const cookies = document.cookie
+    .split(";")
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  for (const cookie of cookies) {
+    const [cookieKey, ...rest] = cookie.split("=");
+    if (cookieKey === key) {
+      return decodeURIComponent(rest.join("="));
+    }
+  }
+
+  return null;
 }
 
 function writeStorage(key: string, value: string) {

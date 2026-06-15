@@ -11,6 +11,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LandingSidebar } from "./landing-sidebar";
+import { getAccessToken } from "@/lib/auth-session";
 
 export function LandingHeader() {
   const pathname = usePathname();
@@ -18,9 +19,11 @@ export function LandingHeader() {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const [isScrolled, setIsScrolled] = React.useState(false);
   const [activeSection, setActiveSection] = React.useState("");
+  const [isLoggedIn, setIsLoggedIn] = React.useState(false);
 
-  const isLoggedIn =
-    typeof window !== "undefined" && !!localStorage.getItem("accessToken");
+  React.useEffect(() => {
+    setIsLoggedIn(Boolean(getAccessToken()));
+  }, []);
 
   React.useEffect(() => {
     const handleScroll = () => {
