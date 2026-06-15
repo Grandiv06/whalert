@@ -17,6 +17,7 @@ import {
   CalendarClock,
   Crown,
   CreditCard,
+  CircleAlert,
 } from "lucide-react";
 import {
   SubscriptionPurchaseService,
@@ -94,6 +95,7 @@ function pickStatusColor(status?: string | number | null): string {
 export function SubscriptionContent() {
   const [showAllPayments, setShowAllPayments] = useState(false);
   const [isPlansModalOpen, setIsPlansModalOpen] = useState(false);
+  const [isRenewalInfoOpen, setIsRenewalInfoOpen] = useState(false);
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -183,29 +185,43 @@ export function SubscriptionContent() {
                   </Button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="rounded-3xl border border-white/5 bg-white/[0.04] p-4">
-                    <p className="text-xs text-white/60 mb-2">پلن فعال</p>
-                    <p className="text-lg text-white font-bold break-words leading-8">
-                      {currentEditionName}
-                    </p>
+                <div className="space-y-4">
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => setIsRenewalInfoOpen(true)}
+                      className="h-9 w-9 rounded-full border border-[#B57CFF]/35 bg-[#B57CFF]/10 text-[#E9D8FF] hover:bg-[#B57CFF]/20 hover:text-white"
+                      aria-label="اطلاعات فعال‌سازی اشتراک جدید"
+                    >
+                      <CircleAlert className="h-4 w-4" />
+                    </Button>
                   </div>
 
-                  <div className="rounded-3xl border border-white/5 bg-white/[0.04] p-4">
-                    <p className="text-xs text-white/60 mb-2">
-                      تاریخ فعال‌سازی
-                    </p>
-                    <p className="text-lg text-white font-bold">
-                      {activationDate}
-                    </p>
-                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="rounded-3xl border border-white/5 bg-white/[0.04] p-4">
+                      <p className="text-xs text-white/60 mb-2">پلن فعال</p>
+                      <p className="text-lg text-white font-bold break-words leading-8">
+                        {currentEditionName}
+                      </p>
+                    </div>
 
-                  <div className="rounded-3xl border border-white/5 bg-white/[0.04] p-4">
-                    <p className="text-xs text-white/60 mb-2">پایان اشتراک</p>
-                    <p className="text-lg text-white font-bold">{endDate}</p>
-                    <div className="mt-3 text-xs text-white/60 flex items-center gap-1">
-                      <CalendarClock className="w-3 h-3" />
-                      {activeDaysText}
+                    <div className="rounded-3xl border border-white/5 bg-white/[0.04] p-4">
+                      <p className="text-xs text-white/60 mb-2">
+                        تاریخ فعال‌سازی
+                      </p>
+                      <p className="text-lg text-white font-bold">
+                        {activationDate}
+                      </p>
+                    </div>
+
+                    <div className="rounded-3xl border border-white/5 bg-white/[0.04] p-4">
+                      <p className="text-xs text-white/60 mb-2">پایان اشتراک</p>
+                      <p className="text-lg text-white font-bold">{endDate}</p>
+                      <div className="mt-3 text-xs text-white/60 flex items-center gap-1">
+                        <CalendarClock className="w-3 h-3" />
+                        {activeDaysText}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -320,6 +336,20 @@ export function SubscriptionContent() {
 
           <div className="mt-2 w-full max-w-full overflow-hidden pb-2">
             <PlansSection showHeader={false} onPurchaseSuccess={() => setIsPlansModalOpen(false)} />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isRenewalInfoOpen} onOpenChange={setIsRenewalInfoOpen}>
+        <DialogContent className="max-w-md border border-white/15 bg-[#120A24] text-white shadow-[0_24px_90px_rgba(93,49,160,0.45)]">
+          <DialogHeader>
+            <DialogTitle className="text-right text-xl font-bold">
+              فعال‌سازی اشتراک جدید
+            </DialogTitle>
+          </DialogHeader>
+          <div className="rounded-3xl border border-[#B57CFF]/25 bg-[#B57CFF]/10 p-4 text-sm leading-7 text-white/80">
+            اگر اشتراک جدیدی بخرید و اشتراک فعلی هنوز تمام نشده باشد، اشتراک
+            جدید بعد از پایان اشتراک فعلی فعال می‌شود.
           </div>
         </DialogContent>
       </Dialog>

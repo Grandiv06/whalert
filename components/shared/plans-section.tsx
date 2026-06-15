@@ -594,6 +594,10 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
             <p className="text-3xl font-black text-[#F9F6FF]">
               {formatMoney(selectedPlan?.monthlyPrice)}
             </p>
+            <div className="rounded-2xl border border-[#B57CFF]/25 bg-[#B57CFF]/10 p-4 text-sm text-white/80 leading-7">
+              اگر اشتراک فعلی شما هنوز تمام نشده باشد، این خرید از همین حالا
+              فعال نمی‌شود و بعد از پایان اشتراک فعلی شروع خواهد شد.
+            </div>
           </div>
 
           <DialogFooter className="pt-1 flex justify-start gap-2">
