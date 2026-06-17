@@ -18,7 +18,6 @@ import {
   AlertDialogTitle,
   AlertDialogDescription,
   AlertDialogFooter,
-  AlertDialogAction,
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
 import {
@@ -67,7 +66,6 @@ import {
   UserDashboardService,
   ShowPositionsDto,
   SignalSide,
-  SignalProviderService,
   ProviderShowcaseService,
   type SignalProviderInfoDto,
   type CurrentUserProfileEditDto,
@@ -294,13 +292,6 @@ export function OpportunitiesContent() {
       ? parsedSignalProviderId
       : undefined;
 
-  // States for outcome submission
-  const [isSubmittingOutcome, setIsSubmittingOutcome] = useState<Record<number, boolean>>({});
-  const [confirmSignal, setConfirmSignal] = useState<{
-    tradingSignalId: number;
-    outcomeStatus: SignalOutcomeStatus;
-    symbol: string;
-  } | null>(null);
   const [signalDetailModal, setSignalDetailModal] = useState<{
     tradingSignalId: number;
     title: string;
@@ -314,13 +305,7 @@ export function OpportunitiesContent() {
   // Toast notification states
   const [toasts, setToasts] = useState<Array<{ id: number; message: string; kind: "success" | "error"; createdAt: number; durationMs: number }>>([]);
   const [nowMs, setNowMs] = useState(() => Date.now());
-  const [isMounted, setIsMounted] = useState(false);
-  const [resolutionError, setResolutionError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setIsMounted(true);
-    return () => setIsMounted(false);
-  }, []);
+  const isMounted = typeof document !== "undefined";
 
   useEffect(() => {
     if (toasts.length === 0) return;
@@ -416,9 +401,9 @@ export function OpportunitiesContent() {
   const hasActiveSubscription =
     !!subscriptionDetails?.hasSubscription &&
     !!subscriptionDetails?.endDateUtc &&
-    new Date(subscriptionDetails.endDateUtc).getTime() > Date.now();
+    new Date(subscriptionDetails.endDateUtc).getTime() > new Date().getTime();
 
-  const providerList = providerInfo?.items ?? [];
+  const providerList = useMemo(() => providerInfo?.items ?? [], [providerInfo]);
   const currentUserDisplay = normalizePersianText(
     [currentProfile?.name, currentProfile?.surname].filter(Boolean).join(" "),
   )
@@ -459,23 +444,13 @@ export function OpportunitiesContent() {
       (resolvedProviderName === currentUserDisplay ||
         resolvedProviderName === currentUserName),
   );
+  const resolutionError =
+    !selectedProviderId || isOwnProvider || resolvedProvider || !providerInfo || !currentProfile
+      ? null
+      : "پروایدر مورد نظر پیدا نشد. لطفا آدرس را بررسی کنید یا از صفحه پیشخوان یا مشاهده تحلیل وارد شوید.";
 
   useEffect(() => {
-    if (!selectedProviderId) return;
-
-    if (isOwnProvider) {
-      router.replace("/dashboard/analysis/");
-      return;
-    }
-
-    if (!resolvedProvider) {
-      if (providerInfo && currentProfile) {
-        setResolutionError(
-          "پروایدر مورد نظر پیدا نشد. لطفا آدرس را بررسی کنید یا از صفحه پیشخوان یا مشاهده تحلیل وارد شوید.",
-        );
-      }
-      return;
-    }
+    if (!selectedProviderId || !resolvedProvider || isOwnProvider) return;
 
     const query = new URLSearchParams(searchParams.toString());
     query.delete("providerName");
@@ -483,13 +458,11 @@ export function OpportunitiesContent() {
 
     const nextUrl = `/dashboard/opportunities/?${query.toString()}`;
     const currentUrl = `/dashboard/opportunities/?${searchParams.toString()}`;
-      if (nextUrl !== currentUrl) {
-        router.replace(nextUrl);
-      }
+    if (nextUrl !== currentUrl) {
+      router.replace(nextUrl);
+    }
   }, [
-    currentProfile,
     isOwnProvider,
-    providerInfo,
     resolvedProvider,
     router,
     searchParams,
@@ -616,23 +589,6 @@ export function OpportunitiesContent() {
       label: item.label,
     })) ?? [];
 
-  const handleDeclareOutcome = async (tradingSignalId: number, outcomeStatus: SignalOutcomeStatus) => {
-    if (!tradingSignalId) return;
-    setIsSubmittingOutcome((prev) => ({ ...prev, [tradingSignalId]: true }));
-    try {
-      await SignalProviderService.apiServicesAppSignalproviderDeclaresignaloutcomePost({
-        tradingSignalId,
-        outcomeStatus,
-      });
-      pushToast("وضعیت سیگنال با موفقیت ثبت شد.", "success");
-      refetch();
-    } catch {
-      pushToast("ثبت وضعیت سیگنال ناموفق بود. لطفاً دوباره تلاش کنید.", "error");
-    } finally {
-      setIsSubmittingOutcome((prev) => ({ ...prev, [tradingSignalId]: false }));
-    }
-  };
-
   useEffect(() => {
     if (typeof window !== "undefined") {
       const globalAbp = (window as AbpWindow).abp;
@@ -706,7 +662,6 @@ export function OpportunitiesContent() {
       outcomeStatus: position.outcomeStatus,
       outcomeSource: position.outcomeSource,
       outcomeDeclaredAt: position.outcomeDeclaredAt,
-      canDeclareOutcome: position.canDeclareOutcome,
       pictureUrl: position.pictureUrl,
       pictureId: position.pictureId,
       pictureBase64:
@@ -1017,31 +972,9 @@ export function OpportunitiesContent() {
                             <p className="text-xs font-medium text-white/80">
                               وضعیت :
                             </p>
-                            {pos.canDeclareOutcome && pos.tradingSignalId ? (
-                              <div className="flex items-center gap-1.5">
-                                <button
-                                  type="button"
-                                  disabled={isSubmittingOutcome[pos.tradingSignalId]}
-                                  onClick={() => setConfirmSignal({ tradingSignalId: pos.tradingSignalId!, outcomeStatus: 1, symbol: pos.symbol })}
-                                  className="text-[10px] text-green-400 hover:text-green-300 font-bold bg-green-500/10 hover:bg-green-500/20 px-2.5 py-1 rounded border border-green-500/30 transition-all cursor-pointer disabled:opacity-50"
-                                >
-                                  ثبت TP
-                                </button>
-                                <button
-                                  type="button"
-                                  disabled={isSubmittingOutcome[pos.tradingSignalId]}
-                                  onClick={() => setConfirmSignal({ tradingSignalId: pos.tradingSignalId!, outcomeStatus: 2, symbol: pos.symbol })}
-                                  className="text-[10px] text-rose-400 hover:text-rose-300 font-bold bg-rose-500/10 hover:bg-rose-500/20 px-2.5 py-1 rounded border border-rose-500/30 transition-all cursor-pointer disabled:opacity-50"
-                                >
-                                  ثبت SL
-                                </button>
-                              </div>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20">
-                                <span className="h-1 w-1 rounded-full bg-purple-400 animate-pulse" />
-                                در انتظار نتیجه
-                              </span>
-                            )}
+                            <span className={getOutcomeStatusMeta(pos.outcomeStatus, pos.outcomeSource).className}>
+                              {getOutcomeStatusMeta(pos.outcomeStatus, pos.outcomeSource).label}
+                            </span>
                           </div>
                         )}
                       </div>
@@ -1248,28 +1181,9 @@ export function OpportunitiesContent() {
                                 <span className={getOutcomeStatusMeta(pos.outcomeStatus, pos.outcomeSource).className}>
                                   {getOutcomeStatusMeta(pos.outcomeStatus, pos.outcomeSource).label}
                                 </span>
-                              ) : pos.canDeclareOutcome && pos.tradingSignalId ? (
-                                <div className="flex items-center justify-center gap-1.5">
-                                  <button
-                                    type="button"
-                                    disabled={isSubmittingOutcome[pos.tradingSignalId]}
-                                    onClick={() => setConfirmSignal({ tradingSignalId: pos.tradingSignalId!, outcomeStatus: 1, symbol: pos.symbol })}
-                                    className="text-[10px] text-green-400 hover:text-green-300 font-bold bg-green-500/10 hover:bg-green-500/20 px-2.5 py-1 rounded border border-green-500/30 transition-all cursor-pointer disabled:opacity-50"
-                                  >
-                                    ثبت TP
-                                  </button>
-                                  <button
-                                    type="button"
-                                    disabled={isSubmittingOutcome[pos.tradingSignalId]}
-                                    onClick={() => setConfirmSignal({ tradingSignalId: pos.tradingSignalId!, outcomeStatus: 2, symbol: pos.symbol })}
-                                    className="text-[10px] text-rose-400 hover:text-rose-300 font-bold bg-rose-500/10 hover:bg-rose-500/20 px-2.5 py-1 rounded border border-rose-500/30 transition-all cursor-pointer disabled:opacity-50"
-                                  >
-                                    ثبت SL
-                                  </button>
-                                </div>
                               ) : (
-                                <span className={getOutcomeStatusMeta().className}>
-                                  {getOutcomeStatusMeta().label}
+                                <span className={getOutcomeStatusMeta(pos.outcomeStatus, pos.outcomeSource).className}>
+                                  {getOutcomeStatusMeta(pos.outcomeStatus, pos.outcomeSource).label}
                                 </span>
                               )}
                             </TableCell>
@@ -1362,48 +1276,6 @@ export function OpportunitiesContent() {
           </div>,
           document.body,
         )}
-
-      <AlertDialog open={confirmSignal !== null} onOpenChange={(open) => { if (!open) setConfirmSignal(null); }}>
-        <AlertDialogContent className="bg-[#0b071e]/95 border border-white/10 text-white backdrop-blur-md rounded-2xl max-w-md p-6">
-          <AlertDialogHeader className="text-right flex flex-col space-y-2">
-            <AlertDialogTitle className="text-lg font-bold text-white flex items-center gap-2">
-              <span className="text-[#A87FF3] text-xl">⚠️</span>
-              تایید نهایی ثبت وضعیت سیگنال
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-white/70 text-sm leading-relaxed mt-2" dir="rtl">
-              آیا از ثبت وضعیت سیگنال <span className="font-bold text-white text-base underline underline-offset-4 decoration-[#A87FF3]/60">{confirmSignal?.symbol}</span> به عنوان{" "}
-              <span className={`font-bold text-xs px-2 py-0.5 rounded ${confirmSignal?.outcomeStatus === 1 ? 'text-green-400 bg-green-500/10' : 'text-rose-400 bg-rose-500/10'}`}>
-                {confirmSignal?.outcomeStatus === 1 ? '🎯 به TP رسید (سود)' : '🛑 به SL رسید (ضرر)'}
-              </span>{" "}
-              اطمینان دارید؟
-              <br />
-              <span className="text-rose-400 font-semibold block mt-3 text-xs bg-rose-500/10 p-2.5 rounded-lg border border-rose-500/20">
-                🚨 توجه: این عملیات قطعی و غیر قابل بازگشت است.
-              </span>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex justify-end gap-3 mt-6" dir="rtl">
-            <AlertDialogCancel className="bg-white/5 border border-white/10 hover:bg-white/10 text-white rounded-lg px-4 py-2 text-sm transition-all cursor-pointer">
-              انصراف
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (confirmSignal) {
-                  handleDeclareOutcome(confirmSignal.tradingSignalId, confirmSignal.outcomeStatus);
-                  setConfirmSignal(null);
-                }
-              }}
-              className={`rounded-lg px-4 py-2 text-sm font-bold text-white transition-all cursor-pointer ${
-                confirmSignal?.outcomeStatus === 1
-                  ? "bg-green-500 hover:bg-green-600 shadow-[0_0_12px_rgba(34,197,94,0.3)]"
-                  : "bg-rose-500 hover:bg-rose-600 shadow-[0_0_12px_rgba(244,63,94,0.3)]"
-              }`}
-            >
-              بله، ثبت شود
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       <AlertDialog open={descriptionModal !== null} onOpenChange={(open) => { if (!open) setDescriptionModal(null); }}>
         <AlertDialogContent className="bg-[#0b071e]/95 border border-white/10 text-white backdrop-blur-md rounded-2xl max-w-lg p-6" dir="rtl">
