@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import {
@@ -35,10 +35,12 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { useQuery } from "@tanstack/react-query";
 import { resolveSignalImage } from "@/lib/signal-image";
 import { normalizePersianText } from "@/lib/utils";
+import { getMarketLabel } from "@/lib/market/market-label";
 import {
   UserDashboardService,
-  MarketType as ApiMarketType,
   SignalSide,
+  SignalOutcomeStatus,
+  SignalStatus,
   type UserSubscriptionPlanDetailsDto,
 } from "@/lib/api/client";
 import type { OfferedPositionsDto } from "@/lib/api/client";
@@ -61,6 +63,8 @@ interface PositionData {
   market: string;
   symbol: string;
   direction: "BUY" | "SELL";
+  status: string;
+  statusTone: string;
   entry: string;
   stopLoss: string;
   takeProfit: string;
@@ -74,6 +78,59 @@ function hasPositionImage(position: OfferedPositionImageFields) {
       position.pictureId?.trim() ||
       position.pictureBase64?.trim(),
   );
+}
+
+const CRYPTO_SYMBOL_HINTS = [
+  "BTC",
+  "ETH",
+  "BNB",
+  "SOL",
+  "XRP",
+  "ADA",
+  "DOGE",
+  "LTC",
+  "TRX",
+  "USDT",
+  "USDC",
+  "AVAX",
+  "DOT",
+  "LINK",
+  "TON",
+  "ATOM",
+  "BCH",
+  "ETC",
+  "XLM",
+  "APT",
+  "NEAR",
+  "SUI",
+  "INJ",
+  "ARB",
+  "OP",
+  "AAVE",
+  "UNI",
+  "PEPE",
+  "SHIB",
+  "WIF",
+  "FLOKI",
+];
+
+function getSuggestedMarketLabel(
+  market?: number | null,
+  symbols?: string[] | null,
+) {
+  const normalizedSymbols = (symbols ?? [])
+    .filter(Boolean)
+    .map((symbol) => symbol.toUpperCase());
+
+  if (
+    normalizedSymbols.some((symbol) =>
+      CRYPTO_SYMBOL_HINTS.some((hint) => symbol.includes(hint)),
+    )
+  ) {
+    return "CRYPTO";
+  }
+
+  return getMarketLabel(market);
 }
 
 const MobileSkeleton = () => (
@@ -108,7 +165,7 @@ const DesktopSkeleton = () => (
         key={i}
         className="dark:bg-transparent bg-white dark:hover:bg-white/5 hover:bg-gray-50"
       >
-        {[...Array(10)].map((_, j) => (
+        {[...Array(11)].map((_, j) => (
           <TableCell key={j} className="text-center h-[72px] px-6 py-8">
             <Skeleton className="h-4 w-12 mx-auto" />
           </TableCell>
@@ -131,6 +188,10 @@ export function SuggestedContent() {
   const [chartPreviewError, setChartPreviewError] = useState<string | null>(null);
   const [selectedPosition, setSelectedPosition] = useState<OfferedPositionsDto | null>(null);
   const [selectedSignalDetail, setSelectedSignalDetail] = useState<ProviderSignalDetailDto | null>(null);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [analysisStatus, debouncedSearch]);
 
   const handleShowChart = async (position: OfferedPositionsDto) => {
     const signalId = (position as OfferedPositionWithSignalId).tradingSignalId;
@@ -226,6 +287,11 @@ export function SuggestedContent() {
     position: OfferedPositionsDto,
     index: number,
   ): PositionData => {
+    const positionWithStatus = position as OfferedPositionsDto & {
+      outcomeStatus?: SignalOutcomeStatus | number;
+      signalStatus?: SignalStatus | number;
+      description?: string | null;
+    };
     const dateObj = position.date ? new Date(position.date) : null;
     const date = dateObj
       ? dateObj.toLocaleDateString("fa-IR", {
@@ -248,11 +314,33 @@ export function SuggestedContent() {
       time: date,
       timeDetail: time,
       analysisModel: normalizePersianText(position.displayName || "-"),
-      market: position.market === ApiMarketType._1 ? "CRYPTO" : "FOREX",
+      market: getSuggestedMarketLabel(position.market, position.symbols),
       symbol: normalizePersianText(
         position.symbols ? position.symbols.join(", ") : "-",
       ),
       direction: position.side === SignalSide._1 ? "BUY" : "SELL",
+      status:
+        positionWithStatus.outcomeStatus === SignalOutcomeStatus._1 ||
+        positionWithStatus.signalStatus === SignalStatus._1
+          ? "به TP رسید"
+          : positionWithStatus.outcomeStatus === SignalOutcomeStatus._2 ||
+              positionWithStatus.signalStatus === SignalStatus._2
+            ? "به SL رسید"
+            : positionWithStatus.outcomeStatus === SignalOutcomeStatus._3 ||
+                positionWithStatus.signalStatus === SignalStatus._3
+              ? "لغو شده"
+              : "در انتظار نتیجه",
+      statusTone:
+        positionWithStatus.outcomeStatus === SignalOutcomeStatus._1 ||
+        positionWithStatus.signalStatus === SignalStatus._1
+          ? "text-green-400 bg-green-500/10 border-green-500/20"
+          : positionWithStatus.outcomeStatus === SignalOutcomeStatus._2 ||
+              positionWithStatus.signalStatus === SignalStatus._2
+            ? "text-rose-400 bg-rose-500/10 border-rose-500/20"
+            : positionWithStatus.outcomeStatus === SignalOutcomeStatus._3 ||
+                positionWithStatus.signalStatus === SignalStatus._3
+              ? "text-white/60 bg-white/5 border-white/10"
+              : "text-purple-400 bg-purple-500/10 border-purple-500/20",
       entry: position.entryPrice?.toString() || "-",
       stopLoss: position.sl?.toString() || "-",
       takeProfit:
@@ -352,7 +440,7 @@ export function SuggestedContent() {
         ) : (
           <div className="overflow-hidden -mx-4 md:mx-0">
             <div className="overflow-x-auto px-4 md:px-0 [&_[data-slot=table-container]]:border-0 [&_[data-slot=table-container]]:rounded-[20px]">
-              <Table className="min-w-[1000px]">
+              <Table className="min-w-[1100px]">
                 <TableHeader className="h-14">
                   <TableRow>
                     <TableHead className="text-center text-white h-12">
@@ -362,7 +450,7 @@ export function SuggestedContent() {
                       زمان
                     </TableHead>
                     <TableHead className="text-center text-white h-12">
-                      مدل تحلیل
+                      تحلیلگر
                     </TableHead>
                     <TableHead className="text-center text-white h-12">
                       بازار
@@ -374,6 +462,12 @@ export function SuggestedContent() {
                       جهت
                     </TableHead>
                     <TableHead className="text-center text-white h-12">
+                      تصویر
+                    </TableHead>
+                    <TableHead className="text-center text-white h-12">
+                      وضعیت
+                    </TableHead>
+                    <TableHead className="text-center text-white h-12">
                       ورود
                     </TableHead>
                     <TableHead className="text-center text-white h-12">
@@ -381,9 +475,6 @@ export function SuggestedContent() {
                     </TableHead>
                     <TableHead className="text-center text-white h-12">
                       حد سود
-                    </TableHead>
-                    <TableHead className="text-center text-white h-12">
-                      نمایش در نمودار
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -394,7 +485,7 @@ export function SuggestedContent() {
                     <TableRow className="dark:bg-transparent bg-white dark:hover:bg-white/5 hover:bg-gray-50">
                       <TableCell
                         className="text-center text-muted-foreground dark:text-white/70 h-[72px] px-6 py-8"
-                        colSpan={10}
+                        colSpan={11}
                       >
                         <div className="space-y-4">
                           <p>{emptyStateMessage}</p>
@@ -453,6 +544,29 @@ export function SuggestedContent() {
                               </span>
                             </TableCell>
                             <TableCell className="text-center h-[72px] px-6 py-8">
+                              {position.hasImage ? (
+                                <button
+                                  type="button"
+                                  onClick={() => void handleShowChart(item)}
+                                  className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-dashed border-[#A87FF3]/35 bg-[#542C85]/10 px-3 py-2 text-xs font-semibold text-[#DCCBFF] transition-colors hover:bg-[#542C85]/18"
+                                  title="مشاهده تصویر"
+                                >
+                                  مشاهده
+                                </button>
+                              ) : (
+                                <span className="text-xs font-semibold text-white/35">
+                                  بدون تصویر
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-center h-[72px] px-6 py-8">
+                              <span
+                                className={`inline-flex items-center justify-center rounded-full border px-2.5 py-1 text-[11px] font-bold ${position.statusTone}`}
+                              >
+                                {position.status}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-center h-[72px] px-6 py-8">
                               {position.entry}
                             </TableCell>
                             <TableCell className="text-center h-[72px] px-6 py-8">
@@ -505,22 +619,6 @@ export function SuggestedContent() {
                                   </Tooltip>
                                   {position.takeProfit}
                                 </div>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-center h-[72px] px-6 py-8">
-                              {position.hasImage ? (
-                                <button
-                                  type="button"
-                                  onClick={() => void handleShowChart(item)}
-                                  className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-dashed border-[#A87FF3]/35 bg-[#542C85]/10 px-3 py-2 text-xs font-semibold text-[#DCCBFF] transition-colors hover:bg-[#542C85]/18"
-                                  title="مشاهده تصویر"
-                                >
-                                  مشاهده
-                                </button>
-                              ) : (
-                                <span className="text-xs font-semibold text-white/35">
-                                  بدون تصویر
-                                </span>
                               )}
                             </TableCell>
                           </TableRow>

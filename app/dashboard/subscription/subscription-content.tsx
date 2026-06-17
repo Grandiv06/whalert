@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -92,16 +91,18 @@ function pickStatusColor(status?: string | number | null): string {
   return "text-white/70 bg-white/10 border-white/20";
 }
 
-export function SubscriptionContent() {
-  const [showAllPayments, setShowAllPayments] = useState(false);
-  const [isPlansModalOpen, setIsPlansModalOpen] = useState(false);
-  const [isRenewalInfoOpen, setIsRenewalInfoOpen] = useState(false);
-  const searchParams = useSearchParams();
+function formatRialAmount(amount?: number): string {
+  if (amount === undefined || !Number.isFinite(amount)) return "—";
+  return `${toPersianDigits(amount.toLocaleString("fa-IR"))} ریال`;
+}
 
-  useEffect(() => {
-    if (searchParams.get("openPlans") !== "1") return;
-    setIsPlansModalOpen(true);
-  }, [searchParams]);
+export function SubscriptionContent() {
+  const searchParams = useSearchParams();
+  const [showAllPayments, setShowAllPayments] = useState(false);
+  const [isPlansModalOpen, setIsPlansModalOpen] = useState(
+    () => searchParams.get("openPlans") === "1",
+  );
+  const [isRenewalInfoOpen, setIsRenewalInfoOpen] = useState(false);
 
   const { data: subscriptionDetails, isLoading: detailsLoading } = useQuery({
     queryKey: ["mySubscriptionPlanDetails"],
@@ -160,9 +161,22 @@ export function SubscriptionContent() {
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6">
           <Card className="xl:col-span-2 bg-[#02000B]/30 border-white/5 rounded-4xl">
             <CardContent className="p-5 md:p-6 space-y-5">
-              <div className="flex items-center gap-2 text-white">
-                <Crown className="w-5 h-5 text-[#B57CFF]" />
-                <h2 className="font-bold text-lg">وضعیت اشتراک فعلی</h2>
+              <div className="flex items-center justify-between gap-3 text-white">
+                <div className="flex items-center gap-2">
+                  <Crown className="w-5 h-5 text-[#B57CFF]" />
+                  <h2 className="font-bold text-lg">وضعیت اشتراک فعلی</h2>
+                </div>
+                {detailsLoading ? null : hasActiveSubscription ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setIsRenewalInfoOpen(true)}
+                    className="h-9 w-9 rounded-full border border-[#B57CFF]/35 bg-[#B57CFF]/10 text-[#E9D8FF] hover:bg-[#B57CFF]/20 hover:text-white shrink-0"
+                    aria-label="اطلاعات فعال‌سازی اشتراک جدید"
+                  >
+                    <CircleAlert className="h-4 w-4" />
+                  </Button>
+                ) : null}
               </div>
 
               {detailsLoading ? (
@@ -186,18 +200,6 @@ export function SubscriptionContent() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="flex justify-end">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() => setIsRenewalInfoOpen(true)}
-                      className="h-9 w-9 rounded-full border border-[#B57CFF]/35 bg-[#B57CFF]/10 text-[#E9D8FF] hover:bg-[#B57CFF]/20 hover:text-white"
-                      aria-label="اطلاعات فعال‌سازی اشتراک جدید"
-                    >
-                      <CircleAlert className="h-4 w-4" />
-                    </Button>
-                  </div>
-
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="rounded-3xl border border-white/5 bg-white/[0.04] p-4">
                       <p className="text-xs text-white/60 mb-2">پلن فعال</p>
@@ -256,9 +258,7 @@ export function SubscriptionContent() {
                     >
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-sm text-white font-semibold">
-                          {item.price !== undefined
-                            ? `${toPersianDigits(item.price.toLocaleString("fa-IR"))} تومان`
-                            : "—"}
+                          {formatRialAmount(item.price)}
                         </span>
                         <span
                           className={`text-xs px-2.5 py-1 rounded-full border font-medium ${pickStatusColor(item.status)}`}
@@ -308,9 +308,7 @@ export function SubscriptionContent() {
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-sm text-white font-semibold">
-                    {item.price !== undefined
-                      ? `${toPersianDigits(item.price.toLocaleString("fa-IR"))} تومان`
-                      : "—"}
+                    {formatRialAmount(item.price)}
                   </span>
                   <span
                     className={`text-xs px-2.5 py-1 rounded-full border font-medium ${pickStatusColor(item.status)}`}

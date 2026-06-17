@@ -30,7 +30,6 @@ import { useQuery } from "@tanstack/react-query";
 import {
   UserDashboardService,
   ShowPositionsDto,
-  MarketType,
   SignalSide,
   SignalOutcomeSource,
   SignalOutcomeStatus,
@@ -42,6 +41,7 @@ import { SignalStatus } from "@/lib/api/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { SignalCardProps } from "@/components/charts/signal-card";
+import { getMarketLabel } from "@/lib/market/market-label";
 import { normalizePersianText } from "@/lib/utils";
 import { FileText } from "lucide-react";
 
@@ -162,7 +162,7 @@ function mapSignalToCardProps(signal: ShowPositionsDto): SignalCardProps {
           })
           .replace(",", " - ")
       : "-",
-    market: signal.market === MarketType._1 ? "CRYPTO" : "FOREX",
+    market: getMarketLabel(signal.market),
     analysisModel: normalizePersianText(signal.displayName || "-"),
     symbol: normalizePersianText(signal.symbol || "-"),
     direction: signal.side === SignalSide._1 ? "BUY" : "SELL",
@@ -192,7 +192,7 @@ export function HomeContent() {
   const isMobile = device === "mobile";
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
-  const [activeFilter, setActiveFilter] = useState("24h");
+  const [activeFilter, setActiveFilter] = useState("all");
   const [dateFrom, setDateFrom] = useState<Date | null>(null);
   const [dateTo, setDateTo] = useState<Date | null>(null);
   const [statusFilter, setStatusFilter] = useState<SignalStatus | undefined>(
@@ -316,7 +316,7 @@ export function HomeContent() {
                         زمان
                       </TableHead>
                       <TableHead className="text-center text-white h-12">
-                        مدل تحلیل
+                        تحلیلگر
                       </TableHead>
                       <TableHead className="text-center text-white h-12">
                         بازار
@@ -385,9 +385,7 @@ export function HomeContent() {
                             {normalizePersianText(signal.displayName || "-")}
                           </TableCell>
                           <TableCell className="text-center h-[72px] px-6 py-8">
-                            {signal.market === MarketType._1
-                              ? "CRYPTO"
-                              : "FOREX"}
+                            {getMarketLabel(signal.market)}
                           </TableCell>
                           <TableCell className="text-center h-[72px] px-6 py-8">
                             {normalizePersianText(signal.symbol || "-")}

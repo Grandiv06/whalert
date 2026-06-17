@@ -18,6 +18,7 @@ import {
   CreateSignalContent as CreateSignalContentPortable,
   type CreateSignalServices,
 } from "@/components/create-signal/create-signal-content";
+import { createSignalSubmissionService } from "@/lib/signal-submission";
 import { cn } from "@/lib/utils";
 import {
   AlertDialog,
@@ -90,10 +91,16 @@ const createSignalServices: CreateSignalServices = {
     UserDashboardService.apiServicesAppUserdashboardSubmitsignalfromimageanalysisPost(
       payload as never,
     ),
-  submitSignalFromUserInput: (payload) =>
-    UserDashboardService.apiServicesAppUserdashboardSubmitsignalfromuserinputPost(
-      payload,
-    ),
+  submitSignal: createSignalSubmissionService({
+    submitJson: (payload) =>
+      SignalProviderService.apiServicesAppSignalproviderSubmitsignalfromuserinputPost(
+        payload,
+      ),
+    submitMultipart: (payload) =>
+      SignalProviderService.apiServicesAppSignalproviderAddnewsignalwithpicturePost(
+        payload,
+      ),
+  }),
 };
 
 const createSignalConfig = {

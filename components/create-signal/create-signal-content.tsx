@@ -54,6 +54,7 @@ import {
   type ChartTimeframeOption,
 } from "@/components/charts/lightweight-chart";
 import { useDebounce } from "@/hooks/useDebounce";
+import type { SubmitSignalWithImageInput } from "@/lib/signal-submission";
 import type { IChartApi } from "lightweight-charts";
 type AbpWrapper<T> = { result?: T };
 
@@ -116,7 +117,7 @@ function cropCanvasToSignalAspectRatio(canvas: HTMLCanvasElement) {
   return outputCanvas;
 }
 
-async function captureElementImageBase64(
+async function captureElementScreenshotBase64(
   element: HTMLDivElement | null,
   chart: IChartApi | null,
 ): Promise<string | null> {
@@ -199,15 +200,7 @@ export type CreateSignalServices = {
   submitSignalFromImageAnalysis: (
     payload: FetchDataFromImageFromUrlResultDto,
   ) => PromiseLike<unknown>;
-  submitSignalFromUserInput: (payload: {
-    direction: "LONG" | "SHORT";
-    symbol: string;
-    entryPoint: number;
-    stopLoss: number;
-    takeProfits: number[];
-    description?: string;
-    imageBase64?: string | null;
-  }) => PromiseLike<unknown>;
+  submitSignal: (payload: SubmitSignalWithImageInput) => PromiseLike<unknown>;
 };
 
 export type CreateSignalConfig = {
@@ -1175,11 +1168,11 @@ export function CreateSignalContent({
           ?.result ?? (response as FetchDataFromImageFromUrlResultDto);
 
       const analysis = result?.analysis;
-      const rawImage = result?.imageBase64;
-      const chartImageSrc = rawImage
-        ? rawImage.startsWith("data:")
-          ? rawImage
-          : `data:image/png;base64,${rawImage}`
+      const analysisImageBase64 = result?.imageBase64;
+      const chartImageSrc = analysisImageBase64
+        ? analysisImageBase64.startsWith("data:")
+          ? analysisImageBase64
+          : `data:image/png;base64,${analysisImageBase64}`
         : "/images/chart_preview.png";
 
       const position: "LONG" | "SHORT" =
@@ -1776,21 +1769,21 @@ export function CreateSignalContent({
     setIsPublishing(true);
     setPublishError("");
     try {
-      const imageBase64 = await captureElementImageBase64(
+      const chartScreenshotBase64 = await captureElementScreenshotBase64(
         manualChartCaptureRef.current,
         chartApiRef.current,
       );
-      if (!imageBase64) {
+      if (!chartScreenshotBase64) {
         throw new Error("Chart screenshot could not be captured. Please try again.");
       }
-      await services.submitSignalFromUserInput({
+      await services.submitSignal({
         direction: manualPublishPreview.side,
         symbol: manualPublishPreview.symbol,
         entryPoint: manualPublishPreview.entry,
         stopLoss: manualPublishPreview.stopLoss,
         takeProfits: manualPublishPreview.takeProfits,
         description: manualPublishPreview.description,
-        imageBase64,
+        picture: { kind: "base64", imageBase64: chartScreenshotBase64 },
       });
       setEntryPointDisplay("0");
       setTargetsDisplay([]);

@@ -75,7 +75,7 @@ import { CreateSignalContent } from "@/components/create-signal/create-signal-co
 const myServices = {
   getDynamicPrice: async (symbol, tf, from, to) => { /* fetch from your API */ },
   fetchDataFromImageFromUrl: async (payload) => { /* call AI service */ },
-  submitSignalFromUserInput: async (payload) => { /* save manual signal */ },
+  submitSignal: async (payload) => { /* route base64 or file automatically */ },
   // ...
 };
 

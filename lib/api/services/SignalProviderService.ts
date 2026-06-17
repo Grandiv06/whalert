@@ -24,6 +24,7 @@ import type { ProviderTeamAccountDto } from '../models/ProviderTeamAccountDto';
 import type { RemoveProviderSubscriberInput } from '../models/RemoveProviderSubscriberInput';
 import type { SetDeliveryChannelInput } from '../models/SetDeliveryChannelInput';
 import type { SetProviderTeamAccountPasswordInput } from '../models/SetProviderTeamAccountPasswordInput';
+import type { SubmitSignalFromUserInputDto } from '../models/SubmitSignalFromUserInputDto';
 import type { SignalOutcomeWorkbenchOutput } from '../models/SignalOutcomeWorkbenchOutput';
 import type { SignalSide } from '../models/SignalSide';
 import type { UpdateProviderSettingsInput } from '../models/UpdateProviderSettingsInput';
@@ -290,6 +291,21 @@ export class SignalProviderService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/services/app/SignalProvider/AddNewSignal',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @param requestBody
+     * @returns any Success
+     * @throws ApiError
+     */
+    public static apiServicesAppSignalproviderSubmitsignalfromuserinputPost(
+        requestBody?: SubmitSignalFromUserInputDto,
+    ): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/services/app/SignalProvider/SubmitSignalFromUserInput',
             body: requestBody,
             mediaType: 'application/json',
         });
