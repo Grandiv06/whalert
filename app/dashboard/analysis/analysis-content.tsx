@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { ProfileCard } from "@/components/ui/profile-card";
 import { Button } from "@/components/ui/button";
 import { SearchIcon } from "@/components/icons/dashboard-icons";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2 } from "lucide-react";
@@ -72,21 +73,85 @@ const normalizeProviderAvatar = (
   return `data:image/jpeg;base64,${value}`;
 };
 
+function ProfileCardSkeleton() {
+  return (
+    <div
+      className="relative overflow-hidden bg-[#542C85]/20 border-0 rounded-2xl"
+      dir="rtl"
+      aria-hidden="true"
+    >
+      <div className="px-6 pt-8 pb-6 flex flex-col items-center space-y-4 relative z-10">
+        <div className="flex items-center justify-center overflow-hidden">
+          <Skeleton className="h-[70px] w-[70px] rounded-2xl bg-white/15" />
+        </div>
+
+        <div className="text-center space-y-3 w-full">
+          <Skeleton className="h-6 w-32 mx-auto bg-white/15" />
+          <div className="flex flex-row-reverse items-center justify-center gap-1">
+            {[...Array(5)].map((_, i) => (
+              <Skeleton
+                key={i}
+                className="h-4 w-4 rounded-sm bg-[#542C85]/45 border border-[#542C85]/20"
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-row-reverse items-center gap-2 w-full justify-center pt-2">
+          <Skeleton className="h-10 flex-1 rounded-lg bg-[#542C85]/75" />
+          <Skeleton className="h-10 w-10 rounded-lg bg-[#4C1767]/80" />
+        </div>
+      </div>
+
+      <div className="px-6 pb-6">
+        <div className="space-y-3">
+          {[...Array(3)].map((_, index) => (
+            <div
+              key={index}
+              className="flex flex-row-reverse items-center justify-between p-3 rounded-lg bg-[#02000B]/30"
+            >
+              <Skeleton
+                className={`h-5 bg-white/15 ${
+                  index === 0 ? "w-14" : index === 1 ? "w-12" : "w-10"
+                }`}
+              />
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-5 w-5 bg-white/15" />
+                <Skeleton
+                  className={`h-4 bg-white/15 ${
+                    index === 0 ? "w-24" : index === 1 ? "w-20" : "w-28"
+                  }`}
+                />
+              </div>
+            </div>
+          ))}
+
+          <div className="flex flex-row-reverse items-center justify-between p-3 rounded-lg bg-[#02000B]/30 mt-6">
+            <Skeleton className="h-5 w-16 bg-white/15" />
+            <Skeleton className="h-4 w-20 bg-white/15" />
+          </div>
+
+          <div className="flex flex-row-reverse items-center justify-between p-3 rounded-lg bg-[#02000B]/30">
+            <Skeleton className="h-5 w-14 bg-white/15" />
+            <Skeleton className="h-4 w-16 bg-white/15" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function AnalysisContent() {
   const router = useRouter();
   const [filterType, setFilterType] = useState<FilterType>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [followToasts, setFollowToasts] = useState<FollowToast[]>([]);
   const [nowMs, setNowMs] = useState(() => Date.now());
-  const [isMounted, setIsMounted] = useState(false);
+  const toastIdRef = useRef(0);
   const debouncedSearch = useDebounce(searchQuery, 400);
   const [currentPage] = useState(1);
   const [pageSize] = useState(10);
-
-  useEffect(() => {
-    setIsMounted(true);
-    return () => setIsMounted(false);
-  }, []);
+  const isMounted = typeof document !== "undefined";
 
   useEffect(() => {
     if (followToasts.length === 0) return;
@@ -101,22 +166,22 @@ export function AnalysisContent() {
   }, [followToasts.length]);
 
   const pushFollowToast = (message: string, kind: FollowToastKind) => {
-    const id = Date.now() + Math.floor(Math.random() * 1000);
+    const id = ++toastIdRef.current;
     setFollowToasts((prev) => [
       ...prev,
-      { id, message, kind, createdAt: Date.now(), durationMs: 4000 },
+      { id, message, kind, createdAt: new Date().getTime(), durationMs: 4000 },
     ].slice(-3));
   };
 
   const pushSubscriptionBlockedToast = () => {
-    const id = Date.now() + Math.floor(Math.random() * 1000);
+    const id = ++toastIdRef.current;
     setFollowToasts((prev) => [
       ...prev,
       {
         id,
         message: "شما اشتراک فعال ندارید.",
         kind: "error" as FollowToastKind,
-        createdAt: Date.now(),
+        createdAt: new Date().getTime(),
         durationMs: 8000,
         actionLabel: "مشاهده پلن‌ها",
         actionHref: "/dashboard/subscription?openPlans=1",
@@ -164,7 +229,7 @@ export function AnalysisContent() {
   const hasActiveSubscription =
     !!subscriptionDetails?.hasSubscription &&
     !!subscriptionDetails?.endDateUtc &&
-    new Date(subscriptionDetails.endDateUtc).getTime() > Date.now();
+    new Date(subscriptionDetails.endDateUtc).getTime() > new Date().getTime();
 
   const filteredProfiles = (data?.items ?? []) as ExtendedSignalProviderInfoDto[];
   const handleViewDetails = (
@@ -297,10 +362,7 @@ export function AnalysisContent() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {isLoading ? (
             [...Array(6)].map((_, i) => (
-              <div
-                key={i}
-                className="h-[300px] w-full rounded-2xl bg-[#542C85]/20 animate-pulse"
-              />
+              <ProfileCardSkeleton key={i} />
             ))
           ) : filteredProfiles.length === 0 ? (
             <div className="col-span-1 md:col-span-2 lg:col-span-3 text-center text-white/70 py-10">
