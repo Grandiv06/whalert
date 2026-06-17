@@ -62,10 +62,10 @@ import {
 import useDevice from "@/hooks/useDevice";
 import { useQuery } from "@tanstack/react-query";
 import { normalizePersianText } from "@/lib/utils";
+import { getMarketLabel } from "@/lib/market/market-label";
 import {
   UserDashboardService,
   ShowPositionsDto,
-  MarketType,
   SignalSide,
   SignalProviderService,
   ProviderShowcaseService,
@@ -679,7 +679,7 @@ export function OpportunitiesContent() {
             .replace(",", " - ")
         : "-",
       analysisModel: normalizePersianText(position.displayName || "-"),
-      market: position.market === MarketType._1 ? "CRYPTO" : "FOREX",
+      market: getMarketLabel(position.market),
       symbol: normalizePersianText(position.symbol || "-"),
       direction: position.side === SignalSide._1 ? "BUY" : "SELL",
       entry: position.entryPrice?.toString() || "-",
@@ -940,7 +940,7 @@ export function OpportunitiesContent() {
                         </div>
                         <div className="flex justify-between items-center">
                           <p className="text-xs font-medium text-white/80">
-                            مدل تحلیل : {pos.analysisModel}
+                            تحلیلگر : {pos.analysisModel}
                           </p>
                           <p className="text-xs font-medium text-white/80">
                             نمادها : {pos.symbol}
@@ -1103,7 +1103,7 @@ export function OpportunitiesContent() {
                       زمان
                     </TableHead>
                     <TableHead className="text-center text-white h-12">
-                      مدل تحلیل
+                      تحلیلگر
                     </TableHead>
                     <TableHead className="text-center text-white h-12">
                       بازار

@@ -55,7 +55,7 @@ export function PositionCard({
           </div>
           <div className="flex justify-between items-center">
             <p className="text-xs font-medium text-white/80">
-              مدل تحلیل : {analysisModel}
+              تحلیلگر : {analysisModel}
             </p>
             <p className="text-xs font-medium text-white/80">
               نمادها : {symbol}
