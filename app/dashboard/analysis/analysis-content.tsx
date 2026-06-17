@@ -18,7 +18,6 @@ import {
 import type { SignalProviderInfoDto } from "@/lib/api/client";
 import type { PagedResultDtoOfSignalProviderInfoDto } from "@/lib/api/client";
 import type { UserSubscriptionPlanDetailsDto } from "@/lib/api/client";
-import { getApiBaseUrl } from "@/config/env";
 
 type AbpWrapper<T> = { result?: T };
 type FilterType = "all" | "followed" | "not-followed";
@@ -37,41 +36,9 @@ interface ExtendedSignalProviderInfoDto extends SignalProviderInfoDto {
   id?: number;
   signalProviderId?: number;
   stars?: number;
-  file?: string | null;
-  profilePictureId?: string | null;
   isAI?: boolean;
   isFollowed?: boolean;
 }
-
-const guidPattern =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-const isGuid = (value?: string | null) =>
-  !!value && guidPattern.test(value.trim());
-
-const apiBaseUrl = getApiBaseUrl().replace(/\/$/, "");
-
-const normalizeProviderAvatar = (
-  raw?: string | null,
-  profilePictureId?: string | null,
-): string | null => {
-  const candidate = profilePictureId?.trim() || raw?.trim() || null;
-  if (!candidate) return null;
-
-  if (isGuid(candidate)) {
-    return `${apiBaseUrl}/File/DownloadBinaryFile?id=${encodeURIComponent(candidate)}`;
-  }
-
-  const value = candidate;
-  if (
-    value.startsWith("http://") ||
-    value.startsWith("https://") ||
-    value.startsWith("data:")
-  ) {
-    return value;
-  }
-  return `data:image/jpeg;base64,${value}`;
-};
 
 function ProfileCardSkeleton() {
   return (
@@ -288,7 +255,7 @@ export function AnalysisContent() {
       profileId: profile.id,
       name: profile.name || "Unknown",
       rating: Math.max(0, Math.min(5, profile.stars ?? 0)),
-      avatarSrc: normalizeProviderAvatar(profile.file, profile.profilePictureId),
+      avatarSrc: null,
       totalPositions: total,
       activePositions: profile.activeSignals || 0,
       lostPositions: profile.lostSignals || 0,
