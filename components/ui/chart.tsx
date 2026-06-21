@@ -55,16 +55,36 @@ ChartContainer.displayName = "ChartContainer";
 
 const ChartTooltip = RechartsPrimitive.Tooltip;
 
+type ChartTooltipPayloadItem = {
+  name?: string;
+  value?: unknown;
+  dataKey?: string;
+  color?: string;
+  payload?: Record<string, unknown>;
+};
+
 interface ChartTooltipContentProps {
   active?: boolean;
-  payload?: Array<{
-    name?: string;
-    value?: unknown;
-    dataKey?: string;
-    color?: string;
-  }>;
+  payload?: ChartTooltipPayloadItem[];
   label?: string;
   hideLabel?: boolean;
+  labelFormatter?: (
+    label: string,
+    payload: ChartTooltipPayloadItem[],
+  ) => React.ReactNode;
+  valueFormatter?: (value: unknown, dataKey?: string) => React.ReactNode;
+  nameFormatter?: (
+    name: string,
+    dataKey: string | undefined,
+    payload: ChartTooltipPayloadItem[],
+  ) => React.ReactNode;
+}
+
+function formatChartNumber(value: number, maximumFractionDigits = 2): string {
+  return value.toLocaleString("en-US", {
+    maximumFractionDigits,
+    minimumFractionDigits: 0,
+  });
 }
 
 function ChartTooltipContent({
@@ -72,13 +92,42 @@ function ChartTooltipContent({
   payload,
   label,
   hideLabel,
+  labelFormatter,
+  valueFormatter,
+  nameFormatter,
 }: ChartTooltipContentProps) {
+  const { config } = useChart();
+
   if (!active || !payload?.length) return null;
+
+  const resolvedLabel = labelFormatter
+    ? labelFormatter(label ?? "", payload)
+    : label;
+
+  const formatValue = (value: unknown, dataKey?: string) => {
+    if (valueFormatter) return valueFormatter(value, dataKey);
+    if (typeof value === "number") return formatChartNumber(value);
+    return String(value ?? "-");
+  };
+
+  const formatName = (entry: ChartTooltipPayloadItem) => {
+    const dataKey = entry.dataKey;
+    const fallbackName = entry.name ?? dataKey ?? "";
+    if (nameFormatter) {
+      return nameFormatter(fallbackName, dataKey, payload);
+    }
+    if (dataKey && config[dataKey]?.label) return config[dataKey].label;
+    return fallbackName;
+  };
+
   return (
-    <div className="rounded-lg border bg-background px-3 py-2 shadow-md">
-      {!hideLabel && label && (
-        <p className="mb-2 text-sm font-medium">{label}</p>
-      )}
+    <div
+      className="rounded-lg border bg-background px-3 py-2 shadow-md text-right"
+      dir="rtl"
+    >
+      {!hideLabel && resolvedLabel ? (
+        <p className="mb-2 text-sm font-medium">{resolvedLabel}</p>
+      ) : null}
       <div className="space-y-1">
         {payload.map((entry, i) => (
           <div key={entry.dataKey ?? i} className="flex items-center gap-2">
@@ -87,7 +136,10 @@ function ChartTooltipContent({
               style={{ backgroundColor: entry.color }}
             />
             <span className="text-sm text-muted-foreground">
-              {entry.name}: {String(entry.value)}
+              {formatName(entry)}:{" "}
+              <span className="font-mono font-semibold tabular-nums text-foreground">
+                {formatValue(entry.value, entry.dataKey)}
+              </span>
             </span>
           </div>
         ))}
@@ -96,4 +148,11 @@ function ChartTooltipContent({
   );
 }
 
-export { ChartContainer, ChartTooltip, ChartTooltipContent, useChart };
+export {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  formatChartNumber,
+  useChart,
+};
+export type { ChartTooltipPayloadItem };

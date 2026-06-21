@@ -10,7 +10,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, FileText, ChevronDown, CheckCircle2, XCircle } from "lucide-react";
+import { ArrowLeft, FileText, ChevronDown, CheckCircle2, XCircle, CircleAlert } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -57,6 +57,8 @@ import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
+  formatChartNumber,
+  type ChartTooltipPayloadItem,
 } from "@/components/ui/chart";
 import useDevice from "@/hooks/useDevice";
 import { useQuery } from "@tanstack/react-query";
@@ -75,6 +77,11 @@ import {
 } from "@/lib/api/client";
 import { ProfileService } from "@/lib/api/client";
 import { SignalDetailDialog } from "@/components/signal/signal-detail-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type AbpWrapper<T> = { result?: T };
 type SignalImageFields = {
@@ -97,9 +104,65 @@ type UserNotificationPayload = {
   };
 };
 
-const commonChartConfig = {
-  value: { label: "مقدار", color: "hsl(var(--primary))" },
+const monthlyPLChartConfig = {
+  value: { label: "سود/ضرر", color: "#10b981" },
 };
+
+const rewardRiskChartConfig = {
+  risk: { label: "ریسک", color: "#3b82f6" },
+  reward: { label: "پاداش", color: "#f59e0b" },
+};
+
+function AssetPerformanceTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: ChartTooltipPayloadItem[];
+}) {
+  if (!active || !payload?.length) return null;
+
+  const item = payload[0];
+  const data = item.payload as {
+    name?: string;
+    value?: number;
+    percentage?: number;
+    fill?: string;
+  };
+  const color = data.fill || item.color;
+  const name = data.name || item.name || "—";
+  const value = data.value ?? 0;
+  const percentage = data.percentage;
+
+  return (
+    <div
+      className="rounded-lg border bg-background px-3 py-2 shadow-md text-right space-y-1.5"
+      dir="rtl"
+    >
+      <p className="text-sm font-medium">{name}</p>
+      <div className="flex items-center gap-2">
+        <span
+          className="h-2 w-2 shrink-0 rounded-full"
+          style={{ backgroundColor: color }}
+        />
+        <span className="text-sm text-muted-foreground">
+          عملکرد:{" "}
+          <span className="font-mono font-semibold tabular-nums text-foreground">
+            {formatChartNumber(value, 0)}
+          </span>
+        </span>
+      </div>
+      {typeof percentage === "number" ? (
+        <div className="text-sm text-muted-foreground pr-4">
+          سهم از کل:{" "}
+          <span className="font-mono font-semibold tabular-nums text-foreground">
+            {formatChartNumber(percentage)}٪
+          </span>
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 const pieConfig = {
   BTC: { label: "BTC", color: "#8884d8" },
@@ -122,11 +185,13 @@ function ChartCard({
   subtitle,
   children,
   noBorder,
+  info,
 }: {
   title: string;
   subtitle: string;
   children: React.ReactNode;
   noBorder?: boolean;
+  info?: string;
 }) {
   return (
     <Card
@@ -137,9 +202,31 @@ function ChartCard({
       }
     >
       <CardHeader className="items-center pb-2">
-        <CardTitle className="text-sm font-medium text-white/90 text-center">
-          {title}
-        </CardTitle>
+        <div className="flex items-center justify-center gap-1.5">
+          <CardTitle className="text-sm font-medium text-white/90 text-center">
+            {title}
+          </CardTitle>
+          {info ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex shrink-0 items-center justify-center rounded-full text-white/45 transition-colors hover:text-white/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+                  aria-label="راهنمای نمودار"
+                >
+                  <CircleAlert className="h-3.5 w-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent
+                side="top"
+                dir="rtl"
+                className="max-w-[260px] text-right text-xs leading-relaxed"
+              >
+                {info}
+              </TooltipContent>
+            </Tooltip>
+          ) : null}
+        </div>
         <CardDescription className="text-xs text-white/50 text-center">
           {subtitle}
         </CardDescription>
@@ -543,8 +630,9 @@ export function OpportunitiesContent() {
         items?: Array<{ label?: string; value?: number; percentage?: number }>;
       }
     )?.items?.map((item, index) => ({
-      name: item.label || "Unknown",
+      name: item.label || "نامشخص",
       value: item.value || 0,
+      percentage: item.percentage,
       fill: colors[index % colors.length],
     })) ?? [];
 
@@ -583,10 +671,9 @@ export function OpportunitiesContent() {
         }>;
       }
     )?.items?.map((item, index) => ({
-      id: index + 1,
+      label: item.label?.trim() || `سیگنال ${index + 1}`,
       reward: item.rewardValue || 0,
       risk: item.riskValue || 0,
-      label: item.label,
     })) ?? [];
 
   useEffect(() => {
@@ -747,6 +834,7 @@ export function OpportunitiesContent() {
         <ChartCard
           title="نمودار سود/ضرر ماهانه سیگنال‌ها"
           subtitle="(۱۴۰۴/۱۰/۱۶ - ۱۴۰۴/۱۰/۱۷)"
+          info="هر میله مجموع سود یا ضرر سیگنال‌های این پروایدر در یک ماه را نشان می‌دهد. میله سبز یعنی سود و میله قرمز یعنی ضرر. با هاور روی هر میله، مقدار دقیق سود یا ضرر همان ماه نمایش داده می‌شود."
         >
           {isMonthlyPLLoading ? (
             <div className="h-[220px] w-full flex items-center justify-center">
@@ -754,7 +842,7 @@ export function OpportunitiesContent() {
             </div>
           ) : (
             <ChartContainer
-              config={commonChartConfig}
+              config={monthlyPLChartConfig}
               className="h-[220px] w-full"
             >
               <BarChart data={monthlyPLData}>
@@ -764,7 +852,25 @@ export function OpportunitiesContent() {
                   tick={{ fontSize: 10, fill: "#888" }}
                   interval={0}
                 />
-                <ChartTooltip content={<ChartTooltipContent />} />
+                <ChartTooltip
+                  content={
+                    <ChartTooltipContent
+                      labelFormatter={(_, payload) => {
+                        const row = payload[0]?.payload as
+                          | { fullLabel?: string; month?: string }
+                          | undefined;
+                        return row?.fullLabel?.trim() || row?.month || "";
+                      }}
+                      nameFormatter={(_, __, payload) => {
+                        const numericValue = Number(payload[0]?.value ?? 0);
+                        return numericValue >= 0 ? "سود" : "ضرر";
+                      }}
+                      valueFormatter={(value) =>
+                        formatChartNumber(Math.abs(Number(value ?? 0)))
+                      }
+                    />
+                  }
+                />
                 <Bar dataKey="value" radius={[2, 2, 0, 0]}>
                   {monthlyPLData.map(
                     (entry: { value?: number }, index: number) => (
@@ -784,6 +890,7 @@ export function OpportunitiesContent() {
           title="عملکرد به تفکیک دارایی"
           subtitle="(۱۴۰۴/۱۰/۱۶ - ۱۴۰۴/۱۰/۱۷)"
           noBorder
+          info="هر بخش سهم یک دارایی (مثل BTC یا ETH) از کل عملکرد سیگنال‌ها را نشان می‌دهد. «عملکرد» مقدار/تعداد سیگنال‌های آن دارایی است و «سهم از کل» درصد آن نسبت به بقیه دارایی‌هاست."
         >
           {isAssetPerformanceLoading ? (
             <div className="h-[220px] w-full flex items-center justify-center">
@@ -808,27 +915,45 @@ export function OpportunitiesContent() {
                     ),
                   )}
                 </Pie>
-                <ChartTooltip content={<ChartTooltipContent hideLabel />} />
+                <ChartTooltip content={<AssetPerformanceTooltip />} />
               </PieChart>
             </ChartContainer>
           )}
         </ChartCard>
 
-        <ChartCard title="پاداش به ریسک" subtitle="(۱۴۰۴/۱۰/۱۶ - ۱۴۰۴/۱۰/۱۷)">
+        <ChartCard
+          title="پاداش به ریسک"
+          subtitle="(۱۴۰۴/۱۰/۱۶ - ۱۴۰۴/۱۰/۱۷)"
+          info="هر ردیف نسبت پاداش به ریسک یک سیگنال را نشان می‌دهد. بخش آبی مقدار ریسک و بخش نارنجی مقدار پاداش است. با هاور روی هر ردیف، مقدار دقیق ریسک و پاداش آن سیگنال نمایش داده می‌شود."
+        >
           {isRewardRiskLoading ? (
             <div className="h-[220px] w-full flex items-center justify-center">
               <Skeleton className="h-[180px] w-[90%] bg-white/10" />
             </div>
           ) : (
             <ChartContainer
-              config={commonChartConfig}
+              config={rewardRiskChartConfig}
               className="h-[220px] w-full"
             >
               <BarChart data={rewardRiskData} layout="vertical">
                 <CartesianGrid horizontal={false} strokeOpacity={0.05} />
                 <XAxis type="number" hide />
-                <YAxis dataKey="id" type="category" hide />
-                <ChartTooltip content={<ChartTooltipContent />} />
+                <YAxis dataKey="label" type="category" hide />
+                <ChartTooltip
+                  content={
+                    <ChartTooltipContent
+                      labelFormatter={(_, payload) => {
+                        const row = payload[0]?.payload as
+                          | { label?: string }
+                          | undefined;
+                        return row?.label || "";
+                      }}
+                      valueFormatter={(value) =>
+                        formatChartNumber(Number(value ?? 0))
+                      }
+                    />
+                  }
+                />
                 <Bar
                   dataKey="risk"
                   fill="#3b82f6"
