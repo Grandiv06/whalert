@@ -139,6 +139,31 @@ type DragState = {
 
 const CROP_VIEW_SIZE = 300;
 const DEFAULT_META_TRADER_TOKEN = "MT-Token-xxxxx";
+
+function normalizeMetaTraderToken(value: unknown): string {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed || DEFAULT_META_TRADER_TOKEN;
+  }
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return String(value);
+  }
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    for (const key of ["token", "mt5Token", "mt5token", "value"]) {
+      const nested = record[key];
+      if (typeof nested === "string") {
+        const trimmed = nested.trim();
+        if (trimmed) return trimmed;
+      }
+      if (typeof nested === "number" && Number.isFinite(nested)) {
+        return String(nested);
+      }
+    }
+  }
+  return DEFAULT_META_TRADER_TOKEN;
+}
+
 const META_TRADER_LATEST_MANIFEST_URL = "https://dl.whalert.net/public/latest.json";
 const META_TRADER_PUBLIC_BASE_URL = "https://dl.whalert.net/public/";
 const CROP_CIRCLE_SIZE = 210;
@@ -1072,10 +1097,10 @@ export function AccountSettingClient() {
     queryFn: async () => {
       const res =
         await UserDashboardService.apiServicesAppUserdashboardGetcurrentusermt5TokenGet();
-      return unwrapAbp<string>(res);
+      return unwrapAbp<unknown>(res);
     },
   });
-  const metaTraderToken = metaTraderTokenData?.trim() || DEFAULT_META_TRADER_TOKEN;
+  const metaTraderToken = normalizeMetaTraderToken(metaTraderTokenData);
 
   const removeAvatarToast = useCallback((id: number) => {
     const timer = avatarToastTimersRef.current.get(id);
