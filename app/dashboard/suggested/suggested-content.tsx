@@ -39,10 +39,10 @@ import { getMarketLabel } from "@/lib/market/market-label";
 import {
   UserDashboardService,
   SignalSide,
-  SignalOutcomeStatus,
   SignalStatus,
   type UserSubscriptionPlanDetailsDto,
 } from "@/lib/api/client";
+import { getSignalStatusMeta } from "@/lib/signal-status";
 import type { OfferedPositionsDto } from "@/lib/api/client";
 import type { ProviderSignalDetailDto } from "@/lib/api/client";
 import type { PagedResultDtoOfOfferedPositionsDto } from "@/lib/api/client";
@@ -288,10 +288,10 @@ export function SuggestedContent() {
     index: number,
   ): PositionData => {
     const positionWithStatus = position as OfferedPositionsDto & {
-      outcomeStatus?: SignalOutcomeStatus | number;
       signalStatus?: SignalStatus | number;
       description?: string | null;
     };
+    const statusMeta = getSignalStatusMeta(positionWithStatus.signalStatus);
     const dateObj = position.date ? new Date(position.date) : null;
     const date = dateObj
       ? dateObj.toLocaleDateString("fa-IR", {
@@ -319,28 +319,8 @@ export function SuggestedContent() {
         position.symbols ? position.symbols.join(", ") : "-",
       ),
       direction: position.side === SignalSide._1 ? "BUY" : "SELL",
-      status:
-        positionWithStatus.outcomeStatus === SignalOutcomeStatus._1 ||
-        positionWithStatus.signalStatus === SignalStatus._1
-          ? "به TP رسید"
-          : positionWithStatus.outcomeStatus === SignalOutcomeStatus._2 ||
-              positionWithStatus.signalStatus === SignalStatus._2
-            ? "به SL رسید"
-            : positionWithStatus.outcomeStatus === SignalOutcomeStatus._3 ||
-                positionWithStatus.signalStatus === SignalStatus._3
-              ? "لغو شده"
-              : "در انتظار نتیجه",
-      statusTone:
-        positionWithStatus.outcomeStatus === SignalOutcomeStatus._1 ||
-        positionWithStatus.signalStatus === SignalStatus._1
-          ? "text-green-400 bg-green-500/10 border-green-500/20"
-          : positionWithStatus.outcomeStatus === SignalOutcomeStatus._2 ||
-              positionWithStatus.signalStatus === SignalStatus._2
-            ? "text-rose-400 bg-rose-500/10 border-rose-500/20"
-            : positionWithStatus.outcomeStatus === SignalOutcomeStatus._3 ||
-                positionWithStatus.signalStatus === SignalStatus._3
-              ? "text-white/60 bg-white/5 border-white/10"
-              : "text-purple-400 bg-purple-500/10 border-purple-500/20",
+      status: statusMeta.label,
+      statusTone: statusMeta.className,
       entry: position.entryPrice?.toString() || "-",
       stopLoss: position.sl?.toString() || "-",
       takeProfit:

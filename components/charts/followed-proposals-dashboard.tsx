@@ -211,7 +211,7 @@ export function FollowedProposalsDashboard({
                           value: status.activePositionsCount ?? 0,
                         },
                         {
-                          name: "از دست رفته",
+                          name: "به نتیجه نرسیده",
                           value: status.missedPositionsCount ?? 0,
                         },
                       ]
