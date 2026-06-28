@@ -31,13 +31,12 @@ import {
   UserDashboardService,
   ShowPositionsDto,
   SignalSide,
-  SignalOutcomeSource,
-  SignalOutcomeStatus,
+  SignalStatus,
 } from "@/lib/api/client";
 import type { DashboardPageResultDto } from "@/lib/api/client";
 import type { DashboardPageInputDto } from "@/lib/api/client";
 import { FollowedOfferStatusTimeFilter } from "@/lib/api/client";
-import { SignalStatus } from "@/lib/api/client";
+import { getSignalStatusMeta } from "@/lib/signal-status";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { SignalCardProps } from "@/components/charts/signal-card";
@@ -105,36 +104,12 @@ function DesktopSkeleton() {
   );
 }
 
-function getOutcomeStatusMeta(
-  outcomeStatus?: SignalOutcomeStatus,
-  outcomeSource?: SignalOutcomeSource,
-) {
-  if (outcomeStatus === SignalOutcomeStatus._1) {
-    return {
-      label: `🎯 به TP رسید ${outcomeSource === SignalOutcomeSource._2 ? "(خودکار)" : "(دستی)"}`,
-      className:
-        "text-[10px] font-bold text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20",
-    };
-  }
-  if (outcomeStatus === SignalOutcomeStatus._2) {
-    return {
-      label: `🛑 به SL رسید ${outcomeSource === SignalOutcomeSource._2 ? "(خودکار)" : "(دستی)"}`,
-      className:
-        "text-[10px] font-bold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/20",
-    };
-  }
-  if (outcomeStatus === SignalOutcomeStatus._3) {
-    return {
-      label: "⚠️ لغو شده",
-      className:
-        "text-[10px] font-bold text-white/50 bg-white/5 px-2 py-0.5 rounded-full border border-white/10",
-    };
-  }
-  return {
-    label: "در انتظار نتیجه",
-    className:
-      "text-[10px] font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20",
-  };
+type PositionWithSignalStatus = ShowPositionsDto & {
+  signalStatus?: SignalStatus | number;
+};
+
+function readSignalStatus(signal: ShowPositionsDto) {
+  return (signal as PositionWithSignalStatus).signalStatus;
 }
 
 function hasSignalImage(signal: SignalImageFields) {
@@ -176,14 +151,8 @@ function mapSignalToCardProps(signal: ShowPositionsDto): SignalCardProps {
     description: signal.description
       ? normalizePersianText(signal.description)
       : null,
-    statusLabel: getOutcomeStatusMeta(
-      signal.outcomeStatus,
-      signal.outcomeSource,
-    ).label,
-    statusClassName: getOutcomeStatusMeta(
-      signal.outcomeStatus,
-      signal.outcomeSource,
-    ).className,
+    statusLabel: getSignalStatusMeta(readSignalStatus(signal)).label,
+    statusClassName: getSignalStatusMeta(readSignalStatus(signal)).className,
   };
 }
 
@@ -486,28 +455,17 @@ export function HomeContent() {
                             )}
                           </TableCell>
                           <TableCell className="text-center h-[72px] px-6 py-8">
-                            {signal.outcomeStatus !== undefined &&
-                            signal.outcomeStatus !== SignalOutcomeStatus._0 ? (
-                              <span
-                                className={
-                                  getOutcomeStatusMeta(
-                                    signal.outcomeStatus,
-                                    signal.outcomeSource,
-                                  ).className
-                                }
-                              >
-                                {
-                                  getOutcomeStatusMeta(
-                                    signal.outcomeStatus,
-                                    signal.outcomeSource,
-                                  ).label
-                                }
-                              </span>
-                            ) : (
-                              <span className={getOutcomeStatusMeta().className}>
-                                {getOutcomeStatusMeta().label}
-                              </span>
-                            )}
+                            <span
+                              className={
+                                getSignalStatusMeta(readSignalStatus(signal))
+                                  .className
+                              }
+                            >
+                              {
+                                getSignalStatusMeta(readSignalStatus(signal))
+                                  .label
+                              }
+                            </span>
                           </TableCell>
                           <TableCell className="text-center h-[72px] px-6 py-8">
                             {signal.description ? (

@@ -72,10 +72,10 @@ import {
   type SignalProviderInfoDto,
   type CurrentUserProfileEditDto,
   type UserSubscriptionPlanDetailsDto,
-  SignalOutcomeStatus,
-  SignalOutcomeSource,
+  SignalStatus,
 } from "@/lib/api/client";
 import { ProfileService } from "@/lib/api/client";
+import { getSignalStatusMeta } from "@/lib/signal-status";
 import { SignalDetailDialog } from "@/components/signal/signal-detail-dialog";
 import {
   Tooltip,
@@ -284,36 +284,12 @@ function DesktopSkeleton() {
   );
 }
 
-function getOutcomeStatusMeta(
-  outcomeStatus?: SignalOutcomeStatus,
-  outcomeSource?: SignalOutcomeSource,
-) {
-  if (outcomeStatus === SignalOutcomeStatus._1) {
-    return {
-      label: `🎯 به TP رسید ${outcomeSource === 2 ? "(خودکار)" : "(دستی)"}`,
-      className:
-        "text-[10px] font-bold text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20",
-    };
-  }
-  if (outcomeStatus === SignalOutcomeStatus._2) {
-    return {
-      label: `🛑 به SL رسید ${outcomeSource === 2 ? "(خودکار)" : "(دستی)"}`,
-      className:
-        "text-[10px] font-bold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/20",
-    };
-  }
-  if (outcomeStatus === SignalOutcomeStatus._3) {
-    return {
-      label: "⚠️ لغو شده",
-      className:
-        "text-[10px] font-bold text-white/50 bg-white/5 px-2 py-0.5 rounded-full border border-white/10",
-    };
-  }
-  return {
-    label: "در انتظار نتیجه",
-    className:
-      "text-[10px] font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20",
-  };
+type PositionWithSignalStatus = ShowPositionsDto & {
+  signalStatus?: SignalStatus | number;
+};
+
+function readSignalStatus(position: ShowPositionsDto) {
+  return (position as PositionWithSignalStatus).signalStatus;
 }
 
 function hasSignalImage(signal: SignalImageFields) {
@@ -534,7 +510,7 @@ export function OpportunitiesContent() {
   const resolutionError =
     !selectedProviderId || isOwnProvider || resolvedProvider || !providerInfo || !currentProfile
       ? null
-      : "پروایدر مورد نظر پیدا نشد. لطفا آدرس را بررسی کنید یا از صفحه پیشخوان یا مشاهده تحلیل وارد شوید.";
+      : "پروایدر مورد نظر پیدا نشد. لطفا آدرس را بررسی کنید یا از صفحه پیشخوان یا پروفایل اساتید وارد شوید.";
 
   useEffect(() => {
     if (!selectedProviderId || !resolvedProvider || isOwnProvider) return;
@@ -746,8 +722,7 @@ export function OpportunitiesContent() {
         ? normalizePersianText(position.description)
         : null,
       tradingSignalId: position.tradingSignalId,
-      outcomeStatus: position.outcomeStatus,
-      outcomeSource: position.outcomeSource,
+      signalStatus: readSignalStatus(position),
       outcomeDeclaredAt: position.outcomeDeclaredAt,
       pictureUrl: position.pictureUrl,
       pictureId: position.pictureId,
@@ -1073,35 +1048,18 @@ export function OpportunitiesContent() {
                             )}
                           </div>
                         </div>
-                        {pos.outcomeStatus !== undefined && pos.outcomeStatus !== 0 ? (
-                          <div className="flex justify-between items-center">
-                            <p className="text-xs font-medium text-white/80">
-                              وضعیت :
-                            </p>
-                            {pos.outcomeStatus === 1 ? (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">
-                                🎯 به TP رسید {pos.outcomeSource === 2 ? "(خودکار)" : "(دستی)"}
-                              </span>
-                            ) : pos.outcomeStatus === 2 ? (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/20">
-                                🛑 به SL رسید {pos.outcomeSource === 2 ? "(خودکار)" : "(دستی)"}
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-white/50 bg-white/5 px-2 py-0.5 rounded-full border border-white/10">
-                                ⚠️ لغو شده
-                              </span>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="flex justify-between items-center">
-                            <p className="text-xs font-medium text-white/80">
-                              وضعیت :
-                            </p>
-                            <span className={getOutcomeStatusMeta(pos.outcomeStatus, pos.outcomeSource).className}>
-                              {getOutcomeStatusMeta(pos.outcomeStatus, pos.outcomeSource).label}
-                            </span>
-                          </div>
-                        )}
+                        <div className="flex justify-between items-center">
+                          <p className="text-xs font-medium text-white/80">
+                            وضعیت :
+                          </p>
+                          <span
+                            className={
+                              getSignalStatusMeta(pos.signalStatus).className
+                            }
+                          >
+                            {getSignalStatusMeta(pos.signalStatus).label}
+                          </span>
+                        </div>
                       </div>
                       <div className="mt-4 flex w-full">
                         <button
@@ -1302,15 +1260,13 @@ export function OpportunitiesContent() {
                               )}
                             </TableCell>
                             <TableCell className="text-center h-[72px] px-6 py-8">
-                              {pos.outcomeStatus !== undefined && pos.outcomeStatus !== 0 ? (
-                                <span className={getOutcomeStatusMeta(pos.outcomeStatus, pos.outcomeSource).className}>
-                                  {getOutcomeStatusMeta(pos.outcomeStatus, pos.outcomeSource).label}
-                                </span>
-                              ) : (
-                                <span className={getOutcomeStatusMeta(pos.outcomeStatus, pos.outcomeSource).className}>
-                                  {getOutcomeStatusMeta(pos.outcomeStatus, pos.outcomeSource).label}
-                                </span>
-                              )}
+                              <span
+                                className={
+                                  getSignalStatusMeta(pos.signalStatus).className
+                                }
+                              >
+                                {getSignalStatusMeta(pos.signalStatus).label}
+                              </span>
                             </TableCell>
                             <TableCell className="text-center h-[72px] px-6 py-8">
                               {pos.description ? (

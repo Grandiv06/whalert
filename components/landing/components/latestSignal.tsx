@@ -59,13 +59,7 @@ const SignalCard = ({
           {signal.symbol}
         </span>
         <span
-          className={`shrink-0 px-3 py-1.5 rounded-2xl text-white text-xs font-semibold shadow-lg capitalize flex items-center justify-center ${
-            signal.status === "Active"
-              ? "bg-emerald-500 hover:bg-emerald-600"
-              : signal.status === "Closed"
-              ? "bg-red-500 hover:bg-red-600"
-              : "bg-amber-500/80 hover:bg-amber-500"
-          } transition-colors`}
+          className={`shrink-0 px-3 py-1.5 rounded-2xl text-white text-xs font-semibold shadow-lg flex items-center justify-center ${signal.statusClassName} transition-colors`}
         >
           {signal.status}
         </span>

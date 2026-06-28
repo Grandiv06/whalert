@@ -8,13 +8,13 @@ import { cn } from "@/lib/utils";
 const chartConfig = {
   pending: { label: "در انتظار", color: "#3b82f6" },
   active: { label: "فعال", color: "#14b8a6" },
-  lost: { label: "از دست رفته", color: "#f59e0b" },
+  lost: { label: "به نتیجه نرسیده", color: "#f59e0b" },
 };
 
 const colorMap: Record<string, string> = {
   "در انتظار": chartConfig.pending.color,
   فعال: chartConfig.active.color,
-  "از دست رفته": chartConfig.lost.color,
+  "به نتیجه نرسیده": chartConfig.lost.color,
 };
 
 function CustomTooltipContent({
