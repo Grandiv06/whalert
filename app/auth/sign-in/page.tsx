@@ -276,7 +276,7 @@ export default function SignInPage() {
       });
       setRedirectPending(true);
       setRedirectTimer(3);
-      pushToast("ورود با موفقیت انجام شد. انتقال تا ۳ ثانیه دیگر...", "success");
+      pushToast("در حال ورود به پنل", "success");
     } catch (error) {
       setErrorMessage(
         getErrorMessage(error, "کد تایید صحیح نیست یا منقضی شده است."),
