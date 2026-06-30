@@ -40,9 +40,12 @@ import {
   UserDashboardService,
   SignalSide,
   SignalStatus,
+  SignalOutcomeStatus,
+  SignalOutcomeSource,
   type UserSubscriptionPlanDetailsDto,
 } from "@/lib/api/client";
 import { getSignalStatusMeta } from "@/lib/signal-status";
+import { getOutcomeStatusMeta } from "@/lib/signal-outcome-status";
 import type { OfferedPositionsDto } from "@/lib/api/client";
 import type { ProviderSignalDetailDto } from "@/lib/api/client";
 import type { PagedResultDtoOfOfferedPositionsDto } from "@/lib/api/client";
@@ -65,6 +68,8 @@ interface PositionData {
   direction: "BUY" | "SELL";
   status: string;
   statusTone: string;
+  outcome: string;
+  outcomeTone: string;
   entry: string;
   stopLoss: string;
   takeProfit: string;
@@ -165,7 +170,7 @@ const DesktopSkeleton = () => (
         key={i}
         className="dark:bg-transparent bg-white dark:hover:bg-white/5 hover:bg-gray-50"
       >
-        {[...Array(11)].map((_, j) => (
+        {[...Array(12)].map((_, j) => (
           <TableCell key={j} className="text-center h-[72px] px-6 py-8">
             <Skeleton className="h-4 w-12 mx-auto" />
           </TableCell>
@@ -289,9 +294,15 @@ export function SuggestedContent() {
   ): PositionData => {
     const positionWithStatus = position as OfferedPositionsDto & {
       signalStatus?: SignalStatus | number;
+      outcomeStatus?: SignalOutcomeStatus | number;
+      outcomeSource?: SignalOutcomeSource | number;
       description?: string | null;
     };
     const statusMeta = getSignalStatusMeta(positionWithStatus.signalStatus);
+    const outcomeMeta = getOutcomeStatusMeta(
+      positionWithStatus.outcomeStatus,
+      positionWithStatus.outcomeSource,
+    );
     const dateObj = position.date ? new Date(position.date) : null;
     const date = dateObj
       ? dateObj.toLocaleDateString("fa-IR", {
@@ -321,6 +332,8 @@ export function SuggestedContent() {
       direction: position.side === SignalSide._1 ? "BUY" : "SELL",
       status: statusMeta.label,
       statusTone: statusMeta.className,
+      outcome: outcomeMeta.label,
+      outcomeTone: outcomeMeta.className,
       entry: position.entryPrice?.toString() || "-",
       stopLoss: position.sl?.toString() || "-",
       takeProfit:
@@ -408,8 +421,20 @@ export function SuggestedContent() {
                 return (
                   <PositionCard
                     key={index}
-                    {...position}
+                    time={position.time}
+                    timeDetail={position.timeDetail}
+                    analysisModel={position.analysisModel}
+                    market={position.market}
+                    symbol={position.symbol}
+                    direction={position.direction}
+                    entry={position.entry}
+                    stopLoss={position.stopLoss}
+                    takeProfit={position.takeProfit}
                     tPs={position.tPs}
+                    statusLabel={position.status}
+                    statusClassName={position.statusTone}
+                    outcomeLabel={position.outcome}
+                    outcomeClassName={position.outcomeTone}
                     hasChartImage={position.hasImage}
                     onShowChart={() => void handleShowChart(item)}
                   />
@@ -448,6 +473,9 @@ export function SuggestedContent() {
                       وضعیت
                     </TableHead>
                     <TableHead className="text-center text-white h-12">
+                      نتیجه
+                    </TableHead>
+                    <TableHead className="text-center text-white h-12">
                       ورود
                     </TableHead>
                     <TableHead className="text-center text-white h-12">
@@ -465,7 +493,7 @@ export function SuggestedContent() {
                     <TableRow className="dark:bg-transparent bg-white dark:hover:bg-white/5 hover:bg-gray-50">
                       <TableCell
                         className="text-center text-muted-foreground dark:text-white/70 h-[72px] px-6 py-8"
-                        colSpan={11}
+                        colSpan={12}
                       >
                         <div className="space-y-4">
                           <p>{emptyStateMessage}</p>
@@ -544,6 +572,13 @@ export function SuggestedContent() {
                                 className={`inline-flex items-center justify-center rounded-full border px-2.5 py-1 text-[11px] font-bold ${position.statusTone}`}
                               >
                                 {position.status}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-center h-[72px] px-6 py-8">
+                              <span
+                                className={`inline-flex items-center justify-center rounded-full border px-2.5 py-1 text-[11px] font-bold ${position.outcomeTone}`}
+                              >
+                                {position.outcome}
                               </span>
                             </TableCell>
                             <TableCell className="text-center h-[72px] px-6 py-8">

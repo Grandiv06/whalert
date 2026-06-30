@@ -37,6 +37,7 @@ import type { DashboardPageResultDto } from "@/lib/api/client";
 import type { DashboardPageInputDto } from "@/lib/api/client";
 import { FollowedOfferStatusTimeFilter } from "@/lib/api/client";
 import { getSignalStatusMeta } from "@/lib/signal-status";
+import { getOutcomeStatusMeta } from "@/lib/signal-outcome-status";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { SignalCardProps } from "@/components/charts/signal-card";
@@ -93,7 +94,7 @@ function DesktopSkeleton() {
           key={i}
           className="dark:bg-transparent bg-white dark:hover:bg-white/5 hover:bg-gray-50"
         >
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((j) => (
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].map((j) => (
             <TableCell key={j} className="text-center h-[72px] px-6 py-8">
               <Skeleton className="h-4 w-16 mx-auto" />
             </TableCell>
@@ -153,6 +154,14 @@ function mapSignalToCardProps(signal: ShowPositionsDto): SignalCardProps {
       : null,
     statusLabel: getSignalStatusMeta(readSignalStatus(signal)).label,
     statusClassName: getSignalStatusMeta(readSignalStatus(signal)).className,
+    outcomeLabel: getOutcomeStatusMeta(
+      signal.outcomeStatus,
+      signal.outcomeSource,
+    ).label,
+    outcomeClassName: getOutcomeStatusMeta(
+      signal.outcomeStatus,
+      signal.outcomeSource,
+    ).className,
   };
 }
 
@@ -312,6 +321,9 @@ export function HomeContent() {
                         وضعیت
                       </TableHead>
                       <TableHead className="text-center text-white h-12">
+                        نتیجه
+                      </TableHead>
+                      <TableHead className="text-center text-white h-12">
                         توضیحات
                       </TableHead>
                     </TableRow>
@@ -322,7 +334,7 @@ export function HomeContent() {
                       <TableRow className="dark:bg-transparent bg-white dark:hover:bg-white/5 hover:bg-gray-50">
                           <TableCell
                             className="text-center text-muted-foreground dark:text-white/70 h-[72px] px-6 py-8"
-                            colSpan={12}
+                            colSpan={13}
                           >
                           هیچ داده‌ای یافت نشد.
                         </TableCell>
@@ -464,6 +476,23 @@ export function HomeContent() {
                               {
                                 getSignalStatusMeta(readSignalStatus(signal))
                                   .label
+                              }
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-center h-[72px] px-6 py-8">
+                            <span
+                              className={
+                                getOutcomeStatusMeta(
+                                  signal.outcomeStatus,
+                                  signal.outcomeSource,
+                                ).className
+                              }
+                            >
+                              {
+                                getOutcomeStatusMeta(
+                                  signal.outcomeStatus,
+                                  signal.outcomeSource,
+                                ).label
                               }
                             </span>
                           </TableCell>
