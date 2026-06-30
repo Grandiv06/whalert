@@ -73,9 +73,12 @@ import {
   type CurrentUserProfileEditDto,
   type UserSubscriptionPlanDetailsDto,
   SignalStatus,
+  SignalOutcomeStatus,
+  SignalOutcomeSource,
 } from "@/lib/api/client";
 import { ProfileService } from "@/lib/api/client";
 import { getSignalStatusMeta } from "@/lib/signal-status";
+import { getOutcomeStatusMeta } from "@/lib/signal-outcome-status";
 import { SignalDetailDialog } from "@/components/signal/signal-detail-dialog";
 import {
   Tooltip,
@@ -273,7 +276,7 @@ function DesktopSkeleton() {
           key={i}
           className="dark:bg-transparent bg-white dark:hover:bg-white/5 hover:bg-gray-50"
         >
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((j) => (
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].map((j) => (
             <TableCell key={j} className="text-center h-[72px] px-6 py-8">
               <Skeleton className="h-4 w-16 mx-auto" />
             </TableCell>
@@ -723,6 +726,8 @@ export function OpportunitiesContent() {
         : null,
       tradingSignalId: position.tradingSignalId,
       signalStatus: readSignalStatus(position),
+      outcomeStatus: position.outcomeStatus,
+      outcomeSource: position.outcomeSource,
       outcomeDeclaredAt: position.outcomeDeclaredAt,
       pictureUrl: position.pictureUrl,
       pictureId: position.pictureId,
@@ -1060,6 +1065,26 @@ export function OpportunitiesContent() {
                             {getSignalStatusMeta(pos.signalStatus).label}
                           </span>
                         </div>
+                        <div className="flex justify-between items-center">
+                          <p className="text-xs font-medium text-white/80">
+                            نتیجه :
+                          </p>
+                          <span
+                            className={
+                              getOutcomeStatusMeta(
+                                pos.outcomeStatus,
+                                pos.outcomeSource,
+                              ).className
+                            }
+                          >
+                            {
+                              getOutcomeStatusMeta(
+                                pos.outcomeStatus,
+                                pos.outcomeSource,
+                              ).label
+                            }
+                          </span>
+                        </div>
                       </div>
                       <div className="mt-4 flex w-full">
                         <button
@@ -1146,6 +1171,9 @@ export function OpportunitiesContent() {
                       وضعیت
                     </TableHead>
                     <TableHead className="text-center text-white h-12">
+                      نتیجه
+                    </TableHead>
+                    <TableHead className="text-center text-white h-12">
                       توضیحات
                     </TableHead>
                   </TableRow>
@@ -1156,7 +1184,7 @@ export function OpportunitiesContent() {
                     <TableRow className="dark:bg-transparent bg-white dark:hover:bg-white/5 hover:bg-gray-50">
                       <TableCell
                         className="text-center text-muted-foreground dark:text-white/70 h-[72px] px-6 py-8"
-                        colSpan={12}
+                        colSpan={13}
                       >
                         <div className="space-y-4">
                           <p>{emptyStateMessage}</p>
@@ -1266,6 +1294,23 @@ export function OpportunitiesContent() {
                                 }
                               >
                                 {getSignalStatusMeta(pos.signalStatus).label}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-center h-[72px] px-6 py-8">
+                              <span
+                                className={
+                                  getOutcomeStatusMeta(
+                                    pos.outcomeStatus,
+                                    pos.outcomeSource,
+                                  ).className
+                                }
+                              >
+                                {
+                                  getOutcomeStatusMeta(
+                                    pos.outcomeStatus,
+                                    pos.outcomeSource,
+                                  ).label
+                                }
                               </span>
                             </TableCell>
                             <TableCell className="text-center h-[72px] px-6 py-8">

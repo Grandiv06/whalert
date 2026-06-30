@@ -15,6 +15,10 @@ export interface PositionCardProps {
   stopLoss: string;
   takeProfit: string;
   tPs?: Array<string | number>;
+  statusLabel?: string;
+  statusClassName?: string;
+  outcomeLabel?: string;
+  outcomeClassName?: string;
   onShowChart?: () => void;
   hasChartImage?: boolean;
 }
@@ -30,6 +34,10 @@ export function PositionCard({
   stopLoss,
   takeProfit,
   tPs,
+  statusLabel,
+  statusClassName,
+  outcomeLabel,
+  outcomeClassName,
   onShowChart,
   hasChartImage = true,
 }: PositionCardProps) {
@@ -114,6 +122,28 @@ export function PositionCard({
                 </span>
               )}
             </div>
+          </div>
+          <div className="flex justify-between items-center">
+            <p className="text-xs font-medium text-white/80">وضعیت :</p>
+            <span
+              className={
+                statusClassName ||
+                "text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20"
+              }
+            >
+              {statusLabel || "به نقطه ورود نرسیده"}
+            </span>
+          </div>
+          <div className="flex justify-between items-center">
+            <p className="text-xs font-medium text-white/80">نتیجه :</p>
+            <span
+              className={
+                outcomeClassName ||
+                "text-[10px] font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20"
+              }
+            >
+              {outcomeLabel || "در انتظار نتیجه"}
+            </span>
           </div>
         </div>
         <div className="pt-2">
