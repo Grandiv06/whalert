@@ -6,6 +6,7 @@ import type { MarketType } from './MarketType';
 import type { SignalOutcomeSource } from './SignalOutcomeSource';
 import type { SignalOutcomeStatus } from './SignalOutcomeStatus';
 import type { SignalSide } from './SignalSide';
+import type { SignalStatus } from './SignalStatus';
 export type ShowPositionsDto = {
     tradingSignalId?: number;
     symbol?: string | null;
@@ -16,6 +17,7 @@ export type ShowPositionsDto = {
     side?: SignalSide;
     date?: string;
     datePersian?: string | null;
+    signalStatus?: SignalStatus;
     outcomeStatus?: SignalOutcomeStatus;
     outcomeSource?: SignalOutcomeSource;
     outcomeDeclaredAt?: string | null;
