@@ -4,10 +4,26 @@ import { ArrowRight, Phone, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type FormEvent,
+} from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ApiError, TokenAuthService, UserDashboardService, type UserSubscriptionPlanDetailsDto } from "@/lib/api/client";
+import {
+  ApiError,
+  TokenAuthService,
+  UserDashboardService,
+  type UserSubscriptionPlanDetailsDto,
+} from "@/lib/api/client";
 import { getAccessToken, storeAuthSession } from "@/lib/auth-session";
+import {
+  formatIranMobileForApi,
+  normalizeOtp,
+  sanitizeIranMobileInput,
+} from "@/lib/auth-phone";
 import { OtpCodeInput } from "@/components/auth/otp-code-input";
 
 type Step = 1 | 2;
@@ -28,23 +44,6 @@ type AbpWrapper<T> = { result?: T };
 function unwrapAbp<T>(res: unknown): T {
   const wrapped = res as AbpWrapper<T>;
   return (wrapped?.result ?? res) as T;
-}
-
-function toEnglishDigits(value: string) {
-  return value
-    .replace(/[۰-۹]/g, (char) => String.fromCharCode(char.charCodeAt(0) - 1728))
-    .replace(/[٠-٩]/g, (char) => String.fromCharCode(char.charCodeAt(0) - 1584));
-}
-
-function normalizePhoneNumber(value: string) {
-  const normalized = toEnglishDigits(value).replace(/[^\d+]/g, "");
-  if (normalized.startsWith("+98")) return `0${normalized.slice(3)}`;
-  if (normalized.startsWith("98")) return `0${normalized.slice(2)}`;
-  return normalized;
-}
-
-function isValidIranMobile(value: string) {
-  return /^09\d{9}$/.test(normalizePhoneNumber(value));
 }
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -86,7 +85,9 @@ function maskPhoneNumber(phoneNumber: string) {
   return phoneNumber;
 }
 
-function hasActiveSubscription(details?: UserSubscriptionPlanDetailsDto | null) {
+function hasActiveSubscription(
+  details?: UserSubscriptionPlanDetailsDto | null,
+) {
   if (!details?.hasSubscription) return false;
   if (typeof details.remainingDays === "number") {
     return details.remainingDays > 0;
@@ -102,6 +103,7 @@ export default function SignInPage() {
   const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = useState<Step>(1);
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [otpPhone, setOtpPhone] = useState("");
   const [otpDigits, setOtpDigits] = useState<string[]>(() =>
     Array.from({ length: OTP_LENGTH }, () => ""),
   );
@@ -114,9 +116,9 @@ export default function SignInPage() {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [nowMs, setNowMs] = useState(() => Date.now());
 
-  const normalizedPhone = useMemo(
-    () => normalizePhoneNumber(phoneNumber).slice(0, 11),
-    [phoneNumber],
+  const apiPhone = useMemo(
+    () => formatIranMobileForApi(otpPhone || phoneNumber) ?? "",
+    [otpPhone, phoneNumber],
   );
 
   useEffect(() => {
@@ -126,7 +128,8 @@ export default function SignInPage() {
       try {
         const res =
           await UserDashboardService.apiServicesAppUserdashboardGetmysubscriptionplandetailsGet();
-        const subscriptionDetails = unwrapAbp<UserSubscriptionPlanDetailsDto>(res);
+        const subscriptionDetails =
+          unwrapAbp<UserSubscriptionPlanDetailsDto>(res);
         router.replace(
           hasActiveSubscription(subscriptionDetails)
             ? "/dashboard/"
@@ -170,7 +173,9 @@ export default function SignInPage() {
 
   const inputClass = (hasError: boolean) =>
     `${fieldWidthClass} px-4 py-3 sm:py-4 pr-10 rounded-xl bg-[#2e165b]/80 border text-white text-sm sm:text-base placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-[#542C85]/30 text-right transition-all ${
-      hasError ? "border-red-500" : "border-[#542C85]/20 focus:border-[#542C85]/40"
+      hasError
+        ? "border-red-500"
+        : "border-[#542C85]/20 focus:border-[#542C85]/40"
     }`;
 
   const clearMessages = () => {
@@ -179,10 +184,12 @@ export default function SignInPage() {
 
   const pushToast = useCallback((message: string, kind: ToastKind) => {
     const id = Date.now() + Math.floor(Math.random() * 1000);
-    setToasts((prev) => [
-      ...prev,
-      { id, message, kind, createdAt: Date.now(), durationMs: 4000 },
-    ].slice(-3));
+    setToasts((prev) =>
+      [
+        ...prev,
+        { id, message, kind, createdAt: Date.now(), durationMs: 4000 },
+      ].slice(-3),
+    );
   }, []);
 
   const resetOtp = () => {
@@ -196,7 +203,8 @@ export default function SignInPage() {
     try {
       const res =
         await UserDashboardService.apiServicesAppUserdashboardGetmysubscriptionplandetailsGet();
-      const subscriptionDetails = unwrapAbp<UserSubscriptionPlanDetailsDto>(res);
+      const subscriptionDetails =
+        unwrapAbp<UserSubscriptionPlanDetailsDto>(res);
       router.replace(
         hasActiveSubscription(subscriptionDetails)
           ? "/dashboard/"
@@ -215,28 +223,36 @@ export default function SignInPage() {
   const sendOtp = async () => {
     clearMessages();
 
-    if (!normalizedPhone) {
-      setErrorMessage("شماره موبایل الزامی است.");
-      return;
-    }
-
-    if (!isValidIranMobile(normalizedPhone)) {
-      setErrorMessage("شماره موبایل معتبر وارد کنید. مثال: 09123456789");
+    const phone = formatIranMobileForApi(phoneNumber);
+    if (!phone) {
+      setErrorMessage(
+        phoneNumber.trim()
+          ? "شماره موبایل معتبر وارد کنید. مثال: 09123456789"
+          : "شماره موبایل الزامی است.",
+      );
       return;
     }
 
     setIsSendingOtp(true);
     try {
       await TokenAuthService.apiTokenauthAppsendotpPost({
-        phoneNumber: normalizedPhone,
+        phoneNumber: phone,
       });
+      setOtpPhone(phone);
+      setPhoneNumber(phone);
       setCurrentStep(2);
       resetOtp();
       setResendTimer(RESEND_SECONDS);
-      pushToast(`کد تایید به ${maskPhoneNumber(normalizedPhone)} ارسال شد.`, "success");
+      pushToast(
+        `کد تایید به ${maskPhoneNumber(phone)} ارسال شد.`,
+        "success",
+      );
     } catch (error) {
       setErrorMessage(
-        getErrorMessage(error, "ارسال کد تایید با خطا مواجه شد. دوباره تلاش کنید."),
+        getErrorMessage(
+          error,
+          "ارسال کد تایید با خطا مواجه شد. دوباره تلاش کنید.",
+        ),
       );
     } finally {
       setIsSendingOtp(false);
@@ -245,7 +261,13 @@ export default function SignInPage() {
 
   const verifyOtp = async (otpValue = otpDigits.join("")) => {
     clearMessages();
-    const normalizedOtp = toEnglishDigits(otpValue).replace(/\D/g, "");
+    const phone = formatIranMobileForApi(otpPhone);
+    const normalizedOtp = normalizeOtp(otpValue);
+
+    if (!phone) {
+      setErrorMessage("شماره موبایل معتبر نیست. لطفا دوباره تلاش کنید.");
+      return;
+    }
 
     if (normalizedOtp.length !== OTP_LENGTH) {
       setErrorMessage("کد تایید ۵ رقمی را کامل وارد کنید.");
@@ -255,7 +277,7 @@ export default function SignInPage() {
     setIsVerifyingOtp(true);
     try {
       const response = await TokenAuthService.apiTokenauthAppverifyotpPost({
-        phoneNumber: normalizedPhone,
+        phoneNumber: phone,
         otp: normalizedOtp,
       });
       const result = unwrapAbp<{
@@ -305,7 +327,7 @@ export default function SignInPage() {
   };
 
   const handlePhoneChange = (value: string) => {
-    setPhoneNumber(normalizePhoneNumber(value).slice(0, 11));
+    setPhoneNumber(sanitizeIranMobileInput(value));
     clearMessages();
   };
 
@@ -334,7 +356,7 @@ export default function SignInPage() {
             <p className="text-sm sm:text-base md:text-lg text-white/50 leading-relaxed">
               {currentStep === 1
                 ? "شماره موبایل خود را وارد کنید تا کد تایید برای شما ارسال شود."
-                : `کد تایید به شماره ${maskPhoneNumber(normalizedPhone)} ارسال شد.`}
+                : `کد تایید به شماره ${maskPhoneNumber(apiPhone)} ارسال شد.`}
             </p>
           </div>
 
@@ -344,7 +366,9 @@ export default function SignInPage() {
             noValidate
           >
             {errorMessage ? (
-              <p className={`${fieldWidthClass} text-red-400 text-sm bg-red-500/10 rounded-xl px-4 py-2 border border-red-500/30`}>
+              <p
+                className={`${fieldWidthClass} text-red-400 text-sm bg-red-500/10 rounded-xl px-4 py-2 border border-red-500/30`}
+              >
                 {errorMessage}
               </p>
             ) : null}
@@ -454,7 +478,10 @@ export default function SignInPage() {
                 const elapsed = nowMs - toast.createdAt;
                 const remainingMs = Math.max(0, toast.durationMs - elapsed);
                 const remainingSec = Math.max(0, Math.ceil(remainingMs / 1000));
-                const progressPercent = Math.max(0, (remainingMs / toast.durationMs) * 100);
+                const progressPercent = Math.max(
+                  0,
+                  (remainingMs / toast.durationMs) * 100,
+                );
 
                 return (
                   <div
@@ -476,7 +503,9 @@ export default function SignInPage() {
                     <div className="mt-2 h-1 w-full rounded-full bg-white/10">
                       <div
                         className={`h-full rounded-full transition-[width] duration-200 ${
-                          toast.kind === "success" ? "bg-[#A87FF3]" : "bg-[#7C4DCC]"
+                          toast.kind === "success"
+                            ? "bg-[#A87FF3]"
+                            : "bg-[#7C4DCC]"
                         }`}
                         style={{ width: `${progressPercent}%` }}
                       />

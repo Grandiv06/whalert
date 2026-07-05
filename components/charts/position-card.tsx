@@ -2,6 +2,7 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { SignalManagementButton } from "@/components/signal/signal-management-button";
 
 export interface PositionCardProps {
   id?: number;
@@ -20,6 +21,7 @@ export interface PositionCardProps {
   outcomeLabel?: string;
   outcomeClassName?: string;
   onShowChart?: () => void;
+  onManageSignal?: () => void;
   hasChartImage?: boolean;
 }
 
@@ -39,6 +41,7 @@ export function PositionCard({
   outcomeLabel,
   outcomeClassName,
   onShowChart,
+  onManageSignal,
   hasChartImage = true,
 }: PositionCardProps) {
   return (
@@ -146,7 +149,7 @@ export function PositionCard({
             </span>
           </div>
         </div>
-        <div className="pt-2">
+        <div className="pt-2 space-y-2">
           <button
             type="button"
             onClick={hasChartImage ? onShowChart : undefined}
@@ -155,6 +158,11 @@ export function PositionCard({
           >
             مشاهده عکس
           </button>
+          <SignalManagementButton
+            onClick={() => onManageSignal?.()}
+            disabled={!onManageSignal}
+            fullWidth
+          />
         </div>
       </CardContent>
     </Card>

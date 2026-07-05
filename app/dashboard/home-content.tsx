@@ -18,6 +18,8 @@ import {
 import { FollowedProposalsDashboard } from "@/components/charts/followed-proposals-dashboard";
 import { SignalCard } from "@/components/charts/signal-card";
 import { SignalDetailDialog } from "@/components/signal/signal-detail-dialog";
+import { SignalManagementMessagesDialog } from "@/components/signal/signal-management-messages-dialog";
+import { SignalManagementButton } from "@/components/signal/signal-management-button";
 import {
   Dialog,
   DialogContent,
@@ -184,6 +186,21 @@ export function HomeContent() {
     title: string;
     description: string;
   } | null>(null);
+  const [managementSignal, setManagementSignal] = useState<{
+    tradingSignalId: number;
+    title: string;
+  } | null>(null);
+
+  const openSignalManagement = (
+    tradingSignalId?: number | null,
+    title?: string | null,
+  ) => {
+    if (!tradingSignalId) return;
+    setManagementSignal({
+      tradingSignalId,
+      title: title || "سیگنال",
+    });
+  };
 
   const buildInput = useCallback((): DashboardPageInputDto => {
     const input: DashboardPageInputDto = {
@@ -278,6 +295,12 @@ export function HomeContent() {
                         description: normalizePersianText(signal.description),
                       });
                     }}
+                    onManageSignal={() =>
+                      openSignalManagement(
+                        signal.tradingSignalId,
+                        signal.symbol,
+                      )
+                    }
                   />
                 ))}
             </div>
@@ -326,6 +349,9 @@ export function HomeContent() {
                       <TableHead className="text-center text-white h-12">
                         توضیحات
                       </TableHead>
+                      <TableHead className="text-center text-white h-12">
+                        مدیریت سیگنال
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -334,7 +360,7 @@ export function HomeContent() {
                       <TableRow className="dark:bg-transparent bg-white dark:hover:bg-white/5 hover:bg-gray-50">
                           <TableCell
                             className="text-center text-muted-foreground dark:text-white/70 h-[72px] px-6 py-8"
-                            colSpan={13}
+                            colSpan={14}
                           >
                           هیچ داده‌ای یافت نشد.
                         </TableCell>
@@ -519,6 +545,17 @@ export function HomeContent() {
                               </span>
                             )}
                           </TableCell>
+                          <TableCell className="text-center h-[72px] px-6 py-8">
+                            <SignalManagementButton
+                              onClick={() =>
+                                openSignalManagement(
+                                  signal.tradingSignalId,
+                                  signal.symbol,
+                                )
+                              }
+                              disabled={!signal.tradingSignalId}
+                            />
+                          </TableCell>
                         </TableRow>
                       ))}
                   </TableBody>
@@ -578,6 +615,15 @@ export function HomeContent() {
               </DialogHeader>
             </DialogContent>
           </Dialog>
+
+          <SignalManagementMessagesDialog
+            open={managementSignal !== null}
+            onOpenChange={(open) => {
+              if (!open) setManagementSignal(null);
+            }}
+            tradingSignalId={managementSignal?.tradingSignalId}
+            title={managementSignal?.title}
+          />
         </div>
       </div>
     </div>

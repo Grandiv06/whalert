@@ -3,6 +3,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { resolveSignalImage } from "@/lib/signal-image";
 import { FileText } from "lucide-react";
+import { SignalManagementButton } from "@/components/signal/signal-management-button";
 
 export interface SignalCardProps {
   id?: number;
@@ -25,6 +26,7 @@ export interface SignalCardProps {
   outcomeClassName?: string;
   onViewImage?: () => void;
   onViewDescription?: () => void;
+  onManageSignal?: () => void;
 }
 
 export function SignalCard({
@@ -38,6 +40,7 @@ export function SignalCard({
   outcomeClassName,
   onViewImage,
   onViewDescription,
+  onManageSignal,
   time,
   analysisModel,
   market,
@@ -171,6 +174,13 @@ export function SignalCard({
               بدون تصویر
             </span>
           )}
+        </div>
+        <div className="mt-3">
+          <SignalManagementButton
+            onClick={() => onManageSignal?.()}
+            disabled={!onManageSignal}
+            fullWidth
+          />
         </div>
         <div className="h-px bg-white/10" />
         {description ? (
