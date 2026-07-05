@@ -80,6 +80,8 @@ import { ProfileService } from "@/lib/api/client";
 import { getSignalStatusMeta } from "@/lib/signal-status";
 import { getOutcomeStatusMeta } from "@/lib/signal-outcome-status";
 import { SignalDetailDialog } from "@/components/signal/signal-detail-dialog";
+import { SignalManagementMessagesDialog } from "@/components/signal/signal-management-messages-dialog";
+import { SignalManagementButton } from "@/components/signal/signal-management-button";
 import {
   Tooltip,
   TooltipContent,
@@ -276,7 +278,7 @@ function DesktopSkeleton() {
           key={i}
           className="dark:bg-transparent bg-white dark:hover:bg-white/5 hover:bg-gray-50"
         >
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].map((j) => (
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14].map((j) => (
             <TableCell key={j} className="text-center h-[72px] px-6 py-8">
               <Skeleton className="h-4 w-16 mx-auto" />
             </TableCell>
@@ -366,6 +368,10 @@ export function OpportunitiesContent() {
   const [descriptionModal, setDescriptionModal] = useState<{
     title: string;
     description: string;
+  } | null>(null);
+  const [managementSignal, setManagementSignal] = useState<{
+    tradingSignalId: number;
+    title: string;
   } | null>(null);
 
   // Toast notification states
@@ -758,6 +764,17 @@ export function OpportunitiesContent() {
     });
   };
 
+  const openSignalManagement = (
+    tradingSignalId?: number | null,
+    title?: string | null,
+  ) => {
+    if (!tradingSignalId) return;
+    setManagementSignal({
+      tradingSignalId,
+      title: title || "سیگنال",
+    });
+  };
+
   return (
     <div
       className="p-4 md:p-6 w-full max-w-full overflow-x-hidden space-y-8"
@@ -1095,6 +1112,18 @@ export function OpportunitiesContent() {
                           مشاهده عکس
                         </button>
                       </div>
+                      <div className="mt-3">
+                        <SignalManagementButton
+                          onClick={() =>
+                            openSignalManagement(
+                              item.tradingSignalId,
+                              pos.symbol,
+                            )
+                          }
+                          disabled={!item.tradingSignalId}
+                          fullWidth
+                        />
+                      </div>
                       <div className="h-px bg-white/10 my-3" />
                       {pos.description ? (
                         <>
@@ -1176,6 +1205,9 @@ export function OpportunitiesContent() {
                     <TableHead className="text-center text-white h-12">
                       توضیحات
                     </TableHead>
+                    <TableHead className="text-center text-white h-12">
+                      مدیریت سیگنال
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1184,7 +1216,7 @@ export function OpportunitiesContent() {
                     <TableRow className="dark:bg-transparent bg-white dark:hover:bg-white/5 hover:bg-gray-50">
                       <TableCell
                         className="text-center text-muted-foreground dark:text-white/70 h-[72px] px-6 py-8"
-                        colSpan={13}
+                        colSpan={14}
                       >
                         <div className="space-y-4">
                           <p>{emptyStateMessage}</p>
@@ -1329,6 +1361,17 @@ export function OpportunitiesContent() {
                                 </span>
                               )}
                             </TableCell>
+                            <TableCell className="text-center h-[72px] px-6 py-8">
+                              <SignalManagementButton
+                                onClick={() =>
+                                  openSignalManagement(
+                                    item.tradingSignalId,
+                                    pos.symbol,
+                                  )
+                                }
+                                disabled={!item.tradingSignalId}
+                              />
+                            </TableCell>
                           </TableRow>
                         </Fragment>
                       );
@@ -1435,6 +1478,15 @@ export function OpportunitiesContent() {
         tradingSignalId={signalDetailModal?.tradingSignalId}
         title={signalDetailModal?.title}
         description={signalDetailModal?.description}
+      />
+
+      <SignalManagementMessagesDialog
+        open={managementSignal !== null}
+        onOpenChange={(open) => {
+          if (!open) setManagementSignal(null);
+        }}
+        tradingSignalId={managementSignal?.tradingSignalId}
+        title={managementSignal?.title}
       />
     </div>
   );

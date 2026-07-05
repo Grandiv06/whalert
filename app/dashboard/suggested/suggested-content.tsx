@@ -16,7 +16,11 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Dialog,
   DialogContent,
@@ -25,7 +29,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { PositionCard } from "@/components/charts/position-card";
-import { SearchIcon, ExclamationCircleIcon } from "@/components/icons/dashboard-icons";
+import { SignalManagementMessagesDialog } from "@/components/signal/signal-management-messages-dialog";
+import { SignalManagementButton } from "@/components/signal/signal-management-button";
+import {
+  SearchIcon,
+  ExclamationCircleIcon,
+} from "@/components/icons/dashboard-icons";
 import { Pagination } from "@/components/ui/pagination";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -52,7 +61,9 @@ import type { PagedResultDtoOfOfferedPositionsDto } from "@/lib/api/client";
 
 type AbpWrapper<T> = { result?: T };
 type AnalysisStatus = "all" | "followed" | "not-followed";
-type OfferedPositionWithSignalId = OfferedPositionsDto & { tradingSignalId?: number };
+type OfferedPositionWithSignalId = OfferedPositionsDto & {
+  tradingSignalId?: number;
+};
 type OfferedPositionImageFields = OfferedPositionsDto & {
   pictureBase64?: string | null;
 };
@@ -80,8 +91,8 @@ interface PositionData {
 function hasPositionImage(position: OfferedPositionImageFields) {
   return Boolean(
     position.pictureUrl?.trim() ||
-      position.pictureId?.trim() ||
-      position.pictureBase64?.trim(),
+    position.pictureId?.trim() ||
+    position.pictureBase64?.trim(),
   );
 }
 
@@ -170,7 +181,7 @@ const DesktopSkeleton = () => (
         key={i}
         className="dark:bg-transparent bg-white dark:hover:bg-white/5 hover:bg-gray-50"
       >
-        {[...Array(12)].map((_, j) => (
+        {[...Array(13)].map((_, j) => (
           <TableCell key={j} className="text-center h-[72px] px-6 py-8">
             <Skeleton className="h-4 w-12 mx-auto" />
           </TableCell>
@@ -190,9 +201,28 @@ export function SuggestedContent() {
   const [pageSize, setPageSize] = useState(10);
   const [chartPreviewOpen, setChartPreviewOpen] = useState(false);
   const [chartPreviewLoading, setChartPreviewLoading] = useState(false);
-  const [chartPreviewError, setChartPreviewError] = useState<string | null>(null);
-  const [selectedPosition, setSelectedPosition] = useState<OfferedPositionsDto | null>(null);
-  const [selectedSignalDetail, setSelectedSignalDetail] = useState<ProviderSignalDetailDto | null>(null);
+  const [chartPreviewError, setChartPreviewError] = useState<string | null>(
+    null,
+  );
+  const [selectedPosition, setSelectedPosition] =
+    useState<OfferedPositionsDto | null>(null);
+  const [selectedSignalDetail, setSelectedSignalDetail] =
+    useState<ProviderSignalDetailDto | null>(null);
+  const [managementSignal, setManagementSignal] = useState<{
+    tradingSignalId: number;
+    title: string;
+  } | null>(null);
+
+  const openSignalManagement = (
+    tradingSignalId?: number | null,
+    title?: string | null,
+  ) => {
+    if (!tradingSignalId) return;
+    setManagementSignal({
+      tradingSignalId,
+      title: title || "سیگنال",
+    });
+  };
 
   useEffect(() => {
     setCurrentPage(1);
@@ -218,7 +248,9 @@ export function SuggestedContent() {
           signalId,
         );
       const wrapped = res as unknown as AbpWrapper<ProviderSignalDetailDto>;
-      setSelectedSignalDetail(wrapped?.result ?? (res as ProviderSignalDetailDto));
+      setSelectedSignalDetail(
+        wrapped?.result ?? (res as ProviderSignalDetailDto),
+      );
     } catch {
       setChartPreviewError("بارگذاری تصویر با خطا مواجه شد.");
     } finally {
@@ -410,8 +442,14 @@ export function SuggestedContent() {
               <div className="text-center text-white/70 py-8 space-y-4">
                 <p>{emptyStateMessage}</p>
                 {!hasActiveSubscription && (
-                  <Button asChild size="sm" className="bg-[#6D3CAC] hover:bg-[#7A4BB9] text-white">
-                    <a href="/dashboard/subscription?openPlans=1">مشاهده ی اشتراک ها</a>
+                  <Button
+                    asChild
+                    size="sm"
+                    className="bg-[#6D3CAC] hover:bg-[#7A4BB9] text-white"
+                  >
+                    <a href="/dashboard/subscription?openPlans=1">
+                      مشاهده ی اشتراک ها
+                    </a>
                   </Button>
                 )}
               </div>
@@ -437,6 +475,12 @@ export function SuggestedContent() {
                     outcomeClassName={position.outcomeTone}
                     hasChartImage={position.hasImage}
                     onShowChart={() => void handleShowChart(item)}
+                    onManageSignal={() =>
+                      openSignalManagement(
+                        item.tradingSignalId,
+                        position.symbol,
+                      )
+                    }
                   />
                 );
               })
@@ -484,6 +528,9 @@ export function SuggestedContent() {
                     <TableHead className="text-center text-white h-12">
                       حد سود
                     </TableHead>
+                    <TableHead className="text-center text-white h-12">
+                      مدیریت سیگنال
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -493,7 +540,7 @@ export function SuggestedContent() {
                     <TableRow className="dark:bg-transparent bg-white dark:hover:bg-white/5 hover:bg-gray-50">
                       <TableCell
                         className="text-center text-muted-foreground dark:text-white/70 h-[72px] px-6 py-8"
-                        colSpan={12}
+                        colSpan={13}
                       >
                         <div className="space-y-4">
                           <p>{emptyStateMessage}</p>
@@ -596,7 +643,9 @@ export function SuggestedContent() {
                                         type="button"
                                         className="group flex items-center gap-1.5 rounded-xl border border-[#9C73DE]/45 bg-[#3A2068]/55 px-3 py-1.5 text-xs font-bold text-[#EDE3FF] shadow-[0_6px_18px_rgba(40,18,74,0.35)] transition-all hover:scale-[1.02] hover:border-[#B996F2]/65 hover:bg-[#4A2A7E]/65 cursor-pointer"
                                       >
-                                        <span className="tracking-wide">{position.takeProfit}</span>
+                                        <span className="tracking-wide">
+                                          {position.takeProfit}
+                                        </span>
                                         <span
                                           dir="ltr"
                                           className="inline-flex h-[16px] w-[16px] min-w-[16px] max-w-[16px] max-h-[16px] items-center justify-center rounded-full border border-[#CBAFFF]/55 bg-[#5A3493] font-mono text-[8px] font-extrabold leading-[1] text-center text-[#EFE7FF] shadow-sm select-none transition-colors group-hover:bg-[#6740A4] pt-[0.5px]"
@@ -605,16 +654,36 @@ export function SuggestedContent() {
                                         </span>
                                       </button>
                                     </PopoverTrigger>
-                                    <PopoverContent className="w-52 rounded-2xl border border-[#C4A0FF]/30 bg-[#090516]/95 p-3.5 text-right text-white shadow-[0_18px_40px_rgba(8,3,22,0.75)] backdrop-blur-sm z-[99999]" align="center" side="bottom" dir="rtl">
+                                    <PopoverContent
+                                      className="w-52 rounded-2xl border border-[#C4A0FF]/30 bg-[#090516]/95 p-3.5 text-right text-white shadow-[0_18px_40px_rgba(8,3,22,0.75)] backdrop-blur-sm z-[99999]"
+                                      align="center"
+                                      side="bottom"
+                                      dir="rtl"
+                                    >
                                       <div className="flex flex-col gap-2.5">
-                                        <p className="mb-0.5 border-b border-white/10 pb-1.5 text-xs font-semibold text-[#C9AEFF]">حد سودهای هدف</p>
+                                        <p className="mb-0.5 border-b border-white/10 pb-1.5 text-xs font-semibold text-[#C9AEFF]">
+                                          حد سودهای هدف
+                                        </p>
                                         <div className="flex flex-col gap-1.5 text-xs">
-                                          {position.tPs.map((tpVal: string | number, tpIdx: number) => (
-                                            <div key={tpIdx} className="flex items-center justify-between gap-3 rounded-lg border border-white/8 bg-white/[0.03] px-2.5 py-1.5" dir="ltr">
-                                              <span className="text-[11px] font-semibold tracking-wide text-white/55">t{tpIdx + 1}</span>
-                                              <span className="font-extrabold text-emerald-300">{tpVal.toString()}</span>
-                                            </div>
-                                          ))}
+                                          {position.tPs.map(
+                                            (
+                                              tpVal: string | number,
+                                              tpIdx: number,
+                                            ) => (
+                                              <div
+                                                key={tpIdx}
+                                                className="flex items-center justify-between gap-3 rounded-lg border border-white/8 bg-white/[0.03] px-2.5 py-1.5"
+                                                dir="ltr"
+                                              >
+                                                <span className="text-[11px] font-semibold tracking-wide text-white/55">
+                                                  t{tpIdx + 1}
+                                                </span>
+                                                <span className="font-extrabold text-emerald-300">
+                                                  {tpVal.toString()}
+                                                </span>
+                                              </div>
+                                            ),
+                                          )}
                                         </div>
                                       </div>
                                     </PopoverContent>
@@ -635,6 +704,17 @@ export function SuggestedContent() {
                                   {position.takeProfit}
                                 </div>
                               )}
+                            </TableCell>
+                            <TableCell className="text-center h-[72px] px-6 py-8">
+                              <SignalManagementButton
+                                onClick={() =>
+                                  openSignalManagement(
+                                    item.tradingSignalId,
+                                    position.symbol,
+                                  )
+                                }
+                                disabled={!item.tradingSignalId}
+                              />
                             </TableCell>
                           </TableRow>
                         );
@@ -661,7 +741,10 @@ export function SuggestedContent() {
         )}
       </div>
       <Dialog open={chartPreviewOpen} onOpenChange={setChartPreviewOpen}>
-        <DialogContent className="w-[calc(100%-1rem)] max-w-3xl overflow-hidden border border-white/10 bg-[#0b071e]/96 p-0 text-white shadow-[0_30px_80px_-24px_rgba(93,49,160,0.45)]" dir="rtl">
+        <DialogContent
+          className="w-[calc(100%-1rem)] max-w-3xl overflow-hidden border border-white/10 bg-[#0b071e]/96 p-0 text-white shadow-[0_30px_80px_-24px_rgba(93,49,160,0.45)]"
+          dir="rtl"
+        >
           <div className="p-5">
             <DialogHeader className="mb-4 text-right">
               <DialogTitle className="text-base font-bold text-[#EBDDFF]">
@@ -700,6 +783,15 @@ export function SuggestedContent() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <SignalManagementMessagesDialog
+        open={managementSignal !== null}
+        onOpenChange={(open) => {
+          if (!open) setManagementSignal(null);
+        }}
+        tradingSignalId={managementSignal?.tradingSignalId}
+        title={managementSignal?.title}
+      />
     </div>
   );
 }

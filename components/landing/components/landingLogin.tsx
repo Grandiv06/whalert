@@ -33,9 +33,13 @@ const LandingLogin = () => {
           variant="default"
           reverse
           className="text-white"
-          icon={<ArrowIcon className="w-8 h-8 p-2 text-white rounded-full bg-primary-450" />}
+          icon={
+            <ArrowIcon className="w-8 h-8 p-2 text-white rounded-full bg-primary-450" />
+          }
           onClick={() =>
-            router.push(isLoggedIn ? "/dashboard/create-signal" : "/auth/sign-up")
+            router.push(
+              isLoggedIn ? "/dashboard/create-signal" : "/auth/sign-up",
+            )
           }
         >
           {isLoggedIn ? "دریافت اولین سیگنال" : "ثبت‌نام رایگان"}

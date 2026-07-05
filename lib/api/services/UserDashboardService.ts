@@ -20,7 +20,9 @@ import type { GetMonthlyProfitLossChartOutput } from '../models/GetMonthlyProfit
 import type { GetPerformanceByAssetChartOutput } from '../models/GetPerformanceByAssetChartOutput';
 import type { GetPnLSequenceChartOutput } from '../models/GetPnLSequenceChartOutput';
 import type { GetRewardToRiskChartOutput } from '../models/GetRewardToRiskChartOutput';
+import type { GetSignalManagementMessagesInput } from '../models/GetSignalManagementMessagesInput';
 import type { GetSignalSequenceQualityChartOutput } from '../models/GetSignalSequenceQualityChartOutput';
+import type { SignalManagementMessageDto } from '../models/SignalManagementMessageDto';
 import type { MarketViewInput } from '../models/MarketViewInput';
 import type { OfferedPosiotionsInput } from '../models/OfferedPosiotionsInput';
 import type { PagedResultDtoOfMarketViewDto } from '../models/PagedResultDtoOfMarketViewDto';
@@ -488,6 +490,21 @@ export class UserDashboardService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/services/app/UserDashboard/GetMySubscriptionPlanDetails',
+        });
+    }
+    /**
+     * @param requestBody
+     * @returns SignalManagementMessageDto Success
+     * @throws ApiError
+     */
+    public static apiServicesAppUserdashboardGetsignalmanagementmessagesPost(
+        requestBody?: GetSignalManagementMessagesInput,
+    ): CancelablePromise<Array<SignalManagementMessageDto>> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/services/app/UserDashboard/GetSignalManagementMessages',
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
     /**

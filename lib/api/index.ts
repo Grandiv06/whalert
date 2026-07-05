@@ -238,6 +238,7 @@ export type { GetSignalExecutionForEditOutput } from './models/GetSignalExecutio
 export type { GetSignalExecutionForViewDto } from './models/GetSignalExecutionForViewDto';
 export type { GetSignalProviderForEditOutput } from './models/GetSignalProviderForEditOutput';
 export type { GetSignalProviderForViewDto } from './models/GetSignalProviderForViewDto';
+export type { GetSignalManagementMessagesInput } from './models/GetSignalManagementMessagesInput';
 export type { GetSignalSequenceQualityChartOutput } from './models/GetSignalSequenceQualityChartOutput';
 export type { GetSignalTargetForEditOutput } from './models/GetSignalTargetForEditOutput';
 export type { GetSignalTargetForViewDto } from './models/GetSignalTargetForViewDto';
@@ -511,6 +512,7 @@ export type { SignalOutcomeItemDto } from './models/SignalOutcomeItemDto';
 export { SignalOutcomeSource } from './models/SignalOutcomeSource';
 export { SignalOutcomeStatus } from './models/SignalOutcomeStatus';
 export type { SignalOutcomeWorkbenchOutput } from './models/SignalOutcomeWorkbenchOutput';
+export type { SignalManagementMessageDto } from './models/SignalManagementMessageDto';
 export type { SignalProvider } from './models/SignalProvider';
 export type { SignalProviderDto } from './models/SignalProviderDto';
 export type { SignalProviderInfoDto } from './models/SignalProviderInfoDto';
