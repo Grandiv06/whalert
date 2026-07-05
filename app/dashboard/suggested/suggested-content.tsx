@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import {
@@ -42,12 +42,9 @@ import { getMarketLabel } from "@/lib/market/market-label";
 import {
   UserDashboardService,
   SignalSide,
-  SignalStatus,
-  SignalOutcomeStatus,
-  SignalOutcomeSource,
   type UserSubscriptionPlanDetailsDto,
 } from "@/lib/api/client";
-import { getSignalStatusMeta } from "@/lib/signal-status";
+import { resolveSignalStatusMeta } from "@/lib/signal-status";
 import { getOutcomeStatusMeta } from "@/lib/signal-outcome-status";
 import type { OfferedPositionsDto } from "@/lib/api/client";
 import type { ProviderSignalDetailDto } from "@/lib/api/client";
@@ -305,6 +302,42 @@ export function SuggestedContent() {
   const paginatedData = (data?.items ?? []) as OfferedPositionsDto[];
   const startIndex = (currentPage - 1) * pageSize;
 
+  const signalIds = useMemo(
+    () =>
+      paginatedData
+        .map((item) => item.tradingSignalId)
+        .filter((id): id is number => typeof id === "number" && id > 0),
+    [paginatedData],
+  );
+
+  const { data: signalDetailsById = {} } = useQuery({
+    queryKey: ["offered-position-signal-details", signalIds],
+    enabled: signalIds.length > 0,
+    queryFn: async () => {
+      const entries = await Promise.all(
+        signalIds.map(async (id) => {
+          try {
+            const res =
+              await UserDashboardService.apiServicesAppUserdashboardGettradingsignaldetailGet(
+                id,
+              );
+            const wrapped = res as AbpWrapper<ProviderSignalDetailDto>;
+            return [
+              id,
+              wrapped?.result ?? (res as ProviderSignalDetailDto),
+            ] as const;
+          } catch {
+            return [id, null] as const;
+          }
+        }),
+      );
+      return Object.fromEntries(entries) as Record<
+        number,
+        ProviderSignalDetailDto | null
+      >;
+    },
+  });
+
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
@@ -318,16 +351,17 @@ export function SuggestedContent() {
     position: OfferedPositionsDto,
     index: number,
   ): PositionData => {
-    const positionWithStatus = position as OfferedPositionsDto & {
-      signalStatus?: SignalStatus | number;
-      outcomeStatus?: SignalOutcomeStatus | number;
-      outcomeSource?: SignalOutcomeSource | number;
-      description?: string | null;
-    };
-    const statusMeta = getSignalStatusMeta(positionWithStatus.signalStatus);
+    const detail =
+      position.tradingSignalId != null
+        ? signalDetailsById[position.tradingSignalId]
+        : null;
+    const statusMeta = resolveSignalStatusMeta({
+      signalStatus: position.signalStatus ?? detail?.signalStatus,
+      statusLabel: position.statusLabel,
+    });
     const outcomeMeta = getOutcomeStatusMeta(
-      positionWithStatus.outcomeStatus,
-      positionWithStatus.outcomeSource,
+      position.outcomeStatus ?? detail?.outcomeStatus,
+      position.outcomeSource ?? detail?.outcomeSource,
     );
     const dateObj = position.date ? new Date(position.date) : null;
     const date = dateObj
@@ -609,16 +643,12 @@ export function SuggestedContent() {
                               )}
                             </TableCell>
                             <TableCell className="text-center h-[72px] px-6 py-8">
-                              <span
-                                className={`inline-flex items-center justify-center rounded-full border px-2.5 py-1 text-[11px] font-bold ${position.statusTone}`}
-                              >
+                              <span className={position.statusTone}>
                                 {position.status}
                               </span>
                             </TableCell>
                             <TableCell className="text-center h-[72px] px-6 py-8">
-                              <span
-                                className={`inline-flex items-center justify-center rounded-full border px-2.5 py-1 text-[11px] font-bold ${position.outcomeTone}`}
-                              >
+                              <span className={position.outcomeTone}>
                                 {position.outcome}
                               </span>
                             </TableCell>
