@@ -12,11 +12,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -33,7 +28,6 @@ import { SignalManagementMessagesDialog } from "@/components/signal/signal-manag
 import { SignalManagementButton } from "@/components/signal/signal-management-button";
 import {
   SearchIcon,
-  ExclamationCircleIcon,
 } from "@/components/icons/dashboard-icons";
 import { Pagination } from "@/components/ui/pagination";
 import { Card, CardContent } from "@/components/ui/card";
@@ -635,23 +629,25 @@ export function SuggestedContent() {
                               {position.stopLoss}
                             </TableCell>
                             <TableCell className="text-center h-[72px] px-6 py-8">
-                              {position.tPs && position.tPs.length > 1 ? (
+                              {position.tPs && position.tPs.length > 0 ? (
                                 <div className="flex items-center justify-center w-full">
                                   <Popover>
                                     <PopoverTrigger asChild>
                                       <button
                                         type="button"
-                                        className="group flex items-center gap-1.5 rounded-xl border border-[#9C73DE]/45 bg-[#3A2068]/55 px-3 py-1.5 text-xs font-bold text-[#EDE3FF] shadow-[0_6px_18px_rgba(40,18,74,0.35)] transition-all hover:scale-[1.02] hover:border-[#B996F2]/65 hover:bg-[#4A2A7E]/65 cursor-pointer"
+                                        className="group flex items-center gap-1.5 rounded-xl border border-[#9C73DE]/45 bg-[#3A2068]/55 px-2.5 py-1 text-[11px] font-bold text-[#EDE3FF] shadow-[0_6px_18px_rgba(40,18,74,0.35)] transition-all hover:scale-[1.02] hover:border-[#B996F2]/65 hover:bg-[#4A2A7E]/65 cursor-pointer"
                                       >
                                         <span className="tracking-wide">
                                           {position.takeProfit}
                                         </span>
-                                        <span
-                                          dir="ltr"
-                                          className="inline-flex h-[16px] w-[16px] min-w-[16px] max-w-[16px] max-h-[16px] items-center justify-center rounded-full border border-[#CBAFFF]/55 bg-[#5A3493] font-mono text-[8px] font-extrabold leading-[1] text-center text-[#EFE7FF] shadow-sm select-none transition-colors group-hover:bg-[#6740A4] pt-[0.5px]"
-                                        >
-                                          +{position.tPs.length - 1}
-                                        </span>
+                                        {position.tPs.length > 1 ? (
+                                          <span
+                                            dir="ltr"
+                                            className="inline-flex h-[16px] w-[16px] min-w-[16px] max-w-[16px] max-h-[16px] items-center justify-center rounded-full border border-[#CBAFFF]/55 bg-[#5A3493] font-mono text-[8px] font-extrabold leading-[1] text-center text-[#EFE7FF] shadow-sm select-none transition-colors group-hover:bg-[#6740A4] pt-[0.5px]"
+                                          >
+                                            +{position.tPs.length - 1}
+                                          </span>
+                                        ) : null}
                                       </button>
                                     </PopoverTrigger>
                                     <PopoverContent
@@ -690,19 +686,7 @@ export function SuggestedContent() {
                                   </Popover>
                                 </div>
                               ) : (
-                                <div className="flex items-center gap-2 justify-center w-full">
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <div className="cursor-pointer hover:opacity-80 transition-colors">
-                                        <ExclamationCircleIcon className="text-white/70 hover:text-white" />
-                                      </div>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p>{position.takeProfit}</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                  {position.takeProfit}
-                                </div>
+                                "-"
                               )}
                             </TableCell>
                             <TableCell className="text-center h-[72px] px-6 py-8">
