@@ -13,7 +13,7 @@ const TitleDesc = ({
   btnTitle,
   loggedInBtnTitle,
   btnHref = "/auth/sign-up",
-  loggedInBtnHref = "/dashboard/create-signal",
+  loggedInBtnHref = "/dashboard/suggested/",
 }: {
   title: string;
   titleDesc?: string;

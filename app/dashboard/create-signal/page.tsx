@@ -1,27 +1,18 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import { CreateSignalContent } from "./create-signal-content";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function CreateSignalPage() {
-  const searchParams = useSearchParams();
+  const router = useRouter();
 
-  const initialManualEditDraft =
-    searchParams.get("edit") === "1"
-      ? {
-          symbolApi: searchParams.get("symbol") || undefined,
-          side: searchParams.get("side") === "SHORT" ? ("SHORT" as const) : ("LONG" as const),
-          entry: searchParams.get("entry") ? Number(searchParams.get("entry")) : undefined,
-          stopLoss: searchParams.get("stopLoss")
-            ? Number(searchParams.get("stopLoss"))
-            : undefined,
-          takeProfits: (searchParams.get("takeProfits") || "")
-            .split(",")
-            .map((v) => Number(v.trim()))
-            .filter((v) => Number.isFinite(v) && v > 0),
-          description: searchParams.get("description") || undefined,
-        }
-      : null;
+  useEffect(() => {
+    router.replace("/dashboard/");
+  }, [router]);
 
-  return <CreateSignalContent initialManualEditDraft={initialManualEditDraft} />;
+  return (
+    <div className="flex min-h-[40vh] items-center justify-center text-white/70">
+      در حال انتقال...
+    </div>
+  );
 }

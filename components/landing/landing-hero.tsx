@@ -28,7 +28,7 @@ export function LandingHero() {
         <Button
           size="lg"
           onClick={() =>
-            router.push(isLoggedIn ? "/dashboard/create-signal" : "/auth/sign-up")
+            router.push(isLoggedIn ? "/dashboard/suggested/" : "/auth/sign-up")
           }
           className="gap-2 h-[50px] px-6 rounded-full bg-[#542C85] hover:bg-[#542C85]/90 text-white"
         >
@@ -39,7 +39,7 @@ export function LandingHero() {
           size="lg"
           variant="outline"
           onClick={() =>
-            router.push(isLoggedIn ? "/dashboard/create-signal" : "/auth/sign-up")
+            router.push(isLoggedIn ? "/dashboard/suggested/" : "/auth/sign-up")
           }
           className="gap-2 h-[50px] px-6 rounded-full border-white/30 bg-white/10 hover:bg-white/20 text-white"
         >
