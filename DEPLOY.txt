@@ -1,0 +1,64 @@
+Whalert Frontend — Static Build
+================================
+Build date: 2026-07-05
+Next.js static export (output: export)
+
+محتوای این آرشیو
+-----------------
+فایل‌های داخل zip همان خروجی پوشه `out/` هستند و برای سرو روی وب‌سرور (Nginx / Apache / IIS / CDN) آماده‌اند.
+
+استقرار سریع
+------------
+1. فایل zip را روی سرور extract کنید.
+2. محتوا را در document root سایت قرار دهید (مثلاً /var/www/whalert یا wwwroot).
+3. مطمئن شوید `index.html` در ریشه سایت در دسترس است.
+4. API بک‌اند باید از همان دامنه/زیردامنه‌ای که فرانت روی آن است، در دسترس باشد
+   (CORS + HTTPS در صورت نیاز).
+
+API پیش‌فرض در بیلد
+--------------------
+اگر هنگام build مقدار env ست نشده باشد:
+  https://api.whalert.net
+
+برای بیلد با API دیگر (روی ماشین توسعه):
+  NEXT_PUBLIC_API_BASE_URL=https://your-api.example.com npm run build
+
+Nginx (نمونه)
+-------------
+server {
+    listen 80;
+    server_name whalert.example.com;
+    root /var/www/whalert;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ $uri/index.html =404;
+    }
+
+    location /_next/ {
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+}
+
+Apache (.htaccess نمونه — اگر mod_rewrite فعال است)
+----------------------------------------------------
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^(.+)/$ $1/index.html [L]
+</IfModule>
+
+نکات
+----
+- این پروژه SPA استاتیک است؛ Node.js روی سرور لازم نیست.
+- trailingSlash در Next فعال است؛ URLها معمولاً با / تمام می‌شوند (مثلاً /dashboard/).
+- بعد از deploy، این مسیرها را تست کنید:
+  / ، /auth/sign-in/ ، /dashboard/ ، /dashboard/suggested/
+
+پشتیبانی
+--------
+در صورت نیاز به بیلد با API یا دامنه دیگر، قبل از `npm run build` متغیر
+NEXT_PUBLIC_API_BASE_URL را در .env.local تنظیم کنید.

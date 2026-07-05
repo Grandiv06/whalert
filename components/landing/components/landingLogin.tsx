@@ -38,7 +38,7 @@ const LandingLogin = () => {
           }
           onClick={() =>
             router.push(
-              isLoggedIn ? "/dashboard/create-signal" : "/auth/sign-up",
+              isLoggedIn ? "/dashboard/suggested/" : "/auth/sign-up",
             )
           }
         >
