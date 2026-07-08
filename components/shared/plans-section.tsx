@@ -134,15 +134,10 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
           ...plans.filter((_, index) => index !== bundlePlanIndex).slice(1),
         ]
       : plans;
-  const mobilePlans = [...plans].reverse();
-  const mobileInitialSlide =
-    bundlePlanIndex > -1
-      ? mobilePlans.findIndex((plan) => plan.isBundle)
-      : 0;
-
-  useEffect(() => {
-    setActiveIndex(mobileInitialSlide);
-  }, [mobileInitialSlide]);
+  const mobilePlans = [...plans].sort((a, b) => {
+    if (a.comingSoon === b.comingSoon) return 0;
+    return a.comingSoon ? 1 : -1;
+  });
 
   const handlePurchase = async (planId: number) => {
     if (!planId) return;
@@ -448,7 +443,7 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
               spaceBetween={14}
               slidesPerView={1.12}
               centeredSlides={false}
-              initialSlide={mobileInitialSlide}
+              initialSlide={0}
               speed={280}
               onSlideChange={(swiper) => setActiveIndex(swiper.activeIndex)}
               pagination={{ clickable: true }}
