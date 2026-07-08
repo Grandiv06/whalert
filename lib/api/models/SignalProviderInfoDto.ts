@@ -5,7 +5,7 @@
 export type SignalProviderInfoDto = {
     totalSignals?: number;
     activeSignals?: number;
-    lostSignals?: number;
+    closedSignals?: number;
     signalProviderId?: number;
     name?: string | null;
     successRate?: number;

@@ -258,7 +258,7 @@ export function AnalysisContent() {
       avatarSrc: null,
       totalPositions: total,
       activePositions: profile.activeSignals || 0,
-      lostPositions: profile.lostSignals || 0,
+      lostPositions: profile.closedSignals || 0,
       successRate,
       failureRate: failRate,
       successCount,
