@@ -26,6 +26,7 @@ import {
   type UserSubscriptionPlanDetailsDto,
 } from "@/lib/api/client";
 import { toPersianDigits } from "@/lib/utils";
+import { getSubscriptionCheckoutStatusMeta } from "@/lib/subscription-checkout-status";
 import PlansSection from "@/components/shared/plans-section";
 
 type AbpWrapper<T> = { result?: T };
@@ -49,46 +50,6 @@ function formatDate(date?: string | null): string {
 function remainingDaysLabel(remainingDays?: number | null): string {
   if (typeof remainingDays !== "number" || !Number.isFinite(remainingDays)) return "—";
   return `${toPersianDigits(Math.max(0, Math.floor(remainingDays)))} روز فعال`;
-}
-
-function paymentStatusText(status?: string | number | null): string {
-  if (status === 2 || status === 3) return "پرداخت موفق";
-  if (status === 1) return "در انتظار";
-  if (status === 4) return "لغو شده";
-  if (status === 5) return "ناموفق";
-
-  const s = String(status ?? "").toLowerCase();
-  if (s.includes("complete") || s.includes("success") || s.includes("paid")) {
-    return "پرداخت موفق";
-  }
-  if (s.includes("pending") || s.includes("wait")) return "در انتظار";
-  if (s.includes("cancel")) return "لغو شده";
-  if (s.includes("fail") || s.includes("error")) return "ناموفق";
-  return "نامشخص";
-}
-
-function pickStatusColor(status?: string | number | null): string {
-  if (status === 2 || status === 3) {
-    return "text-emerald-300 bg-emerald-500/15 border-emerald-400/30";
-  }
-  if (status === 1) {
-    return "text-amber-300 bg-amber-500/15 border-amber-400/30";
-  }
-  if (status === 4 || status === 5) {
-    return "text-rose-300 bg-rose-500/15 border-rose-400/30";
-  }
-
-  const s = String(status ?? "").toLowerCase();
-  if (s.includes("complete") || s.includes("success") || s.includes("paid")) {
-    return "text-emerald-300 bg-emerald-500/15 border-emerald-400/30";
-  }
-  if (s.includes("pending") || s.includes("wait")) {
-    return "text-amber-300 bg-amber-500/15 border-amber-400/30";
-  }
-  if (s.includes("cancel") || s.includes("fail") || s.includes("error")) {
-    return "text-rose-300 bg-rose-500/15 border-rose-400/30";
-  }
-  return "text-white/70 bg-white/10 border-white/20";
 }
 
 function formatRialAmount(amount?: number): string {
@@ -251,7 +212,9 @@ export function SubscriptionContent() {
                 </div>
               ) : historyItems.length > 0 ? (
                 <div className="space-y-3">
-                  {visibleHistoryItems.map((item, index) => (
+                  {visibleHistoryItems.map((item, index) => {
+                    const statusMeta = getSubscriptionCheckoutStatusMeta(item.status);
+                    return (
                     <div
                       key={item.id ?? `payment-${index}`}
                       className="rounded-3xl border border-white/10 bg-gradient-to-l from-white/[0.05] to-[#7A46BA]/[0.06] p-3.5 transition-all duration-300 hover:border-[#B57CFF]/30 hover:bg-gradient-to-l hover:from-white/[0.08] hover:to-[#7A46BA]/[0.12]"
@@ -261,16 +224,17 @@ export function SubscriptionContent() {
                           {formatRialAmount(item.price)}
                         </span>
                         <span
-                          className={`text-xs px-2.5 py-1 rounded-full border font-medium ${pickStatusColor(item.status)}`}
+                          className={`text-xs px-2.5 py-1 rounded-full border font-medium ${statusMeta.className}`}
                         >
-                          {paymentStatusText(item.status)}
+                          {statusMeta.label}
                         </span>
                       </div>
                       <p className="text-xs text-white/65 mt-1.5">
                         {formatDate(item.date)}
                       </p>
                     </div>
-                  ))}
+                    );
+                  })}
                   {hasMoreHistory && (
                     <button
                       type="button"
@@ -301,7 +265,9 @@ export function SubscriptionContent() {
             <DialogTitle className="text-xl font-bold">همه پرداخت‌ها</DialogTitle>
           </DialogHeader>
           <div className="mt-2 max-h-[60vh] space-y-3 overflow-y-auto pr-1 scrollbar-subscription">
-            {historyItems.map((item, index) => (
+            {historyItems.map((item, index) => {
+              const statusMeta = getSubscriptionCheckoutStatusMeta(item.status);
+              return (
               <div
                 key={item.id ?? `payment-all-${index}`}
                 className="rounded-2xl border border-white/10 bg-gradient-to-l from-white/[0.05] to-[#7A46BA]/[0.06] p-3.5"
@@ -311,14 +277,15 @@ export function SubscriptionContent() {
                     {formatRialAmount(item.price)}
                   </span>
                   <span
-                    className={`text-xs px-2.5 py-1 rounded-full border font-medium ${pickStatusColor(item.status)}`}
+                    className={`text-xs px-2.5 py-1 rounded-full border font-medium ${statusMeta.className}`}
                   >
-                    {paymentStatusText(item.status)}
+                    {statusMeta.label}
                   </span>
                 </div>
                 <p className="text-xs text-white/65 mt-1.5">{formatDate(item.date)}</p>
               </div>
-            ))}
+              );
+            })}
           </div>
         </DialogContent>
       </Dialog>

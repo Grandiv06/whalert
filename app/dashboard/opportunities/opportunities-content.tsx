@@ -1114,6 +1114,7 @@ export function OpportunitiesContent() {
                       </div>
                       <div className="mt-3">
                         <SignalManagementButton
+                          tradingSignalId={item.tradingSignalId}
                           onClick={() =>
                             openSignalManagement(
                               item.tradingSignalId,
@@ -1363,6 +1364,7 @@ export function OpportunitiesContent() {
                             </TableCell>
                             <TableCell className="text-center h-[72px] px-6 py-8">
                               <SignalManagementButton
+                                tradingSignalId={item.tradingSignalId}
                                 onClick={() =>
                                   openSignalManagement(
                                     item.tradingSignalId,

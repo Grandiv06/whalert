@@ -487,6 +487,7 @@ export function SuggestedContent() {
                 return (
                   <PositionCard
                     key={index}
+                    tradingSignalId={item.tradingSignalId}
                     time={position.time}
                     timeDetail={position.timeDetail}
                     analysisModel={position.analysisModel}
@@ -721,6 +722,7 @@ export function SuggestedContent() {
                             </TableCell>
                             <TableCell className="text-center h-[72px] px-6 py-8">
                               <SignalManagementButton
+                                tradingSignalId={item.tradingSignalId}
                                 onClick={() =>
                                   openSignalManagement(
                                     item.tradingSignalId,
