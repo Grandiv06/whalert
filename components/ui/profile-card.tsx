@@ -257,7 +257,7 @@ export function ProfileCard({
             <div className="flex items-center gap-2">
               <TrendingDown className="w-5 h-5 text-white" />
               <span className="text-sm font-medium text-white">
-                موقعیتهای از دست رفته
+                موقعیت های به نتیجه رسیده
               </span>
             </div>
           </div>
