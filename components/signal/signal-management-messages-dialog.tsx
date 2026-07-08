@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,27 +9,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  UserDashboardService,
-  type SignalManagementMessageDto,
-} from "@/lib/api/client";
+import { useSignalManagementMessages } from "@/hooks/use-signal-management-unread";
+import { markSignalManagementMessagesAsRead } from "@/lib/signal-management-read-state";
 import { normalizePersianText } from "@/lib/utils";
 import { MessageSquare } from "lucide-react";
-
-type AbpWrapper<T> = { result?: T };
 
 export interface SignalManagementMessagesDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tradingSignalId?: number | null;
   title?: string;
-}
-
-function unwrapMessages(value: unknown): SignalManagementMessageDto[] {
-  if (Array.isArray(value)) return value;
-  const wrapped = value as AbpWrapper<SignalManagementMessageDto[]>;
-  if (Array.isArray(wrapped?.result)) return wrapped.result;
-  return [];
 }
 
 function formatPostedAt(value?: string) {
@@ -75,22 +64,15 @@ export function SignalManagementMessagesDialog({
     isLoading,
     isError,
     isFetching,
-  } = useQuery({
-    queryKey: ["signal-management-messages", tradingSignalId],
+  } = useSignalManagementMessages(tradingSignalId, {
     enabled: open && !!tradingSignalId,
     refetchInterval: open ? 15000 : false,
-    queryFn: async () => {
-      const res =
-        await UserDashboardService.apiServicesAppUserdashboardGetsignalmanagementmessagesPost(
-          { tradingSignalId: tradingSignalId! },
-        );
-      return unwrapMessages(res).sort((a, b) => {
-        const aTime = a.postedAt ? new Date(a.postedAt).getTime() : 0;
-        const bTime = b.postedAt ? new Date(b.postedAt).getTime() : 0;
-        return bTime - aTime;
-      });
-    },
   });
+
+  useEffect(() => {
+    if (!open || !tradingSignalId || isLoading || isError) return;
+    markSignalManagementMessagesAsRead(tradingSignalId, messages);
+  }, [open, tradingSignalId, isLoading, isError, messages]);
 
   const dialogTitle = title
     ? `مدیریت سیگنال ${title}`

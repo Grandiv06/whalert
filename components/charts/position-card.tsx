@@ -22,6 +22,7 @@ export interface PositionCardProps {
   outcomeClassName?: string;
   onShowChart?: () => void;
   onManageSignal?: () => void;
+  tradingSignalId?: number | null;
   hasChartImage?: boolean;
 }
 
@@ -42,6 +43,7 @@ export function PositionCard({
   outcomeClassName,
   onShowChart,
   onManageSignal,
+  tradingSignalId,
   hasChartImage = true,
 }: PositionCardProps) {
   return (
@@ -159,6 +161,7 @@ export function PositionCard({
             مشاهده عکس
           </button>
           <SignalManagementButton
+            tradingSignalId={tradingSignalId}
             onClick={() => onManageSignal?.()}
             disabled={!onManageSignal}
             fullWidth

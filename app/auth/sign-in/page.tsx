@@ -196,8 +196,9 @@ export default function SignInPage() {
     setOtpDigits(Array.from({ length: OTP_LENGTH }, () => ""));
   };
 
+  const isLoginBusy = isSendingOtp || isVerifyingOtp || redirectPending;
+
   const redirectAfterLogin = useCallback(async () => {
-    setRedirectPending(false);
     setRedirectTimer(0);
     queryClient.clear();
     try {
@@ -311,7 +312,7 @@ export default function SignInPage() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (isSendingOtp || isVerifyingOtp) return;
+    if (isLoginBusy) return;
     if (currentStep === 1) {
       await sendOtp();
     } else {
@@ -320,7 +321,7 @@ export default function SignInPage() {
   };
 
   const goToPhoneStep = () => {
-    if (isSendingOtp || isVerifyingOtp) return;
+    if (isLoginBusy) return;
     setCurrentStep(1);
     setErrorMessage("");
     resetOtp();
@@ -344,7 +345,8 @@ export default function SignInPage() {
               <button
                 type="button"
                 onClick={goToPhoneStep}
-                className="inline-flex w-fit items-center gap-2 text-sm text-white/50 transition-colors hover:text-white/80"
+                disabled={isLoginBusy}
+                className="inline-flex w-fit items-center gap-2 text-sm text-white/50 transition-colors hover:text-white/80 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <ArrowRight className="h-4 w-4" />
                 بازگشت به ورود
@@ -402,15 +404,17 @@ export default function SignInPage() {
                     value={otpDigits}
                     onChange={setOtpDigits}
                     onComplete={verifyOtp}
-                    loading={isVerifyingOtp}
+                    loading={isLoginBusy}
                     error={!!errorMessage}
                     isActive={currentStep === 2}
                     otpLength={OTP_LENGTH}
                   />
-                  {isVerifyingOtp ? (
+                  {isLoginBusy && currentStep === 2 ? (
                     <div className="mt-4 flex items-center gap-2 text-xs text-white/50">
                       <ShieldCheck className="h-4 w-4 animate-pulse" />
-                      در حال بررسی کد تایید...
+                      {redirectPending
+                        ? "در حال ورود به پنل..."
+                        : "در حال بررسی کد تایید..."}
                     </div>
                   ) : null}
                 </div>
@@ -419,7 +423,7 @@ export default function SignInPage() {
                 >
                   <button
                     type="button"
-                    disabled={isSendingOtp || isVerifyingOtp}
+                    disabled={isLoginBusy}
                     onClick={goToPhoneStep}
                     className="w-fit text-sm text-white/50 transition-colors hover:text-white/80 disabled:opacity-60"
                   >
@@ -427,7 +431,7 @@ export default function SignInPage() {
                   </button>
                   <button
                     type="button"
-                    disabled={isSendingOtp || isVerifyingOtp || resendTimer > 0}
+                    disabled={isLoginBusy || resendTimer > 0}
                     onClick={sendOtp}
                     className="w-fit text-sm text-[#CDB7FF] transition-colors hover:text-white disabled:cursor-not-allowed disabled:text-white/35"
                   >
@@ -441,21 +445,27 @@ export default function SignInPage() {
 
             <button
               type="submit"
-              disabled={isSendingOtp || isVerifyingOtp}
+              disabled={isLoginBusy}
               className={`${fieldWidthClass} block h-12 sm:h-[58px] cursor-pointer rounded-xl text-base sm:text-lg font-bold text-white transition-opacity hover:opacity-95 disabled:opacity-70 disabled:cursor-not-allowed bg-gradient-to-r from-[#501794] to-[#3e70a1]`}
             >
               {isSendingOtp
                 ? "در حال ارسال..."
                 : isVerifyingOtp
                   ? "در حال بررسی..."
-                  : currentStep === 1
-                    ? "ارسال کد تایید"
-                    : "تایید و ورود"}
+                  : redirectPending
+                    ? "در حال ورود به پنل..."
+                    : currentStep === 1
+                      ? "ارسال کد تایید"
+                      : "تایید و ورود"}
             </button>
 
             <Link
               href="/auth/sign-up"
-              className="block w-fit text-base text-white/50 hover:text-white/70 transition-colors"
+              className={`block w-fit text-base text-white/50 transition-colors ${
+                isLoginBusy
+                  ? "pointer-events-none opacity-50"
+                  : "hover:text-white/70"
+              }`}
             >
               اکانت ندارید ؟ ثبت نام کنید
             </Link>

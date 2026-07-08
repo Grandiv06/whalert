@@ -30,6 +30,7 @@ export interface SignalCardProps {
 }
 
 export function SignalCard({
+  id,
   pictureUrl,
   pictureId,
   pictureBase64,
@@ -177,6 +178,7 @@ export function SignalCard({
         </div>
         <div className="mt-3">
           <SignalManagementButton
+            tradingSignalId={id}
             onClick={() => onManageSignal?.()}
             disabled={!onManageSignal}
             fullWidth
