@@ -8,13 +8,13 @@ import { cn } from "@/lib/utils";
 const chartConfig = {
   pending: { label: "در انتظار", color: "#3b82f6" },
   active: { label: "فعال", color: "#14b8a6" },
-  lost: { label: "به نتیجه نرسیده", color: "#f59e0b" },
+  lost: { label: "به نتیجه رسیده", color: "#f59e0b" },
 };
 
 const colorMap: Record<string, string> = {
   "در انتظار": chartConfig.pending.color,
   فعال: chartConfig.active.color,
-  "به نتیجه نرسیده": chartConfig.lost.color,
+  "به نتیجه رسیده": chartConfig.lost.color,
 };
 
 function CustomTooltipContent({
@@ -187,8 +187,8 @@ export function ChartPieDonutText({
               nameKey="name"
               cx="50%"
               cy="100%"
-              startAngle={180}
-              endAngle={0}
+              startAngle={0}
+              endAngle={180}
               innerRadius={chartSize.innerRadius}
               outerRadius={chartSize.outerRadius}
               stroke="none"
@@ -238,10 +238,7 @@ export function ChartPieDonutText({
               <div key={index} className="flex flex-col items-center gap-1.5">
                 <div className="flex items-center gap-2">
                   <div
-                    className={cn(
-                      "w-3 h-3 shrink-0",
-                      item.name === "در انتظار" ? "rounded-full" : "rounded-sm",
-                    )}
+                    className="w-3 h-3 shrink-0 rounded-sm"
                     style={{ backgroundColor: item.fill }}
                   />
                   <span className="font-medium text-sm text-foreground">

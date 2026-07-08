@@ -36,6 +36,7 @@ type GoldPlan = {
   footerText: string;
   ctaText: string;
   isBundle?: boolean;
+  comingSoon?: boolean;
 };
 
 type AbpWrapper<T> = {
@@ -53,6 +54,18 @@ function formatMoney(value?: number | null): string {
   if (value === null || value === undefined) return "رایگان";
   const displayValue = Math.round(value / 10);
   return `${toPersianDigits(displayValue.toLocaleString("fa-IR"))} تومان`;
+}
+
+function isComingSoonPlan(plan: SubscriptionPlanCatalogItemDto): boolean {
+  const displayName = (plan.displayName ?? plan.name ?? "").trim();
+  const isBundle = plan.isHighlighted === true;
+  const isMazanehPlan = displayName.includes("مظنه");
+
+  return isBundle || isMazanehPlan;
+}
+
+function getPlanPriceLabel(plan: GoldPlan): string {
+  return plan.comingSoon ? "بزودی" : formatMoney(plan.monthlyPrice);
 }
 
 interface PlansSectionProps {
@@ -110,6 +123,7 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
       "برای مشاهده اطلاعات کامل این پلن اقدام کنید.",
     ctaText: plan.callToActionText ?? "مشاهده و فعال‌سازی پلن",
     isBundle: plan.isHighlighted === true,
+    comingSoon: isComingSoonPlan(plan),
   }));
   const bundlePlanIndex = plans.findIndex((plan) => plan.isBundle);
   const desktopPlans =
@@ -132,6 +146,8 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
 
   const handlePurchase = async (planId: number) => {
     if (!planId) return;
+    const plan = plans.find((item) => item.id === planId);
+    if (plan?.comingSoon) return;
     setPendingPlanId(planId);
     try {
       const response = await SubscriptionPurchaseService.apiServicesAppSubscriptionpurchaseRequestpaymentPost({
@@ -157,6 +173,7 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
   };
 
   const openConfirm = (plan: GoldPlan) => {
+    if (plan.comingSoon) return;
     if (!isLoggedIn) {
       const redirectUrl = showHeader ? "/#plans" : "/dashboard/subscription";
       router.push(`/auth/sign-in?redirect=${encodeURIComponent(redirectUrl)}`);
@@ -313,11 +330,15 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
                     </div>
 
                     <div className={`${showHeader ? "rounded-3xl p-4" : "rounded-2xl p-3"} border ${theme.priceBox}`}>
-                      <p className="text-xs text-white/60 mb-1.5">شروع از</p>
+                      {!plan.comingSoon && (
+                        <p className="text-xs text-white/60 mb-1.5">شروع از</p>
+                      )}
                       <p className={`font-black text-white leading-none ${showHeader ? "text-3xl md:text-4xl" : "text-2xl md:text-[26px]"}`}>
-                        {formatMoney(plan.monthlyPrice)}
+                        {getPlanPriceLabel(plan)}
                       </p>
-                      <p className="text-xs mt-1.5 text-white/65">پرداخت ماهانه</p>
+                      {!plan.comingSoon && (
+                        <p className="text-xs mt-1.5 text-white/65">پرداخت ماهانه</p>
+                      )}
                     </div>
 
                     <ul className={`${showHeader ? "space-y-2 text-sm min-h-[194px]" : "space-y-1.5 text-[12px] min-h-[170px]"} text-white/85 flex-1`}>
@@ -347,14 +368,19 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
                       <Button
                         type="button"
                         onClick={() => openConfirm(plan)}
-                        disabled={isLoggedIn && pendingPlanId === plan.id}
-                        className={`w-full cursor-pointer ${showHeader ? "rounded-3xl h-12 text-base" : "rounded-2xl h-10 text-sm"} ${theme.button}`}
+                        disabled={
+                          plan.comingSoon ||
+                          (isLoggedIn && pendingPlanId === plan.id)
+                        }
+                        className={`w-full ${plan.comingSoon ? "cursor-not-allowed opacity-75 bg-white/10 hover:bg-white/10 text-white/70 border border-white/15" : `cursor-pointer ${theme.button}`} ${showHeader ? "rounded-3xl h-12 text-base" : "rounded-2xl h-10 text-sm"}`}
                       >
-                        {!isLoggedIn
-                          ? "ورود به اکانت"
-                          : pendingPlanId === plan.id
-                            ? "در حال انتقال..."
-                            : plan.ctaText}
+                        {plan.comingSoon
+                          ? "بزودی"
+                          : !isLoggedIn
+                            ? "ورود به اکانت"
+                            : pendingPlanId === plan.id
+                              ? "در حال انتقال..."
+                              : plan.ctaText}
                       </Button>
                     </div>
                   </div>
@@ -513,11 +539,15 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
                           </div>
 
                           <div className={`rounded-2xl p-3 border ${theme.priceBox}`}>
-                            <p className="text-xs text-white/60 mb-1.5">شروع از</p>
+                            {!plan.comingSoon && (
+                              <p className="text-xs text-white/60 mb-1.5">شروع از</p>
+                            )}
                             <p className="font-black text-white leading-none text-2xl md:text-[26px]">
-                              {formatMoney(plan.monthlyPrice)}
+                              {getPlanPriceLabel(plan)}
                             </p>
-                            <p className="text-xs mt-1.5 text-white/65">پرداخت ماهانه</p>
+                            {!plan.comingSoon && (
+                              <p className="text-xs mt-1.5 text-white/65">پرداخت ماهانه</p>
+                            )}
                           </div>
 
                           <ul className="space-y-1.5 text-[12px] text-white/85 flex-1 min-h-[170px]">
@@ -547,14 +577,19 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
                             <Button
                               type="button"
                               onClick={() => openConfirm(plan)}
-                              disabled={isLoggedIn && pendingPlanId === plan.id}
-                              className={`w-full cursor-pointer rounded-2xl h-10 text-sm ${theme.button}`}
+                              disabled={
+                                plan.comingSoon ||
+                                (isLoggedIn && pendingPlanId === plan.id)
+                              }
+                              className={`w-full ${plan.comingSoon ? "cursor-not-allowed opacity-75 bg-white/10 hover:bg-white/10 text-white/70 border border-white/15" : `cursor-pointer ${theme.button}`} rounded-2xl h-10 text-sm`}
                             >
-                              {!isLoggedIn
-                                ? "ورود به اکانت"
-                                : pendingPlanId === plan.id
-                                  ? "در حال انتقال..."
-                                  : plan.ctaText}
+                              {plan.comingSoon
+                                ? "بزودی"
+                                : !isLoggedIn
+                                  ? "ورود به اکانت"
+                                  : pendingPlanId === plan.id
+                                    ? "در حال انتقال..."
+                                    : plan.ctaText}
                             </Button>
                           </div>
                         </div>
