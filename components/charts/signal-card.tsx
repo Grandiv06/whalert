@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { resolveSignalImage } from "@/lib/signal-image";
 import { FileText } from "lucide-react";
 import { SignalManagementButton } from "@/components/signal/signal-management-button";
+import { getTradeDirectionLabel, isBuyDirection } from "@/lib/trade-direction-label";
 
 export interface SignalCardProps {
   id?: number;
@@ -90,10 +91,10 @@ export function SignalCard({
               <span
                 className={cn(
                   "mr-1 font-bold",
-                  direction === "BUY" ? "text-green-500" : "text-red-500",
+                  isBuyDirection(direction) ? "text-green-500" : "text-red-500",
                 )}
               >
-                {direction}
+                {getTradeDirectionLabel(direction)}
               </span>
             </p>
             <p className="text-xs font-medium text-white/80">

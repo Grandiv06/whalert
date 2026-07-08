@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +11,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSignalManagementMessages } from "@/hooks/use-signal-management-unread";
 import { markSignalManagementMessagesAsRead } from "@/lib/signal-management-read-state";
+import { setSignalManagementDialogOpen } from "@/lib/signal-management-polling-state";
 import { normalizePersianText } from "@/lib/utils";
 import { MessageSquare } from "lucide-react";
 
@@ -63,14 +64,34 @@ export function SignalManagementMessagesDialog({
     data: messages = [],
     isLoading,
     isError,
-    isFetching,
   } = useSignalManagementMessages(tradingSignalId, {
     enabled: open && !!tradingSignalId,
-    refetchInterval: open ? 15000 : false,
+    refetchInterval: false,
   });
+
+  const markedSignalIdRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!open || !tradingSignalId) {
+      if (tradingSignalId) {
+        setSignalManagementDialogOpen(tradingSignalId, false);
+      }
+      markedSignalIdRef.current = null;
+      return;
+    }
+
+    setSignalManagementDialogOpen(tradingSignalId, true);
+    return () => {
+      setSignalManagementDialogOpen(tradingSignalId, false);
+      markedSignalIdRef.current = null;
+    };
+  }, [open, tradingSignalId]);
 
   useEffect(() => {
     if (!open || !tradingSignalId || isLoading || isError) return;
+    if (markedSignalIdRef.current === tradingSignalId) return;
+
+    markedSignalIdRef.current = tradingSignalId;
     markSignalManagementMessagesAsRead(tradingSignalId, messages);
   }, [open, tradingSignalId, isLoading, isError, messages]);
 
@@ -98,7 +119,6 @@ export function SignalManagementMessagesDialog({
               {!isLoading && !isError && messages.length > 0
                 ? ` (${messages.length} پیام)`
                 : null}
-              {isFetching && !isLoading ? " در حال بروزرسانی..." : null}
             </DialogDescription>
           </DialogHeader>
         </div>

@@ -3,6 +3,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SignalManagementButton } from "@/components/signal/signal-management-button";
+import { getTradeDirectionLabel, isBuyDirection } from "@/lib/trade-direction-label";
 
 export interface PositionCardProps {
   id?: number;
@@ -77,8 +78,8 @@ export function PositionCard({
           <div className="flex justify-between items-center">
             <p className="text-xs font-medium text-white/80">
               جهت :
-              <span className={direction === "BUY" ? "mr-1 font-bold text-green-500" : "mr-1 font-bold text-red-500"}>
-                {direction}
+              <span className={isBuyDirection(direction) ? "mr-1 font-bold text-green-500" : "mr-1 font-bold text-red-500"}>
+                {getTradeDirectionLabel(direction)}
               </span>
             </p>
             <p className="text-xs font-medium text-white/80">
