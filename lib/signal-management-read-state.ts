@@ -40,17 +40,29 @@ export function getLatestSignalManagementMessageMeta(
   return { latestId, count: messages.length };
 }
 
+export function getUnreadSignalManagementMessageCount(
+  tradingSignalId: number,
+  messages: SignalManagementMessageDto[],
+): number {
+  if (!messages.length) return 0;
+
+  const stored = readStorage()[String(tradingSignalId)];
+  if (!stored) return messages.length;
+
+  const unreadById = messages.filter(
+    (message) => typeof message.id === "number" && message.id > stored.lastSeenMessageId,
+  ).length;
+  if (unreadById > 0) return unreadById;
+
+  const { count } = getLatestSignalManagementMessageMeta(messages);
+  return Math.max(0, count - stored.messageCount);
+}
+
 export function hasUnreadSignalManagementMessages(
   tradingSignalId: number,
   messages: SignalManagementMessageDto[],
 ): boolean {
-  if (!messages.length) return false;
-
-  const { latestId, count } = getLatestSignalManagementMessageMeta(messages);
-  const stored = readStorage()[String(tradingSignalId)];
-  if (!stored) return true;
-
-  return count > stored.messageCount || latestId > stored.lastSeenMessageId;
+  return getUnreadSignalManagementMessageCount(tradingSignalId, messages) > 0;
 }
 
 export function markSignalManagementMessagesAsRead(

@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { PositionCard } from "@/components/charts/position-card";
 import { SignalManagementMessagesDialog } from "@/components/signal/signal-management-messages-dialog";
+import { SignalManagementMessageAlerts } from "@/components/signal/signal-management-message-alerts";
 import { SignalManagementButton } from "@/components/signal/signal-management-button";
 import {
   SearchIcon,
@@ -46,6 +47,7 @@ import {
 } from "@/lib/api/client";
 import { resolveSignalStatusMeta } from "@/lib/signal-status";
 import { getOutcomeStatusMeta } from "@/lib/signal-outcome-status";
+import { getTradeDirectionLabel, isBuyDirection } from "@/lib/trade-direction-label";
 import type { OfferedPositionsDto } from "@/lib/api/client";
 import type { ProviderSignalDetailDto } from "@/lib/api/client";
 import type { PagedResultDtoOfOfferedPositionsDto } from "@/lib/api/client";
@@ -301,6 +303,22 @@ export function SuggestedContent() {
   const totalPages = Math.ceil(totalItems / pageSize) || 0;
   const paginatedData = (data?.items ?? []) as OfferedPositionsDto[];
   const startIndex = (currentPage - 1) * pageSize;
+
+  const managementAlertSignals = useMemo(
+    () =>
+      paginatedData
+        .filter(
+          (item) =>
+            typeof item.tradingSignalId === "number" && item.tradingSignalId > 0,
+        )
+        .map((item) => ({
+          tradingSignalId: item.tradingSignalId!,
+          title: normalizePersianText(
+            item.symbols?.join(", ") || item.displayName || "سیگنال",
+          ),
+        })),
+    [paginatedData],
+  );
 
   const signalIds = useMemo(
     () =>
@@ -619,12 +637,12 @@ export function SuggestedContent() {
                             <TableCell className="text-center h-[72px] px-6 py-8">
                               <span
                                 className={
-                                  position.direction === "BUY"
+                                  isBuyDirection(position.direction)
                                     ? "text-green-600 dark:text-green-400 font-semibold"
                                     : "text-red-600 dark:text-red-400 font-semibold"
                                 }
                               >
-                                {position.direction}
+                                {getTradeDirectionLabel(position.direction)}
                               </span>
                             </TableCell>
                             <TableCell className="text-center h-[72px] px-6 py-8">
@@ -799,6 +817,11 @@ export function SuggestedContent() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <SignalManagementMessageAlerts
+        signals={managementAlertSignals}
+        onView={openSignalManagement}
+      />
 
       <SignalManagementMessagesDialog
         open={managementSignal !== null}

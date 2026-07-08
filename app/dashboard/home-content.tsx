@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import {
   Table,
   TableBody,
@@ -19,6 +19,7 @@ import { FollowedProposalsDashboard } from "@/components/charts/followed-proposa
 import { SignalCard } from "@/components/charts/signal-card";
 import { SignalDetailDialog } from "@/components/signal/signal-detail-dialog";
 import { SignalManagementMessagesDialog } from "@/components/signal/signal-management-messages-dialog";
+import { SignalManagementMessageAlerts } from "@/components/signal/signal-management-message-alerts";
 import { SignalManagementButton } from "@/components/signal/signal-management-button";
 import {
   Dialog,
@@ -40,6 +41,7 @@ import type { DashboardPageInputDto } from "@/lib/api/client";
 import { FollowedOfferStatusTimeFilter } from "@/lib/api/client";
 import { getSignalStatusMeta } from "@/lib/signal-status";
 import { getOutcomeStatusMeta } from "@/lib/signal-outcome-status";
+import { getTradeDirectionLabel, isBuyDirection } from "@/lib/trade-direction-label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { SignalCardProps } from "@/components/charts/signal-card";
@@ -243,6 +245,20 @@ export function HomeContent() {
   const totalPages = Math.ceil(totalCount / pageSize) || 0;
   const startIndex = (currentPage - 1) * pageSize;
 
+  const managementAlertSignals = useMemo(
+    () =>
+      items
+        .filter(
+          (item) =>
+            typeof item.tradingSignalId === "number" && item.tradingSignalId > 0,
+        )
+        .map((item) => ({
+          tradingSignalId: item.tradingSignalId!,
+          title: normalizePersianText(item.symbol || item.displayName || "سیگنال"),
+        })),
+    [items],
+  );
+
   return (
     <div className="p-1 md:p-6 w-full max-w-full overflow-x-hidden">
       <div className="space-y-4 md:space-y-6">
@@ -424,12 +440,12 @@ export function HomeContent() {
                           <TableCell className="text-center h-[72px] px-6 py-8">
                             <span
                               className={
-                                signal.side === SignalSide._1
+                                isBuyDirection(signal.side)
                                   ? "text-green-600 dark:text-green-400 font-semibold"
                                   : "text-red-600 dark:text-red-400 font-semibold"
                               }
                             >
-                              {signal.side === SignalSide._1 ? "BUY" : "SELL"}
+                              {getTradeDirectionLabel(signal.side)}
                             </span>
                           </TableCell>
                           <TableCell className="text-center h-[72px] px-6 py-8">
@@ -616,6 +632,11 @@ export function HomeContent() {
               </DialogHeader>
             </DialogContent>
           </Dialog>
+
+          <SignalManagementMessageAlerts
+            signals={managementAlertSignals}
+            onView={openSignalManagement}
+          />
 
           <SignalManagementMessagesDialog
             open={managementSignal !== null}

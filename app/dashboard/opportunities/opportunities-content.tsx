@@ -79,8 +79,10 @@ import {
 import { ProfileService } from "@/lib/api/client";
 import { getSignalStatusMeta } from "@/lib/signal-status";
 import { getOutcomeStatusMeta } from "@/lib/signal-outcome-status";
+import { getTradeDirectionLabel, isBuyDirection } from "@/lib/trade-direction-label";
 import { SignalDetailDialog } from "@/components/signal/signal-detail-dialog";
 import { SignalManagementMessagesDialog } from "@/components/signal/signal-management-messages-dialog";
+import { SignalManagementMessageAlerts } from "@/components/signal/signal-management-message-alerts";
 import { SignalManagementButton } from "@/components/signal/signal-management-button";
 import {
   Tooltip,
@@ -686,6 +688,20 @@ export function OpportunitiesContent() {
   const totalPages = Math.ceil(totalCount / pageSize) || 0;
   const startIndex = (currentPage - 1) * pageSize;
 
+  const managementAlertSignals = useMemo(
+    () =>
+      items
+        .filter(
+          (item) =>
+            typeof item.tradingSignalId === "number" && item.tradingSignalId > 0,
+        )
+        .map((item) => ({
+          tradingSignalId: item.tradingSignalId!,
+          title: normalizePersianText(item.symbol || item.displayName || "سیگنال"),
+        })),
+    [items],
+  );
+
   const mapPosition = (position: ShowPositionsDto, index: number) => {
     const positionWithTakeProfits = position as ShowPositionsDto & {
       takeProfits?: number[] | null;
@@ -1028,12 +1044,12 @@ export function OpportunitiesContent() {
                             جهت :
                             <span
                               className={`mr-1 font-bold ${
-                                pos.direction === "BUY"
+                                isBuyDirection(pos.direction)
                                   ? "text-green-500"
                                   : "text-red-500"
                               }`}
                             >
-                              {pos.direction}
+                              {getTradeDirectionLabel(pos.direction)}
                             </span>
                           </p>
                           <p className="text-xs font-medium text-white/80">
@@ -1278,12 +1294,12 @@ export function OpportunitiesContent() {
                             <TableCell className="text-center h-[72px] px-6 py-8">
                               <span
                                 className={
-                                  pos.direction === "BUY"
+                                  isBuyDirection(pos.direction)
                                     ? "text-green-600 dark:text-green-400 font-semibold"
                                     : "text-red-600 dark:text-red-400 font-semibold"
                                 }
                               >
-                                {pos.direction}
+                                {getTradeDirectionLabel(pos.direction)}
                               </span>
                             </TableCell>
                             <TableCell className="text-center h-[72px] px-6 py-8">
@@ -1480,6 +1496,11 @@ export function OpportunitiesContent() {
         tradingSignalId={signalDetailModal?.tradingSignalId}
         title={signalDetailModal?.title}
         description={signalDetailModal?.description}
+      />
+
+      <SignalManagementMessageAlerts
+        signals={managementAlertSignals}
+        onView={openSignalManagement}
       />
 
       <SignalManagementMessagesDialog
