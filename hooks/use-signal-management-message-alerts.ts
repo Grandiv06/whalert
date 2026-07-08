@@ -88,6 +88,8 @@ export function useSignalManagementMessageAlerts(
   );
 
   useEffect(() => {
+    const pendingToasts: SignalManagementAlertToast[] = [];
+
     for (const { tradingSignalId, title, messages } of watchedMessages) {
       if (!messages) continue;
 
@@ -105,23 +107,33 @@ export function useSignalManagementMessageAlerts(
       const previousCount = prevCountsRef.current[tradingSignalId] ?? 0;
       if (unreadCount > previousCount) {
         const newCount = unreadCount - previousCount;
-        setToasts((current) =>
-          [
-            ...current.filter((toast) => toast.tradingSignalId !== tradingSignalId),
-            {
-              id: Date.now() + tradingSignalId,
-              tradingSignalId,
-              title,
-              newCount,
-              createdAt: Date.now(),
-              durationMs: TOAST_DURATION_MS,
-            },
-          ].slice(-3),
-        );
+        pendingToasts.push({
+          id: Date.now() + tradingSignalId,
+          tradingSignalId,
+          title,
+          newCount,
+          createdAt: Date.now(),
+          durationMs: TOAST_DURATION_MS,
+        });
       }
 
       prevCountsRef.current[tradingSignalId] = unreadCount;
     }
+
+    if (pendingToasts.length === 0) return;
+
+    queueMicrotask(() => {
+      setToasts((current) => {
+        let next = current;
+        for (const toast of pendingToasts) {
+          next = [
+            ...next.filter((item) => item.tradingSignalId !== toast.tradingSignalId),
+            toast,
+          ];
+        }
+        return next.slice(-3);
+      });
+    });
   }, [watchedMessages]);
 
   useEffect(() => {
