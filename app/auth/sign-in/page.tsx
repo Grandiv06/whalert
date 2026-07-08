@@ -396,7 +396,7 @@ export default function SignInPage() {
             ) : null}
 
             {currentStep === 2 ? (
-              <div className="space-y-5 pt-2 pb-2">
+              <div className="space-y-5 pt-2 pb-0">
                 <div className="w-full md:w-9/12 py-2 sm:py-3">
                   <OtpCodeInput
                     value={otpDigits}
@@ -414,7 +414,9 @@ export default function SignInPage() {
                     </div>
                   ) : null}
                 </div>
-                <div className="flex w-full md:w-9/12 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div
+                  className={`flex ${fieldWidthClass} flex-col gap-2 sm:flex-row sm:items-center sm:justify-between`}
+                >
                   <button
                     type="button"
                     disabled={isSendingOtp || isVerifyingOtp}

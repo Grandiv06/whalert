@@ -11,7 +11,12 @@ export function LandingHero() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    setIsLoggedIn(Boolean(getAccessToken()));
+    // Avoid direct state update inside effect body (eslint react-hooks rule).
+    const timeoutId = setTimeout(() => {
+      setIsLoggedIn(Boolean(getAccessToken()));
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
   }, []);
 
   return (

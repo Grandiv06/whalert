@@ -33,27 +33,36 @@ export function normalizePersianText(str: string): string {
 }
 
 /** Deeply merge two objects. */
-export function deepMerge<T extends object>(target: T, source: any): T {
-  if (!source) return target;
-  const output = { ...target };
-  if (isObject(target) && isObject(source)) {
-    const sourceObj = source as Record<string, any>;
-    Object.keys(sourceObj).forEach((key) => {
-      if (sourceObj[key] === undefined) return;
-      if (isObject(sourceObj[key])) {
-        if (!(key in target)) {
-          Object.assign(output, { [key]: sourceObj[key] });
-        } else {
-          (output as any)[key] = deepMerge((target as any)[key], sourceObj[key]);
-        }
+export function deepMerge<T extends object>(target: T, source: unknown): T {
+  if (source == null) return target;
+  if (!isObject(source)) return target;
+
+  // `target` یک آبجکت جنریکه؛ spread نتیجه از نظر TS الزاماً index signature نداره.
+  // برای مپ‌کردن کلیدها، نوع خروجی رو به صورت امن cast می‌کنیم.
+  const output = { ...target } as Record<string, unknown>;
+
+  const sourceObj = source;
+  Object.keys(sourceObj).forEach((key) => {
+    const sourceValue = sourceObj[key];
+    if (sourceValue === undefined) return;
+
+    if (isObject(sourceValue)) {
+      const targetValue = (target as Record<string, unknown>)[key];
+
+      if (targetValue !== undefined && isObject(targetValue)) {
+        output[key] = deepMerge(targetValue as object, sourceValue);
       } else {
-        Object.assign(output, { [key]: sourceObj[key] });
+        output[key] = sourceValue;
       }
-    });
-  }
-  return output;
+      return;
+    }
+
+    output[key] = sourceValue;
+  });
+
+  return output as T;
 }
 
-function isObject(item: any): item is object {
-  return item && typeof item === "object" && !Array.isArray(item);
+function isObject(item: unknown): item is Record<string, unknown> {
+  return item != null && typeof item === "object" && !Array.isArray(item);
 }

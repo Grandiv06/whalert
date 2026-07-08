@@ -1,6 +1,6 @@
 Whalert Frontend — Static Build
 ================================
-Build date: 2026-07-05
+Build date: 2026-07-08
 Next.js static export (output: export)
 
 محتوای این آرشیو
