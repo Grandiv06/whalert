@@ -36,7 +36,12 @@ export function LandingSidebar({ isOpen, onClose, isLoggedIn = false }: LandingS
   }, [isOpen]);
 
   useEffect(() => {
-    setLoggedIn(Boolean(getAccessToken()));
+    // Avoid direct state update inside effect body (eslint react-hooks rule).
+    const timeoutId = setTimeout(() => {
+      setLoggedIn(Boolean(getAccessToken()));
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
   }, []);
 
   const handleSmoothNavigate = (

@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { SubscriptionPurchaseService, type VerifySubscriptionPaymentOutput } from "@/lib/api/client";
 import { toPersianDigits } from "@/lib/utils";
 
-type AbpWrapper<T> = { result?: T; success?: boolean; error?: any };
+type AbpWrapper<T> = { result?: T; success?: boolean; error?: unknown };
 
 function unwrapAbp<T>(res: unknown): T | null {
   const w = res as AbpWrapper<T>;
