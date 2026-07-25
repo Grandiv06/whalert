@@ -13,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Check, Sparkles } from "lucide-react";
+import { Check, Sparkles, Crown, ArrowLeft } from "lucide-react";
 import { toPersianDigits } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -26,6 +26,11 @@ import {
   type SubscriptionPlanCatalogItemDto,
 } from "@/lib/api/client";
 import { getAccessToken } from "@/lib/auth-session";
+import {
+  getDurationLabel,
+  getPaymentPeriodLabel,
+  isOnsCatalogPlan,
+} from "@/lib/subscription-plan-duration";
 
 type GoldPlan = {
   id: number;
@@ -37,6 +42,11 @@ type GoldPlan = {
   ctaText: string;
   isBundle?: boolean;
   comingSoon?: boolean;
+  durationInDays?: number | null;
+  marketFocus?: number | null;
+  isOns?: boolean;
+  variants?: GoldPlan[];
+  hasDurationChoices?: boolean;
 };
 
 type AbpWrapper<T> = {
@@ -56,6 +66,18 @@ function formatMoney(value?: number | null): string {
   return `${toPersianDigits(displayValue.toLocaleString("fa-IR"))} تومان`;
 }
 
+function formatMoneyAmount(value?: number | null): string {
+  if (value === null || value === undefined) return "رایگان";
+  const displayValue = Math.round(value / 10);
+  return toPersianDigits(displayValue.toLocaleString("fa-IR"));
+}
+
+function getDailyPriceLabel(price?: number | null, days?: number | null): string | null {
+  if (!price || !days || days <= 0) return null;
+  const daily = Math.round(price / 10 / days);
+  return `${toPersianDigits(daily.toLocaleString("fa-IR"))} تومان / روز`;
+}
+
 function isComingSoonPlan(plan: SubscriptionPlanCatalogItemDto): boolean {
   const displayName = (plan.displayName ?? plan.name ?? "").trim();
   const isBundle = plan.isHighlighted === true;
@@ -68,6 +90,68 @@ function getPlanPriceLabel(plan: GoldPlan): string {
   return plan.comingSoon ? "بزودی" : formatMoney(plan.monthlyPrice);
 }
 
+function mapCatalogPlan(plan: SubscriptionPlanCatalogItemDto): GoldPlan {
+  return {
+    id: plan.id ?? 0,
+    displayName: plan.displayName ?? plan.name ?? "پلن اشتراک",
+    subtitle:
+      plan.subtitle ??
+      plan.summaryText ??
+      plan.description ??
+      "جزئیات پلن در دسترس است.",
+    monthlyPrice: plan.price ?? 0,
+    features:
+      plan.features
+        ?.filter((f) => f.isEnabled !== false)
+        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+        .map((f) => f.value)
+        .filter((v): v is string => Boolean(v && v.trim().length > 0)) ?? [],
+    footerText:
+      plan.summaryText ??
+      plan.description ??
+      "برای مشاهده اطلاعات کامل این پلن اقدام کنید.",
+    ctaText: plan.callToActionText ?? "مشاهده و فعال‌سازی پلن",
+    isBundle: plan.isHighlighted === true,
+    comingSoon: isComingSoonPlan(plan),
+    durationInDays: plan.durationInDays,
+    marketFocus: plan.marketFocus,
+    isOns: isOnsCatalogPlan(plan),
+  };
+}
+
+function buildDisplayPlans(plans: GoldPlan[]): GoldPlan[] {
+  const onsVariants = plans
+    .filter((plan) => plan.isOns && !plan.comingSoon)
+    .sort(
+      (a, b) => (b.durationInDays ?? 0) - (a.durationInDays ?? 0),
+    );
+  const otherPlans = plans.filter((plan) => !(plan.isOns && !plan.comingSoon));
+
+  if (onsVariants.length <= 1) {
+    return plans;
+  }
+
+  const preferred =
+    onsVariants.find((plan) => plan.durationInDays === 30) ?? onsVariants[0];
+  const lowestPrice = Math.min(
+    ...onsVariants.map((plan) => plan.monthlyPrice),
+  );
+
+  const groupedOns: GoldPlan = {
+    ...preferred,
+    id: preferred.id,
+    displayName: "اشتراک انس جهانی",
+    monthlyPrice: lowestPrice,
+    variants: onsVariants,
+    hasDurationChoices: true,
+    ctaText: preferred.ctaText.includes("انس")
+      ? preferred.ctaText
+      : "فعال‌سازی اشتراک انس",
+  };
+
+  return [groupedOns, ...otherPlans];
+}
+
 interface PlansSectionProps {
   showHeader?: boolean;
   onPurchaseSuccess?: () => void;
@@ -77,6 +161,9 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
   const router = useRouter();
   const [pendingPlanId, setPendingPlanId] = useState<number | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<GoldPlan | null>(null);
+  const [durationGroup, setDurationGroup] = useState<GoldPlan | null>(null);
+  const [durationOpen, setDurationOpen] = useState(false);
+  const [selectedDurationId, setSelectedDurationId] = useState<number | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -102,29 +189,10 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
       ? normalizedPlansResponse.result
       : [];
 
-  const plans: GoldPlan[] = plansFromApi.map((plan) => ({
-    id: plan.id ?? 0,
-    displayName: plan.displayName ?? plan.name ?? "پلن اشتراک",
-    subtitle:
-      plan.subtitle ??
-      plan.summaryText ??
-      plan.description ??
-      "جزئیات پلن در دسترس است.",
-    monthlyPrice: plan.price ?? 0,
-    features:
-      plan.features
-        ?.filter((f) => f.isEnabled !== false)
-        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-        .map((f) => f.value)
-        .filter((v): v is string => Boolean(v && v.trim().length > 0)) ?? [],
-    footerText:
-      plan.summaryText ??
-      plan.description ??
-      "برای مشاهده اطلاعات کامل این پلن اقدام کنید.",
-    ctaText: plan.callToActionText ?? "مشاهده و فعال‌سازی پلن",
-    isBundle: plan.isHighlighted === true,
-    comingSoon: isComingSoonPlan(plan),
-  }));
+  const catalogPlans = plansFromApi.map(mapCatalogPlan);
+  const plans = buildDisplayPlans(catalogPlans);
+  const allPurchaseablePlans = catalogPlans.filter((plan) => !plan.comingSoon);
+
   const bundlePlanIndex = plans.findIndex((plan) => plan.isBundle);
   const desktopPlans =
     bundlePlanIndex > -1 && plans.length >= 3
@@ -141,8 +209,8 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
 
   const handlePurchase = async (planId: number) => {
     if (!planId) return;
-    const plan = plans.find((item) => item.id === planId);
-    if (plan?.comingSoon) return;
+    const plan = allPurchaseablePlans.find((item) => item.id === planId);
+    if (!plan || plan.comingSoon) return;
     setPendingPlanId(planId);
     try {
       const response = await SubscriptionPurchaseService.apiServicesAppSubscriptionpurchaseRequestpaymentPost({
@@ -174,7 +242,30 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
       router.push(`/auth/sign-in?redirect=${encodeURIComponent(redirectUrl)}`);
       return;
     }
-    setSelectedPlan(plan);
+
+    if (plan.hasDurationChoices && (plan.variants?.length ?? 0) > 1) {
+      const preferred =
+        plan.variants?.find((item) => item.durationInDays === 30) ??
+        plan.variants?.[0] ??
+        null;
+      setDurationGroup(plan);
+      setSelectedDurationId(preferred?.id ?? null);
+      setDurationOpen(true);
+      return;
+    }
+
+    setSelectedPlan(plan.variants?.[0] ?? plan);
+    setConfirmOpen(true);
+  };
+
+  const confirmDurationSelection = () => {
+    const variant =
+      durationGroup?.variants?.find((item) => item.id === selectedDurationId) ??
+      null;
+    if (!variant) return;
+    setDurationOpen(false);
+    setDurationGroup(null);
+    setSelectedPlan(variant);
     setConfirmOpen(true);
   };
 
@@ -332,7 +423,11 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
                         {getPlanPriceLabel(plan)}
                       </p>
                       {!plan.comingSoon && (
-                        <p className="text-xs mt-1.5 text-white/65">پرداخت ماهانه</p>
+                        <p className="text-xs mt-1.5 text-white/65">
+                          {plan.hasDurationChoices
+                            ? "ماهانه · دو هفته‌ای · هفتگی"
+                            : getPaymentPeriodLabel(plan.durationInDays)}
+                        </p>
                       )}
                     </div>
 
@@ -541,7 +636,11 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
                               {getPlanPriceLabel(plan)}
                             </p>
                             {!plan.comingSoon && (
-                              <p className="text-xs mt-1.5 text-white/65">پرداخت ماهانه</p>
+                              <p className="text-xs mt-1.5 text-white/65">
+                                {plan.hasDurationChoices
+                                  ? "ماهانه · دو هفته‌ای · هفتگی"
+                                  : getPaymentPeriodLabel(plan.durationInDays)}
+                              </p>
                             )}
                           </div>
 
@@ -598,6 +697,140 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
         )}
       </div>
 
+      <Dialog
+        open={durationOpen}
+        onOpenChange={(open) => {
+          setDurationOpen(open);
+          if (!open) {
+            setDurationGroup(null);
+            setSelectedDurationId(null);
+          }
+        }}
+      >
+        <DialogContent
+          className="box-border w-[calc(100vw-1.5rem)] max-w-[960px] max-h-[min(92dvh,900px)] gap-0 overflow-x-hidden overflow-y-auto md:overflow-y-hidden border border-[#E8C878]/20 bg-[#07040F] p-0 text-white shadow-[0_40px_120px_-30px_rgba(0,0,0,0.85)]"
+          dir="rtl"
+        >
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(90%_70%_at_100%_0%,rgba(232,200,120,0.16)_0%,transparent_55%),radial-gradient(80%_60%_at_0%_100%,rgba(93,49,160,0.35)_0%,transparent_55%)]" />
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-l from-transparent via-[#E8C878]/70 to-transparent" />
+
+          <div className="relative px-4 pt-5 pb-2.5 md:px-6 md:pt-5 md:pb-3">
+            <DialogHeader className="space-y-2 text-right pe-8 md:space-y-2.5">
+              <div className="inline-flex w-fit items-center gap-1.5 rounded-full border border-[#E8C878]/35 bg-[#E8C878]/10 px-3 py-1 text-[11px] font-semibold tracking-wide text-[#F3D98A]">
+                <Crown className="h-3.5 w-3.5" />
+                تجربه پریمیوم انس
+              </div>
+              <div className="space-y-1.5 md:space-y-2">
+                <DialogTitle className="text-right text-[22px] md:text-[26px] font-black leading-tight tracking-tight text-white break-words">
+                  {durationGroup?.displayName ?? "اشتراک انس جهانی"}
+                </DialogTitle>
+                <DialogDescription className="text-right text-[13px] md:text-[14px] leading-6 md:leading-7 text-white/60 md:max-w-2xl">
+                  مدت دسترسی خود را انتخاب کنید. هر پلن همان سیگنال‌های انس را
+                  با پوشش کامل ارائه می‌دهد.
+                </DialogDescription>
+              </div>
+            </DialogHeader>
+          </div>
+
+          <div className="relative grid w-full min-w-0 grid-cols-1 gap-2.5 px-4 pb-3 md:grid-cols-3 md:gap-3 md:px-6 md:pb-4">
+            {(durationGroup?.variants ?? []).map((variant) => {
+              const isSelected = selectedDurationId === variant.id;
+              const isRecommended = variant.durationInDays === 30;
+              const dailyLabel = getDailyPriceLabel(
+                variant.monthlyPrice,
+                variant.durationInDays,
+              );
+
+              return (
+                <button
+                  key={variant.id}
+                  type="button"
+                  onClick={() => setSelectedDurationId(variant.id)}
+                  className={`group relative w-full max-w-full overflow-hidden rounded-[18px] border text-right transition-[border-color,background-color,box-shadow] duration-300 cursor-pointer ${
+                    isSelected
+                      ? "border-[#E8C878]/65 bg-gradient-to-b from-[#E8C878]/18 via-[#2A1848]/80 to-[#120A22] shadow-[0_0_0_1px_rgba(232,200,120,0.25),0_18px_50px_-24px_rgba(232,200,120,0.55)]"
+                      : "border-white/10 bg-white/[0.03] hover:border-white/25 hover:bg-white/[0.05]"
+                  }`}
+                >
+                  <div className="flex w-full min-w-0 flex-col gap-2.5 p-3.5 md:gap-3 md:p-4">
+                    <div className="flex w-full min-w-0 items-center justify-between gap-2">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <div
+                          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-all duration-300 ${
+                            isSelected
+                              ? "border-[#E8C878] bg-[#E8C878] text-[#1A1205]"
+                              : "border-white/20 bg-transparent text-transparent"
+                          }`}
+                        >
+                          <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                        </div>
+                        <p className="truncate text-[16px] md:text-[18px] font-extrabold text-white">
+                          {getDurationLabel(variant.durationInDays)}
+                        </p>
+                      </div>
+                      {isRecommended ? (
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[#E8C878]/40 bg-[#E8C878]/15 px-2 py-0.5 text-[10px] font-bold text-[#F6E2A4]">
+                          <Sparkles className="h-3 w-3" />
+                          پیشنهاد ویژه
+                        </span>
+                      ) : null}
+                    </div>
+
+                    {variant.durationInDays ? (
+                      <span className="w-fit rounded-md border border-white/10 bg-black/20 px-2 py-0.5 text-[10px] md:text-[11px] text-white/55">
+                        {toPersianDigits(variant.durationInDays)} روز دسترسی
+                      </span>
+                    ) : null}
+
+                    <div
+                      className={`w-full min-w-0 rounded-2xl border px-3 py-2.5 md:px-3.5 md:py-3 transition-colors duration-300 ${
+                        isSelected
+                          ? "border-[#E8C878]/30 bg-[#E8C878]/10"
+                          : "border-white/10 bg-black/20"
+                      }`}
+                    >
+                      <p className="text-[11px] text-white/50 mb-1">مبلغ پرداخت</p>
+                      <div className="flex min-w-0 flex-wrap items-baseline gap-1">
+                        <span className="text-[22px] md:text-[24px] font-black leading-none tracking-tight text-white break-all">
+                          {formatMoneyAmount(variant.monthlyPrice)}
+                        </span>
+                        <span className="text-xs font-semibold text-white/65">
+                          تومان
+                        </span>
+                      </div>
+                      {dailyLabel ? (
+                        <p className="mt-2 text-[11px] text-white/45 break-words">
+                          {dailyLabel}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="relative border-t border-white/10 bg-[#07040F]/95 px-4 py-3 md:px-6 md:py-3.5 backdrop-blur-md">
+            <div className="flex flex-col gap-2 md:flex-row-reverse md:items-center md:justify-between md:gap-4">
+              <Button
+                type="button"
+                onClick={confirmDurationSelection}
+                disabled={!selectedDurationId}
+                className="h-11 md:h-12 w-full md:w-auto md:min-w-[200px] rounded-2xl border-0 bg-gradient-to-l from-[#C9A24A] via-[#E8C878] to-[#F4E0A8] px-5 text-[15px] font-extrabold text-[#1A1205] shadow-[0_12px_40px_-12px_rgba(232,200,120,0.75)] hover:brightness-105 disabled:opacity-50 cursor-pointer"
+              >
+                <span className="inline-flex items-center gap-2">
+                  ادامه خرید
+                  <ArrowLeft className="h-4 w-4" />
+                </span>
+              </Button>
+              <p className="text-[11px] md:text-[12px] leading-6 text-white/45 text-center md:text-right">
+                پس از انتخاب مدت، تایید نهایی خرید نمایش داده می‌شود.
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent className="max-w-md overflow-hidden bg-[radial-gradient(120%_120%_at_100%_0%,rgba(168,127,243,0.28)_0%,rgba(17,5,34,0.95)_45%,rgba(8,2,20,0.98)_100%)] border border-white/20 text-white shadow-[0_24px_90px_rgba(93,49,160,0.45)]">
           <div className="pointer-events-none absolute -top-20 -right-20 h-48 w-48 rounded-full bg-fuchsia-400/20 blur-3xl" />
@@ -618,6 +851,11 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
             <p className="text-xs text-white/60">نام پلن</p>
             <p className="text-lg font-extrabold break-words leading-8">
               {selectedPlan?.displayName ?? "—"}
+            </p>
+            <div className="h-px w-full bg-white/10" />
+            <p className="text-xs text-white/60">مدت اشتراک</p>
+            <p className="text-base font-bold text-white/90">
+              {getDurationLabel(selectedPlan?.durationInDays)}
             </p>
             <div className="h-px w-full bg-white/10" />
             <p className="text-xs text-white/60">قیمت پلن</p>
