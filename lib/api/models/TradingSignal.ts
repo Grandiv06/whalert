@@ -29,12 +29,15 @@ export type TradingSignal = {
     picture?: string | null;
     pictureUrl?: string | null;
     signalStatus?: SignalStatus;
+    activatedAt?: string | null;
     signalVisibility?: SignalVisibility;
     expiresAt?: string;
     outcomeStatus?: SignalOutcomeStatus;
     outcomeSource?: SignalOutcomeSource;
     suggestedOutcomeStatus?: SignalOutcomeStatus;
     suggestedOutcomeDetectedAt?: string | null;
+    suggestedEntryReached?: boolean;
+    suggestedEntryDetectedAt?: string | null;
     outcomeDeclaredByUserId?: number | null;
     outcomeDeclaredAt?: string | null;
     marketId?: number | null;

@@ -29,6 +29,7 @@ export type SubscriptionPlanDetailDto = {
     includesAiBots?: boolean;
     includesHumanAnalyst?: boolean;
     supportsAdvancedFilters?: boolean;
+    includesLiveSessions?: boolean;
     features?: Array<SubscriptionPlanFeatureItemDto> | null;
     faqs?: Array<SubscriptionFaqItemDto> | null;
 };

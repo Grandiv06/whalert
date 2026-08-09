@@ -3,10 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { MarketType } from './MarketType';
-import type { SignalOutcomeSource } from './SignalOutcomeSource';
-import type { SignalOutcomeStatus } from './SignalOutcomeStatus';
 import type { SignalSide } from './SignalSide';
-import type { SignalStatus } from './SignalStatus';
 export type OfferedPositionsDto = {
     tradingSignalId?: number;
     market?: MarketType;
@@ -19,9 +16,5 @@ export type OfferedPositionsDto = {
     tPs?: Array<number> | null;
     pictureUrl?: string | null;
     pictureId?: string | null;
-    signalStatus?: SignalStatus;
-    statusLabel?: string | null;
-    outcomeStatus?: SignalOutcomeStatus;
-    outcomeSource?: SignalOutcomeSource;
 };
 

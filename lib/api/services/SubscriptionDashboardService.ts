@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { MySubscriptionQueueDto } from '../models/MySubscriptionQueueDto';
 import type { SubscriptionPlanCatalogItemDto } from '../models/SubscriptionPlanCatalogItemDto';
 import type { SubscriptionPlanDetailDto } from '../models/SubscriptionPlanDetailDto';
 import type { SubscriptionPurchaseStatusDto } from '../models/SubscriptionPurchaseStatusDto';
@@ -49,6 +50,16 @@ export class SubscriptionDashboardService {
             query: {
                 'paymentId': paymentId,
             },
+        });
+    }
+    /**
+     * @returns MySubscriptionQueueDto Success
+     * @throws ApiError
+     */
+    public static apiServicesAppSubscriptiondashboardGetmysubscriptionqueueGet(): CancelablePromise<MySubscriptionQueueDto> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/services/app/SubscriptionDashboard/GetMySubscriptionQueue',
         });
     }
 }

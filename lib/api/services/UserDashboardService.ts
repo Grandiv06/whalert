@@ -4,6 +4,8 @@
 /* eslint-disable */
 import type { AddMockDataForApiTestInput } from '../models/AddMockDataForApiTestInput';
 import type { AddMockDataForApiTestOutput } from '../models/AddMockDataForApiTestOutput';
+import type { BaleConnectLinkOutput } from '../models/BaleConnectLinkOutput';
+import type { BaleConnectSyncOutput } from '../models/BaleConnectSyncOutput';
 import type { ChartTimePeriodInput } from '../models/ChartTimePeriodInput';
 import type { DashboardPageInputDto } from '../models/DashboardPageInputDto';
 import type { DashboardPageResultDto } from '../models/DashboardPageResultDto';
@@ -16,13 +18,13 @@ import type { FollowedOfferStatusTimeFilter } from '../models/FollowedOfferStatu
 import type { FollowProviderInput } from '../models/FollowProviderInput';
 import type { GetBalanceChangeChartOutput } from '../models/GetBalanceChangeChartOutput';
 import type { GetCurrentAppUserProfilePictureOutput } from '../models/GetCurrentAppUserProfilePictureOutput';
+import type { GetLiveSessionsOutput } from '../models/GetLiveSessionsOutput';
 import type { GetMonthlyProfitLossChartOutput } from '../models/GetMonthlyProfitLossChartOutput';
 import type { GetPerformanceByAssetChartOutput } from '../models/GetPerformanceByAssetChartOutput';
 import type { GetPnLSequenceChartOutput } from '../models/GetPnLSequenceChartOutput';
 import type { GetRewardToRiskChartOutput } from '../models/GetRewardToRiskChartOutput';
 import type { GetSignalManagementMessagesInput } from '../models/GetSignalManagementMessagesInput';
 import type { GetSignalSequenceQualityChartOutput } from '../models/GetSignalSequenceQualityChartOutput';
-import type { SignalManagementMessageDto } from '../models/SignalManagementMessageDto';
 import type { MarketViewInput } from '../models/MarketViewInput';
 import type { OfferedPosiotionsInput } from '../models/OfferedPosiotionsInput';
 import type { PagedResultDtoOfMarketViewDto } from '../models/PagedResultDtoOfMarketViewDto';
@@ -36,6 +38,7 @@ import type { ReferralInput } from '../models/ReferralInput';
 import type { RegisterPositionInput } from '../models/RegisterPositionInput';
 import type { SettingInput } from '../models/SettingInput';
 import type { ShowPositionInputDto } from '../models/ShowPositionInputDto';
+import type { SignalManagementMessageDto } from '../models/SignalManagementMessageDto';
 import type { SignalProviderInfoInput } from '../models/SignalProviderInfoInput';
 import type { SubmitSignalFromUserInputDto } from '../models/SubmitSignalFromUserInputDto';
 import type { TelegramConnectLinkOutput } from '../models/TelegramConnectLinkOutput';
@@ -70,6 +73,26 @@ export class UserDashboardService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/services/app/UserDashboard/GetTelegramConnectLink',
+        });
+    }
+    /**
+     * @returns BaleConnectLinkOutput Success
+     * @throws ApiError
+     */
+    public static apiServicesAppUserdashboardGetbaleconnectlinkGet(): CancelablePromise<BaleConnectLinkOutput> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/services/app/UserDashboard/GetBaleConnectLink',
+        });
+    }
+    /**
+     * @returns BaleConnectSyncOutput Success
+     * @throws ApiError
+     */
+    public static apiServicesAppUserdashboardSyncbaleconnectPost(): CancelablePromise<BaleConnectSyncOutput> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/services/app/UserDashboard/SyncBaleConnect',
         });
     }
     /**
@@ -493,18 +516,13 @@ export class UserDashboardService {
         });
     }
     /**
-     * @param requestBody
-     * @returns SignalManagementMessageDto Success
+     * @returns GetLiveSessionsOutput Success
      * @throws ApiError
      */
-    public static apiServicesAppUserdashboardGetsignalmanagementmessagesPost(
-        requestBody?: GetSignalManagementMessagesInput,
-    ): CancelablePromise<Array<SignalManagementMessageDto>> {
+    public static apiServicesAppUserdashboardGetlivesessionsGet(): CancelablePromise<GetLiveSessionsOutput> {
         return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/services/app/UserDashboard/GetSignalManagementMessages',
-            body: requestBody,
-            mediaType: 'application/json',
+            method: 'GET',
+            url: '/api/services/app/UserDashboard/GetLiveSessions',
         });
     }
     /**
@@ -518,6 +536,21 @@ export class UserDashboardService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/services/app/UserDashboard/AddMockDataForApiTest',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @param requestBody
+     * @returns SignalManagementMessageDto Success
+     * @throws ApiError
+     */
+    public static apiServicesAppUserdashboardGetsignalmanagementmessagesPost(
+        requestBody?: GetSignalManagementMessagesInput,
+    ): CancelablePromise<Array<SignalManagementMessageDto>> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/services/app/UserDashboard/GetSignalManagementMessages',
             body: requestBody,
             mediaType: 'application/json',
         });

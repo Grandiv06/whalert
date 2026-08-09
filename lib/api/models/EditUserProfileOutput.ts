@@ -5,6 +5,7 @@
 export type EditUserProfileOutput = {
     userId?: number;
     telegramId?: string | null;
+    baleId?: string | null;
     userName?: string | null;
     emailAddress?: string | null;
     name?: string | null;

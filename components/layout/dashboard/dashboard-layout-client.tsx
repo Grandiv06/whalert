@@ -60,9 +60,14 @@ export function DashboardLayoutClient({
     return null;
   }
 
+  const isFullBleed = pathname === "/dashboard/live" || pathname === "/dashboard/live/";
+
   return (
     <div
-      className="flex min-h-screen w-full overflow-x-hidden dark-bg-gradient"
+      className={cn(
+        "flex min-h-screen w-full overflow-x-hidden",
+        isFullBleed ? "bg-[#02000b]" : "dark-bg-gradient",
+      )}
       dir="rtl"
       style={{ direction: "rtl" }}
     >
@@ -77,7 +82,10 @@ export function DashboardLayoutClient({
       >
         <DashboardHeader />
         <main
-          className="flex flex-1 flex-col gap-4 p-4 md:p-4 text-right"
+          className={cn(
+            "flex flex-1 flex-col text-right",
+            isFullBleed ? "gap-0 p-0" : "gap-4 p-4 md:p-4",
+          )}
           dir="rtl"
           style={{ direction: "rtl" }}
         >

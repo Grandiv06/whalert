@@ -25,5 +25,6 @@ export type SignalProvider = {
     userId?: number | null;
     userFk?: User;
     providerType?: ProviderType;
+    isHidden?: boolean;
 };
 

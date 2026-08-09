@@ -17,10 +17,10 @@ export type ShowPositionsDto = {
     side?: SignalSide;
     date?: string;
     datePersian?: string | null;
-    signalStatus?: SignalStatus;
     outcomeStatus?: SignalOutcomeStatus;
     outcomeSource?: SignalOutcomeSource;
     outcomeDeclaredAt?: string | null;
+    signalStatus?: SignalStatus;
     canDeclareOutcome?: boolean;
     entryPrice?: number;
     sl?: number;

@@ -23,11 +23,14 @@ export type SignalOutcomeItemDto = {
     outcomeSource?: SignalOutcomeSource;
     suggestedOutcomeStatus?: SignalOutcomeStatus;
     suggestedOutcomeDetectedAt?: string | null;
+    suggestedEntryReached?: boolean;
+    suggestedEntryDetectedAt?: string | null;
     outcomeDeclaredAt?: string | null;
     canConfirmDetectedOutcome?: boolean;
     canDeclareOutcome?: boolean;
     signalStatus?: SignalStatus;
     canCancelPending?: boolean;
+    canConfirmEntryReached?: boolean;
     pictureUrl?: string | null;
     pictureId?: string | null;
 };

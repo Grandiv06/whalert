@@ -26,11 +26,14 @@ export type ProviderSignalDetailDto = {
     outcomeSource?: SignalOutcomeSource;
     suggestedOutcomeStatus?: SignalOutcomeStatus;
     suggestedOutcomeDetectedAt?: string | null;
+    suggestedEntryReached?: boolean;
+    suggestedEntryDetectedAt?: string | null;
     outcomeDeclaredAt?: string | null;
     creationTime?: string;
     datePersian?: string | null;
     takeProfits?: Array<number> | null;
     canCancelPending?: boolean;
+    canConfirmEntryReached?: boolean;
     canConfirmDetectedOutcome?: boolean;
     canDeclareOutcome?: boolean;
 };

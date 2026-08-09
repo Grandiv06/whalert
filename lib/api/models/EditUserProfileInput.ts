@@ -7,6 +7,7 @@ export type EditUserProfileInput = {
     surname: string;
     phoneNumber?: string | null;
     telegramId?: string | null;
+    baleId?: string | null;
     profilePictureId?: string | null;
 };
 
