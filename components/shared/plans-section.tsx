@@ -13,13 +13,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Check, Sparkles, Crown, ArrowLeft } from "lucide-react";
+import { Check, Sparkles, Crown, ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { toPersianDigits } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Pagination } from "swiper/modules";
+import { Pagination, Navigation, Autoplay } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/pagination";
+import "swiper/css/navigation";
 import {
   SubscriptionPurchaseService,
   SubscriptionDashboardService,
@@ -30,6 +31,7 @@ import {
   getDurationLabel,
   getPaymentPeriodLabel,
   isOnsCatalogPlan,
+  isMazanehCatalogPlan,
 } from "@/lib/subscription-plan-duration";
 
 type GoldPlan = {
@@ -45,6 +47,7 @@ type GoldPlan = {
   durationInDays?: number | null;
   marketFocus?: number | null;
   isOns?: boolean;
+  isMazaneh?: boolean;
   variants?: GoldPlan[];
   hasDurationChoices?: boolean;
 };
@@ -79,11 +82,8 @@ function getDailyPriceLabel(price?: number | null, days?: number | null): string
 }
 
 function isComingSoonPlan(plan: SubscriptionPlanCatalogItemDto): boolean {
-  const displayName = (plan.displayName ?? plan.name ?? "").trim();
   const isBundle = plan.isHighlighted === true;
-  const isMazanehPlan = displayName.includes("مظنه");
-
-  return isBundle || isMazanehPlan;
+  return isBundle;
 }
 
 function getPlanPriceLabel(plan: GoldPlan): string {
@@ -116,40 +116,90 @@ function mapCatalogPlan(plan: SubscriptionPlanCatalogItemDto): GoldPlan {
     durationInDays: plan.durationInDays,
     marketFocus: plan.marketFocus,
     isOns: isOnsCatalogPlan(plan),
+    isMazaneh: isMazanehCatalogPlan(plan),
   };
 }
 
 function buildDisplayPlans(plans: GoldPlan[]): GoldPlan[] {
   const onsVariants = plans
     .filter((plan) => plan.isOns && !plan.comingSoon)
-    .sort(
-      (a, b) => (b.durationInDays ?? 0) - (a.durationInDays ?? 0),
-    );
-  const otherPlans = plans.filter((plan) => !(plan.isOns && !plan.comingSoon));
+    .sort((a, b) => (b.durationInDays ?? 0) - (a.durationInDays ?? 0));
+    
+  const baseMazanehVariants = plans
+    .filter((plan) => plan.isMazaneh && !plan.comingSoon && !plan.isBundle)
+    .sort((a, b) => (b.durationInDays ?? 0) - (a.durationInDays ?? 0));
 
-  if (onsVariants.length <= 1) {
-    return plans;
-  }
-
-  const preferred =
-    onsVariants.find((plan) => plan.durationInDays === 30) ?? onsVariants[0];
-  const lowestPrice = Math.min(
-    ...onsVariants.map((plan) => plan.monthlyPrice),
+  const otherPlans = plans.filter(
+    (plan) => 
+      !(plan.isOns && !plan.comingSoon) &&
+      !(plan.isMazaneh && !plan.comingSoon && !plan.isBundle)
   );
 
-  const groupedOns: GoldPlan = {
-    ...preferred,
-    id: preferred.id,
-    displayName: "اشتراک انس جهانی",
-    monthlyPrice: lowestPrice,
-    variants: onsVariants,
-    hasDurationChoices: true,
-    ctaText: preferred.ctaText.includes("انس")
-      ? preferred.ctaText
-      : "فعال‌سازی اشتراک انس",
-  };
+  // Mock missing Mazaneh durations based on the monthly plan
+  const finalMazanehVariants = [...baseMazanehVariants];
+  const monthlyMazaneh = finalMazanehVariants.find((p) => p.durationInDays === 30) || finalMazanehVariants[0];
+  if (monthlyMazaneh) {
+    if (!finalMazanehVariants.some((p) => p.durationInDays === 14)) {
+      finalMazanehVariants.push({
+        ...monthlyMazaneh,
+        id: 999914, // Fake ID
+        displayName: "اشتراک دو هفته‌ای مظنه",
+        durationInDays: 14,
+        monthlyPrice: Math.round(monthlyMazaneh.monthlyPrice / 2),
+      });
+    }
+    if (!finalMazanehVariants.some((p) => p.durationInDays === 7)) {
+      finalMazanehVariants.push({
+        ...monthlyMazaneh,
+        id: 999907, // Fake ID
+        displayName: "اشتراک هفتگی مظنه",
+        durationInDays: 7,
+        monthlyPrice: Math.round(monthlyMazaneh.monthlyPrice / 4),
+      });
+    }
+    finalMazanehVariants.sort((a, b) => (b.durationInDays ?? 0) - (a.durationInDays ?? 0));
+  }
 
-  return [groupedOns, ...otherPlans];
+  const result: GoldPlan[] = [];
+
+  if (onsVariants.length > 0) {
+    if (onsVariants.length === 1) {
+      result.push(onsVariants[0]);
+    } else {
+      const preferred = onsVariants.find((plan) => plan.durationInDays === 30) ?? onsVariants[0];
+      const lowestPrice = Math.min(...onsVariants.map((plan) => plan.monthlyPrice));
+      result.push({
+        ...preferred,
+        id: preferred.id,
+        displayName: "اشتراک انس جهانی",
+        monthlyPrice: lowestPrice,
+        variants: onsVariants,
+        hasDurationChoices: true,
+        ctaText: preferred.ctaText.includes("انس") ? preferred.ctaText : "فعال‌سازی اشتراک انس",
+      });
+    }
+  }
+
+  if (finalMazanehVariants.length > 0) {
+    if (finalMazanehVariants.length === 1 && !finalMazanehVariants[0].hasDurationChoices && !baseMazanehVariants.length) {
+       result.push(finalMazanehVariants[0]);
+    } else {
+       const preferred = finalMazanehVariants.find((plan) => plan.durationInDays === 30) ?? finalMazanehVariants[0];
+       const lowestPrice = Math.min(...finalMazanehVariants.map((plan) => plan.monthlyPrice));
+       result.push({
+         ...preferred,
+         id: preferred.id,
+         displayName: "اشتراک مظنه",
+         monthlyPrice: lowestPrice,
+         variants: finalMazanehVariants,
+         hasDurationChoices: finalMazanehVariants.length > 1,
+         ctaText: preferred.ctaText.includes("مظنه") ? preferred.ctaText : "فعال‌سازی اشتراک مظنه",
+       });
+    }
+  }
+
+  result.push(...otherPlans);
+  return result;
 }
 
 interface PlansSectionProps {
@@ -295,206 +345,37 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
         </div>
       )}
 
-      {/* Desktop view (md and up) */}
-      <div
-        className={`hidden md:grid md:grid-cols-2 lg:grid-cols-3 ${
-          showHeader ? "gap-6 lg:gap-8 mt-12 px-4 md:px-0" : "gap-4 lg:gap-5 mt-2"
-        } auto-rows-fr`}
-      >
-        {isLoading &&
-          Array.from({ length: 3 }).map((_, index) => (
-            <Card
-              key={`plans-skeleton-desktop-${index}`}
-              className="relative overflow-hidden rounded-4xl border border-white/10 bg-gradient-to-br from-white/[0.08] to-[#02000B]/50 h-full flex flex-col"
-            >
-              <CardContent className={`${showHeader ? "p-5 md:p-6" : "p-4 md:p-4.5"} flex-1 flex flex-col justify-between`}>
-                <div className={`${showHeader ? "space-y-5" : "space-y-3.5"} flex-1 flex flex-col justify-between h-full`}>
-                  <div className="space-y-3">
-                    <Skeleton className="h-8 w-3/4 bg-white/10" />
-                    <Skeleton className="h-5 w-full bg-white/10" />
-                  </div>
-                  <div className={`border border-white/10 ${showHeader ? "rounded-3xl p-4 space-y-2" : "rounded-2xl p-3 space-y-1.5"}`}>
-                    <Skeleton className="h-4 w-16 bg-white/10" />
-                    <Skeleton className="h-10 w-2/3 bg-white/10" />
-                    <Skeleton className="h-4 w-24 bg-white/10" />
-                  </div>
-                  <div className="space-y-2 flex-1">
-                    <Skeleton className="h-5 w-full bg-white/10" />
-                    <Skeleton className="h-5 w-11/12 bg-white/10" />
-                    <Skeleton className="h-5 w-10/12 bg-white/10" />
-                    <Skeleton className="h-5 w-9/12 bg-white/10" />
-                  </div>
-                  <Skeleton className="h-16 w-full bg-white/10" />
-                  <Skeleton className={`${showHeader ? "h-12 rounded-3xl" : "h-10 rounded-2xl"} w-full bg-white/10 mt-auto`} />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-
-        {!isLoading && plans.length === 0 && (
-          <div className="col-span-full rounded-3xl border border-dashed border-white/20 bg-white/[0.02] p-8 text-center text-white/70">
-            در حال حاضر پلن فعالی برای نمایش وجود ندارد.
-          </div>
-        )}
-
-        {!isLoading &&
-          desktopPlans.map((plan, index) => {
-            const isBundle = !!plan.isBundle;
-
-            let theme = {
-              cardBg:
-                "border-white/10 bg-gradient-to-br from-white/[0.08] to-[#02000B]/50 hover:border-white/20",
-              glow: "bg-white/5",
-              priceBox: "border-white/10 bg-white/[0.03]",
-              check: "text-white/60",
-              button: "bg-[#5D31A0] hover:bg-[#6A3D9C] text-white",
-            };
-
-            if (index % 3 === 0) {
-                theme = {
-                  cardBg:
-                    "border-indigo-400/40 bg-gradient-to-br from-indigo-500/15 via-[#3B216A]/25 to-[#02000B]/60 hover:border-indigo-400/60",
-                  glow: "bg-indigo-400/20",
-                  priceBox: "border-indigo-400/30 bg-indigo-400/10",
-                  check: "text-indigo-300",
-                  button:
-                    "bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/25",
-              };
-            } else if (index % 3 === 1) {
-                theme = {
-                  cardBg:
-                    "border-fuchsia-400/40 bg-gradient-to-br from-fuchsia-500/15 via-[#542C85]/25 to-[#02000B]/60 hover:border-fuchsia-400/60",
-                  glow: "bg-fuchsia-400/20",
-                  priceBox: "border-fuchsia-400/30 bg-fuchsia-400/10",
-                  check: "text-fuchsia-300",
-                  button:
-                    "bg-fuchsia-600 hover:bg-fuchsia-500 text-white shadow-lg shadow-fuchsia-600/25",
-              };
-            }
-
-            if (isBundle) {
-                theme = {
-                  cardBg:
-                    "border-amber-300/70 bg-gradient-to-br from-amber-400/30 via-[#5F2E96]/35 to-[#090613]/90 lg:z-10",
-                  glow: "bg-amber-300/25",
-                  priceBox: "border-amber-300/40 bg-amber-400/10",
-                  check: "text-amber-400",
-                  button:
-                    "bg-amber-400 hover:bg-amber-300 text-black font-bold shadow-lg shadow-amber-500/25",
-              };
-            }
-
-            return (
+      {/* Single Unified Responsive Swiper Section */}
+      <div className="w-full overflow-visible relative px-1 mt-4">
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {Array.from({ length: 3 }).map((_, index) => (
               <Card
-                key={plan.id}
-                className={`relative overflow-hidden ${showHeader ? "rounded-4xl border h-[700px]" : "rounded-3xl border h-[700px]"} transition-all duration-300 group ${theme.cardBg} shadow-[0_16px_40px_rgba(7,2,20,0.45)] hover:shadow-[0_20px_52px_rgba(11,4,28,0.55)] flex flex-col`}
+                key={`plans-skeleton-${index}`}
+                className="relative overflow-hidden rounded-4xl border border-white/10 bg-gradient-to-br from-white/[0.08] to-[#02000B]/50 h-[680px] flex flex-col"
               >
-                <div className="absolute inset-0 pointer-events-none">
-                  <div
-                    className={`absolute -top-20 -right-20 w-48 h-48 rounded-full blur-3xl ${theme.glow}`}
-                  />
-                </div>
-
-                {isBundle && (
-                  <div className={`absolute ${showHeader ? "top-3 left-3 px-3 py-1.5" : "top-2.5 left-2.5 px-2.5 py-1"} rounded-3xl text-[11px] border border-amber-200/60 bg-amber-400/25 text-amber-100 inline-flex items-center gap-1 font-semibold backdrop-blur-sm`}>
-                    <Sparkles className="w-3 h-3" />
-                    پیشنهاد ویژه
-                  </div>
-                )}
-
-                <CardContent
-                  className={`${showHeader ? "p-5 md:p-6" : "p-4 md:p-4.5"} ${isBundle ? (showHeader ? "pt-14" : "pt-12") : ""} flex-1 flex flex-col h-full`}
-                >
-                  <div className={`${showHeader ? "space-y-5" : "space-y-3.5"} flex-1 flex flex-col h-full min-h-0`}>
-                    <div>
-                      <h3 className={`font-extrabold text-white leading-8 ${showHeader ? "text-xl" : "text-[17px]"}`}>
-                        {plan.displayName}
-                      </h3>
-                      <p className={`text-white/75 mt-1.5 leading-6 ${showHeader ? "text-sm min-h-[3rem]" : "text-[12px] min-h-[2.5rem]"}`}>
-                        {plan.subtitle}
-                      </p>
+                <CardContent className={`${showHeader ? "p-5 md:p-6" : "p-4 md:p-4.5"} flex-1 flex flex-col justify-between`}>
+                  <div className={`${showHeader ? "space-y-5" : "space-y-3.5"} flex-1 flex flex-col justify-between h-full`}>
+                    <div className="space-y-3">
+                      <Skeleton className="h-8 w-3/4 bg-white/10" />
+                      <Skeleton className="h-5 w-full bg-white/10" />
                     </div>
-
-                    <div className={`${showHeader ? "rounded-3xl p-4" : "rounded-2xl p-3"} border ${theme.priceBox}`}>
-                      {!plan.comingSoon && (
-                        <p className="text-xs text-white/60 mb-1.5">شروع از</p>
-                      )}
-                      <p className={`font-black text-white leading-none ${showHeader ? "text-3xl md:text-4xl" : "text-2xl md:text-[26px]"}`}>
-                        {getPlanPriceLabel(plan)}
-                      </p>
-                      {!plan.comingSoon && (
-                        <p className="text-xs mt-1.5 text-white/65">
-                          {plan.hasDurationChoices
-                            ? "ماهانه · دو هفته‌ای · هفتگی"
-                            : getPaymentPeriodLabel(plan.durationInDays)}
-                        </p>
-                      )}
+                    <div className={`border border-white/10 ${showHeader ? "rounded-3xl p-4 space-y-2" : "rounded-2xl p-3 space-y-1.5"}`}>
+                      <Skeleton className="h-4 w-16 bg-white/10" />
+                      <Skeleton className="h-10 w-2/3 bg-white/10" />
+                      <Skeleton className="h-4 w-24 bg-white/10" />
                     </div>
-
-                    <ul className={`${showHeader ? "space-y-2 text-sm min-h-[194px]" : "space-y-1.5 text-[12px] min-h-[170px]"} text-white/85 flex-1`}>
-                      {plan.features.map((feature) => (
-                        <li
-                          key={feature}
-                          className="inline-flex items-start gap-2 w-full leading-5"
-                        >
-                          <Check
-                            className={`shrink-0 mt-0.5 ${showHeader ? "w-4 h-4" : "w-3.5 h-3.5"} ${theme.check}`}
-                          />
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                      {plan.features.length === 0 && (
-                        <li className="text-white/60 text-sm">
-                          جزئیات ویژگی‌ها به‌زودی اعلام می‌شود.
-                        </li>
-                      )}
-                    </ul>
-
-                    <p className={`text-white/70 leading-5 border-t border-white/10 ${showHeader ? "text-xs md:text-sm pt-3 mt-1 min-h-[64px]" : "text-[11px] pt-2 mt-0.5 min-h-[48px]"}`}>
-                      {plan.footerText}
-                    </p>
-
-                    <div className="mt-auto pt-6">
-                      <Button
-                        type="button"
-                        onClick={() => openConfirm(plan)}
-                        disabled={
-                          plan.comingSoon ||
-                          (isLoggedIn && pendingPlanId === plan.id)
-                        }
-                        className={`w-full ${plan.comingSoon ? "cursor-not-allowed opacity-75 bg-white/10 hover:bg-white/10 text-white/70 border border-white/15" : `cursor-pointer ${theme.button}`} ${showHeader ? "rounded-3xl h-12 text-base" : "rounded-2xl h-10 text-sm"}`}
-                      >
-                        {plan.comingSoon
-                          ? "بزودی"
-                          : !isLoggedIn
-                            ? "ورود به اکانت"
-                            : pendingPlanId === plan.id
-                              ? "در حال انتقال..."
-                              : plan.ctaText}
-                      </Button>
+                    <div className="space-y-2 flex-1">
+                      <Skeleton className="h-5 w-full bg-white/10" />
+                      <Skeleton className="h-5 w-11/12 bg-white/10" />
+                      <Skeleton className="h-5 w-10/12 bg-white/10" />
                     </div>
+                    <Skeleton className="h-16 w-full bg-white/10" />
+                    <Skeleton className={`${showHeader ? "h-12 rounded-3xl" : "h-10 rounded-2xl"} w-full bg-white/10 mt-auto`} />
                   </div>
                 </CardContent>
               </Card>
-            );
-          })}
-      </div>
-
-      {/* Mobile view (under md) using Swiper */}
-      <div className="block md:hidden w-full overflow-visible relative px-1">
-        {isLoading ? (
-          <div className="flex gap-4">
-            <Card className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.08] to-[#02000B]/50 w-full h-96 flex flex-col">
-              <CardContent className="p-4 flex-1 flex flex-col justify-between">
-                <div className="space-y-3.5 flex-1 flex flex-col justify-between h-full">
-                  <div className="space-y-3">
-                    <Skeleton className="h-8 w-3/4 bg-white/10" />
-                    <Skeleton className="h-5 w-full bg-white/10" />
-                  </div>
-                  <Skeleton className="h-16 w-full bg-white/10 mt-auto" />
-                </div>
-              </CardContent>
-            </Card>
+            ))}
           </div>
         ) : plans.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-white/20 bg-white/[0.02] p-8 text-center text-white/70">
@@ -506,19 +387,19 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
               .plans-swiper .swiper-pagination-bullet {
                 background: rgba(255, 255, 255, 0.2) !important;
                 opacity: 1 !important;
-                width: 7px !important;
-                height: 7px !important;
+                width: 8px !important;
+                height: 8px !important;
                 transition: all 0.3s ease !important;
               }
               .plans-swiper .swiper-pagination-bullet-active {
                 background: linear-gradient(90deg, #B57CFF, #8C46FF) !important;
-                width: 22px !important;
+                width: 24px !important;
                 border-radius: 4px !important;
                 box-shadow: 0 0 10px rgba(181, 124, 255, 0.5) !important;
               }
               .plans-swiper .swiper-pagination {
                 position: static !important;
-                margin-top: 10px;
+                margin-top: 24px;
                 line-height: 0;
                 text-align: center;
               }
@@ -532,23 +413,76 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
               .plans-swiper {
                 direction: rtl;
               }
+              .plans-swiper-button-disabled {
+                opacity: 0.35 !important;
+                cursor: not-allowed !important;
+              }
+              @media (min-width: 768px) {
+                .plans-swiper-mask {
+                  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 150px, black calc(100% - 150px), transparent 100%);
+                  mask-image: linear-gradient(to right, transparent 0%, black 150px, black calc(100% - 150px), transparent 100%);
+                }
+              }
             `}} />
+
+            {/* Navigation Arrows for Desktop */}
+            <div className="hidden md:flex items-center justify-end gap-3 mb-6 px-4 md:px-8 relative z-20">
+              <button
+                type="button"
+                className="plans-swiper-prev p-3 rounded-full bg-white/5 border border-white/10 text-white hover:bg-white/15 hover:border-white/25 transition-all cursor-pointer shadow-[0_4px_15px_rgba(0,0,0,0.2)] group backdrop-blur-md"
+                aria-label="Previous Slide"
+              >
+                <ChevronRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
+              </button>
+              <button
+                type="button"
+                className="plans-swiper-next p-3 rounded-full bg-white/5 border border-white/10 text-white hover:bg-white/15 hover:border-white/25 transition-all cursor-pointer shadow-[0_4px_15px_rgba(0,0,0,0.2)] group backdrop-blur-md"
+                aria-label="Next Slide"
+              >
+                <ChevronLeft className="w-5 h-5 group-hover:-translate-x-0.5 transition-transform" />
+              </button>
+            </div>
+
             <Swiper
-              modules={[Pagination]}
-              spaceBetween={14}
+              modules={[Pagination, Navigation, Autoplay]}
+              spaceBetween={16}
               slidesPerView={1.12}
-              centeredSlides={false}
+              autoplay={{
+                delay: 3500,
+                disableOnInteraction: false,
+                pauseOnMouseEnter: true,
+              }}
+              loop={true}
+              navigation={{
+                nextEl: ".plans-swiper-next",
+                prevEl: ".plans-swiper-prev",
+              }}
+              breakpoints={{
+                640: {
+                  slidesPerView: 2.15,
+                  spaceBetween: 20,
+                },
+                1024: {
+                  slidesPerView: 3.15,
+                  spaceBetween: 24,
+                },
+                1280: {
+                  slidesPerView: 3.2,
+                  spaceBetween: 24,
+                },
+              }}
               initialSlide={0}
-              speed={280}
-              onSlideChange={(swiper) => setActiveIndex(swiper.activeIndex)}
+              speed={400}
+              onSlideChange={(swiper) => setActiveIndex(swiper.realIndex)}
               pagination={{ clickable: true }}
-              className="plans-swiper overflow-visible"
+              className="plans-swiper plans-swiper-mask overflow-visible !py-12 !-my-12"
               dir="rtl"
-              style={{ direction: "rtl" }}
+              style={{ 
+                direction: "rtl"
+              }}
             >
-              {mobilePlans.map((plan, index) => {
+              {desktopPlans.map((plan, index) => {
                 const isBundle = !!plan.isBundle;
-                const isActive = activeIndex === index;
 
                 let theme = {
                   cardBg:
@@ -593,46 +527,42 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
                   };
                 }
 
-                const mobileActiveClasses = isActive
-                  ? "border-opacity-100 opacity-100"
-                  : "opacity-80 border-opacity-65";
-
                 return (
                   <SwiperSlide key={plan.id} className="overflow-visible py-2">
                     <Card
-                      className={`relative overflow-hidden rounded-3xl border transition-[opacity,border-color] duration-200 ${theme.cardBg} w-full h-full min-h-[670px] shadow-[0_8px_18px_rgba(7,2,20,0.28)] flex flex-col will-change-transform ${mobileActiveClasses}`}
+                      className={`relative overflow-hidden ${showHeader ? "rounded-4xl border h-[700px]" : "rounded-3xl border h-[680px]"} transition-all duration-300 group ${theme.cardBg} shadow-none md:shadow-[0_16px_40px_rgba(7,2,20,0.45)] hover:md:shadow-[0_20px_52px_rgba(11,4,28,0.55)] flex flex-col w-full`}
                     >
-                      <div className="absolute inset-0 pointer-events-none hidden sm:block">
+                      <div className="absolute inset-0 pointer-events-none">
                         <div
                           className={`absolute -top-20 -right-20 w-48 h-48 rounded-full blur-3xl ${theme.glow}`}
                         />
                       </div>
 
                       {isBundle && (
-                        <div className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-3xl text-[11px] border border-amber-200/60 bg-amber-400/25 text-amber-100 inline-flex items-center gap-1 font-semibold backdrop-blur-sm">
+                        <div className={`absolute ${showHeader ? "top-3 left-3 px-3 py-1.5" : "top-2.5 left-2.5 px-2.5 py-1"} rounded-3xl text-[11px] border border-amber-200/60 bg-amber-400/25 text-amber-100 inline-flex items-center gap-1 font-semibold backdrop-blur-sm`}>
                           <Sparkles className="w-3 h-3" />
                           پیشنهاد ویژه
                         </div>
                       )}
 
                       <CardContent
-                        className={`p-4 md:p-4.5 ${isBundle ? "pt-12" : ""} flex-1 flex flex-col h-full`}
+                        className={`${showHeader ? "p-5 md:p-6" : "p-4 md:p-4.5"} ${isBundle ? (showHeader ? "pt-14" : "pt-12") : ""} flex-1 flex flex-col h-full`}
                       >
-                        <div className="space-y-3.5 flex-1 flex flex-col h-full min-h-0">
+                        <div className={`${showHeader ? "space-y-5" : "space-y-3.5"} flex-1 flex flex-col h-full min-h-0`}>
                           <div>
-                            <h3 className="font-extrabold text-white leading-8 text-[17px]">
+                            <h3 className={`font-extrabold text-white leading-8 ${showHeader ? "text-xl" : "text-[17px]"}`}>
                               {plan.displayName}
                             </h3>
-                            <p className="text-white/75 mt-1.5 leading-6 text-[12px] min-h-[2.5rem]">
+                            <p className={`text-white/75 mt-1.5 leading-6 ${showHeader ? "text-sm min-h-[3rem]" : "text-[12px] min-h-[2.5rem]"}`}>
                               {plan.subtitle}
                             </p>
                           </div>
 
-                          <div className={`rounded-2xl p-3 border ${theme.priceBox}`}>
+                          <div className={`${showHeader ? "rounded-3xl p-4" : "rounded-2xl p-3"} border ${theme.priceBox}`}>
                             {!plan.comingSoon && (
                               <p className="text-xs text-white/60 mb-1.5">شروع از</p>
                             )}
-                            <p className="font-black text-white leading-none text-2xl md:text-[26px]">
+                            <p className={`font-black text-white leading-none ${showHeader ? "text-3xl md:text-4xl" : "text-2xl md:text-[26px]"}`}>
                               {getPlanPriceLabel(plan)}
                             </p>
                             {!plan.comingSoon && (
@@ -644,14 +574,14 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
                             )}
                           </div>
 
-                          <ul className="space-y-1.5 text-[12px] text-white/85 flex-1 min-h-[170px]">
+                          <ul className={`${showHeader ? "space-y-2 text-sm min-h-[194px]" : "space-y-1.5 text-[12px] min-h-[170px]"} text-white/85 flex-1`}>
                             {plan.features.map((feature) => (
                               <li
                                 key={feature}
                                 className="inline-flex items-start gap-2 w-full leading-5"
                               >
                                 <Check
-                                  className={`shrink-0 mt-0.5 w-3.5 h-3.5 ${theme.check}`}
+                                  className={`shrink-0 mt-0.5 ${showHeader ? "w-4 h-4" : "w-3.5 h-3.5"} ${theme.check}`}
                                 />
                                 <span>{feature}</span>
                               </li>
@@ -663,7 +593,7 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
                             )}
                           </ul>
 
-                          <p className="text-white/70 leading-5 border-t border-white/10 text-[11px] pt-2 mt-0.5 min-h-[48px]">
+                          <p className={`text-white/70 leading-5 border-t border-white/10 ${showHeader ? "text-xs md:text-sm pt-3 mt-1 min-h-[64px]" : "text-[11px] pt-2 mt-0.5 min-h-[48px]"}`}>
                             {plan.footerText}
                           </p>
 
@@ -675,7 +605,7 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
                                 plan.comingSoon ||
                                 (isLoggedIn && pendingPlanId === plan.id)
                               }
-                              className={`w-full ${plan.comingSoon ? "cursor-not-allowed opacity-75 bg-white/10 hover:bg-white/10 text-white/70 border border-white/15" : `cursor-pointer ${theme.button}`} rounded-2xl h-10 text-sm`}
+                              className={`w-full ${plan.comingSoon ? "cursor-not-allowed opacity-75 bg-white/10 hover:bg-white/10 text-white/70 border border-white/15" : `cursor-pointer ${theme.button}`} ${showHeader ? "rounded-3xl h-12 text-base" : "rounded-2xl h-10 text-sm"}`}
                             >
                               {plan.comingSoon
                                 ? "بزودی"

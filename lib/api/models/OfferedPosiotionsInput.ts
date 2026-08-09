@@ -13,7 +13,7 @@ export type OfferedPosiotionsInput = {
     symbol?: string | null;
     marketType?: MarketType;
     searchFilter?: string | null;
-    followed?: boolean;
+    followed?: boolean | null;
     signalStatus?: SignalStatus;
     timeFilter?: FollowedOfferStatusTimeFilter;
     status?: Status;

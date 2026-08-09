@@ -29,3 +29,17 @@ export function isOnsCatalogPlan(plan: SubscriptionPlanCatalogItemDto): boolean 
     displayName.includes("انس")
   );
 }
+
+export function isMazanehCatalogPlan(plan: SubscriptionPlanCatalogItemDto): boolean {
+  if (plan.marketFocus === 2) return true;
+
+  const name = (plan.name ?? "").toLowerCase();
+  const displayName = plan.displayName ?? "";
+
+  // The bundle is usually "BundleXauUsdMozaneh", so we exclude bundle via `isBundle` check elsewhere.
+  // But strictly, we can check if it explicitly contains mozaneh or مظنه
+  return (
+    name.includes("mozaneh") ||
+    displayName.includes("مظنه")
+  );
+}

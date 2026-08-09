@@ -373,13 +373,14 @@ export function SuggestedContent() {
       position.tradingSignalId != null
         ? signalDetailsById[position.tradingSignalId]
         : null;
+    const posAny = position as any;
     const statusMeta = resolveSignalStatusMeta({
-      signalStatus: position.signalStatus ?? detail?.signalStatus,
-      statusLabel: position.statusLabel,
+      signalStatus: posAny.signalStatus ?? detail?.signalStatus,
+      statusLabel: posAny.statusLabel,
     });
     const outcomeMeta = getOutcomeStatusMeta(
-      position.outcomeStatus ?? detail?.outcomeStatus,
-      position.outcomeSource ?? detail?.outcomeSource,
+      posAny.outcomeStatus ?? detail?.outcomeStatus,
+      posAny.outcomeSource ?? detail?.outcomeSource,
     );
     const dateObj = position.date ? new Date(position.date) : null;
     const date = dateObj

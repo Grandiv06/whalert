@@ -55,6 +55,7 @@ export type User = {
     signInToken?: string | null;
     googleAuthenticatorKey?: string | null;
     telegramId?: string | null;
+    baleId?: string | null;
     referalCode?: string | null;
     recoveryCode?: string | null;
     mt5ApiToken?: string | null;

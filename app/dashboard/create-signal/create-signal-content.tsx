@@ -93,8 +93,8 @@ const createSignalServices: CreateSignalServices = {
     ),
   submitSignal: createSignalSubmissionService({
     submitJson: (payload) =>
-      SignalProviderService.apiServicesAppSignalproviderSubmitsignalfromuserinputPost(
-        payload,
+      SignalProviderService.apiServicesAppSignalproviderAddnewsignalPost(
+        payload as never,
       ),
     submitMultipart: (payload) =>
       SignalProviderService.apiServicesAppSignalproviderAddnewsignalwithpicturePost(

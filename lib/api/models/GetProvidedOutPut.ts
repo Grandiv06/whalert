@@ -25,9 +25,12 @@ export type GetProvidedOutPut = {
     outcomeSource?: SignalOutcomeSource;
     suggestedOutcomeStatus?: SignalOutcomeStatus;
     suggestedOutcomeDetectedAt?: string | null;
+    suggestedEntryReached?: boolean;
+    suggestedEntryDetectedAt?: string | null;
     outcomeDeclaredAt?: string | null;
     signalStatus?: SignalStatus;
     canCancelPending?: boolean;
+    canConfirmEntryReached?: boolean;
     pictureUrl?: string | null;
     pictureId?: string | null;
 };

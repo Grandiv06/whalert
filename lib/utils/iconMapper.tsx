@@ -16,6 +16,7 @@ import {
   User,
   UserPlus,
   Plus,
+  Radio,
   type LucideIcon,
 } from "lucide-react";
 import type { SVGProps } from "react";
@@ -38,6 +39,7 @@ export const iconMap: Record<string, LucideIcon> = {
   user: User,
   userplus: UserPlus,
   plus: Plus,
+  radio: Radio,
 };
 
 export const getIcon = (

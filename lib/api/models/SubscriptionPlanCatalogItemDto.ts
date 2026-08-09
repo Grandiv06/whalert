@@ -28,6 +28,7 @@ export type SubscriptionPlanCatalogItemDto = {
     includesAiBots?: boolean;
     includesHumanAnalyst?: boolean;
     supportsAdvancedFilters?: boolean;
+    includesLiveSessions?: boolean;
     features?: Array<SubscriptionPlanFeatureItemDto> | null;
 };
 

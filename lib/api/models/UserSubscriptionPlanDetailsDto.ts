@@ -32,6 +32,7 @@ export type UserSubscriptionPlanDetailsDto = {
     durationInDays?: number | null;
     trialDays?: number | null;
     maxDailySignals?: number | null;
+    includesLiveSessions?: boolean;
     queuedSubscriptionsCount?: number;
 };
 

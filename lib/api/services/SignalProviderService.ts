@@ -4,18 +4,27 @@
 /* eslint-disable */
 import type { CancelPendingSignalInput } from '../models/CancelPendingSignalInput';
 import type { ConfirmDetectedSignalOutcomeInput } from '../models/ConfirmDetectedSignalOutcomeInput';
+import type { ConfirmSignalEntryReachedInput } from '../models/ConfirmSignalEntryReachedInput';
+import type { CreateProviderLiveSessionInput } from '../models/CreateProviderLiveSessionInput';
 import type { CreateProviderTeamAccountInput } from '../models/CreateProviderTeamAccountInput';
 import type { DeclareSignalOutcomeInput } from '../models/DeclareSignalOutcomeInput';
+import type { DeleteProviderLiveSessionInput } from '../models/DeleteProviderLiveSessionInput';
+import type { DeleteSignalManagementMessageInput } from '../models/DeleteSignalManagementMessageInput';
 import type { GetDeliveryChannelsOutput } from '../models/GetDeliveryChannelsOutput';
 import type { GetMySignalForEditInput } from '../models/GetMySignalForEditInput';
 import type { GetMySignalForEditOutput } from '../models/GetMySignalForEditOutput';
 import type { GetProvidedSignalDetailInput } from '../models/GetProvidedSignalDetailInput';
+import type { GetProviderLiveSessionsOutput } from '../models/GetProviderLiveSessionsOutput';
 import type { GetProviderSubscribersInput } from '../models/GetProviderSubscribersInput';
 import type { GetProviderTeamAccountsOutput } from '../models/GetProviderTeamAccountsOutput';
+import type { GetSignalManagementMessagesInput } from '../models/GetSignalManagementMessagesInput';
 import type { NewSignalInput } from '../models/NewSignalInput';
 import type { PagedResultDtoOfGetProvidedOutPut } from '../models/PagedResultDtoOfGetProvidedOutPut';
 import type { PagedResultDtoOfProviderSubscriberDto } from '../models/PagedResultDtoOfProviderSubscriberDto';
+import type { PostSignalManagementMessageInput } from '../models/PostSignalManagementMessageInput';
+import type { PostSignalManagementMessageOutput } from '../models/PostSignalManagementMessageOutput';
 import type { ProvidedInput } from '../models/ProvidedInput';
+import type { ProviderLiveSessionDto } from '../models/ProviderLiveSessionDto';
 import type { ProviderOverviewOutput } from '../models/ProviderOverviewOutput';
 import type { ProviderSettingsOutput } from '../models/ProviderSettingsOutput';
 import type { ProviderSignalDetailDto } from '../models/ProviderSignalDetailDto';
@@ -24,9 +33,10 @@ import type { ProviderTeamAccountDto } from '../models/ProviderTeamAccountDto';
 import type { RemoveProviderSubscriberInput } from '../models/RemoveProviderSubscriberInput';
 import type { SetDeliveryChannelInput } from '../models/SetDeliveryChannelInput';
 import type { SetProviderTeamAccountPasswordInput } from '../models/SetProviderTeamAccountPasswordInput';
-import type { SubmitSignalFromUserInputDto } from '../models/SubmitSignalFromUserInputDto';
+import type { SignalManagementMessageDto } from '../models/SignalManagementMessageDto';
 import type { SignalOutcomeWorkbenchOutput } from '../models/SignalOutcomeWorkbenchOutput';
 import type { SignalSide } from '../models/SignalSide';
+import type { UpdateProviderLiveSessionInput } from '../models/UpdateProviderLiveSessionInput';
 import type { UpdateProviderSettingsInput } from '../models/UpdateProviderSettingsInput';
 import type { UpdateProviderSubscriberInput } from '../models/UpdateProviderSubscriberInput';
 import type { UpdateProviderTeamAccountInput } from '../models/UpdateProviderTeamAccountInput';
@@ -296,21 +306,6 @@ export class SignalProviderService {
         });
     }
     /**
-     * @param requestBody
-     * @returns any Success
-     * @throws ApiError
-     */
-    public static apiServicesAppSignalproviderSubmitsignalfromuserinputPost(
-        requestBody?: SubmitSignalFromUserInputDto,
-    ): CancelablePromise<any> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/services/app/SignalProvider/SubmitSignalFromUserInput',
-            body: requestBody,
-            mediaType: 'application/json',
-        });
-    }
-    /**
      * @param formData
      * @returns any Success
      * @throws ApiError
@@ -378,6 +373,121 @@ export class SignalProviderService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/services/app/SignalProvider/CancelPendingSignal',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @param requestBody
+     * @returns any Success
+     * @throws ApiError
+     */
+    public static apiServicesAppSignalproviderConfirmsignalentryreachedPost(
+        requestBody?: ConfirmSignalEntryReachedInput,
+    ): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/services/app/SignalProvider/ConfirmSignalEntryReached',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns GetProviderLiveSessionsOutput Success
+     * @throws ApiError
+     */
+    public static apiServicesAppSignalproviderGetproviderlivesessionsPost(): CancelablePromise<GetProviderLiveSessionsOutput> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/services/app/SignalProvider/GetProviderLiveSessions',
+        });
+    }
+    /**
+     * @param requestBody
+     * @returns ProviderLiveSessionDto Success
+     * @throws ApiError
+     */
+    public static apiServicesAppSignalproviderCreateproviderlivesessionPost(
+        requestBody?: CreateProviderLiveSessionInput,
+    ): CancelablePromise<ProviderLiveSessionDto> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/services/app/SignalProvider/CreateProviderLiveSession',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @param requestBody
+     * @returns ProviderLiveSessionDto Success
+     * @throws ApiError
+     */
+    public static apiServicesAppSignalproviderUpdateproviderlivesessionPost(
+        requestBody?: UpdateProviderLiveSessionInput,
+    ): CancelablePromise<ProviderLiveSessionDto> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/services/app/SignalProvider/UpdateProviderLiveSession',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @param requestBody
+     * @returns any Success
+     * @throws ApiError
+     */
+    public static apiServicesAppSignalproviderDeleteproviderlivesessionPost(
+        requestBody?: DeleteProviderLiveSessionInput,
+    ): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/services/app/SignalProvider/DeleteProviderLiveSession',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @param requestBody
+     * @returns PostSignalManagementMessageOutput Success
+     * @throws ApiError
+     */
+    public static apiServicesAppSignalproviderPostsignalmanagementmessagePost(
+        requestBody?: PostSignalManagementMessageInput,
+    ): CancelablePromise<PostSignalManagementMessageOutput> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/services/app/SignalProvider/PostSignalManagementMessage',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @param requestBody
+     * @returns SignalManagementMessageDto Success
+     * @throws ApiError
+     */
+    public static apiServicesAppSignalproviderGetmysignalmanagementmessagesPost(
+        requestBody?: GetSignalManagementMessagesInput,
+    ): CancelablePromise<Array<SignalManagementMessageDto>> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/services/app/SignalProvider/GetMySignalManagementMessages',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @param requestBody
+     * @returns any Success
+     * @throws ApiError
+     */
+    public static apiServicesAppSignalproviderDeletesignalmanagementmessagePost(
+        requestBody?: DeleteSignalManagementMessageInput,
+    ): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/services/app/SignalProvider/DeleteSignalManagementMessage',
             body: requestBody,
             mediaType: 'application/json',
         });

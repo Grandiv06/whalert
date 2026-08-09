@@ -68,6 +68,7 @@ function profileImageSrc(raw: string | null | undefined): string | null {
 
 const defaultNavItems: NavItem[] = [
   { label: "پیشخوان", path: "/dashboard/", iconName: "dashboard" },
+  { label: "لایو طلا", path: "/dashboard/live/", iconName: "radio" },
   { label: "اشتراک من", path: "/dashboard/subscription/", iconName: "calendar" },
   { label: "پروفایل اساتید", path: "/dashboard/analysis/", iconName: "trending" },
   {
