@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,7 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Check, Sparkles, Crown, ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
-import { toPersianDigits } from "@/lib/utils";
+import { toPersianDigits, cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination, Navigation, Autoplay } from "swiper/modules";
@@ -84,10 +84,6 @@ function getDailyPriceLabel(price?: number | null, days?: number | null): string
 function isComingSoonPlan(plan: SubscriptionPlanCatalogItemDto): boolean {
   const isBundle = plan.isHighlighted === true;
   return isBundle;
-}
-
-function getPlanPriceLabel(plan: GoldPlan): string {
-  return plan.comingSoon ? "بزودی" : formatMoney(plan.monthlyPrice);
 }
 
 function mapCatalogPlan(plan: SubscriptionPlanCatalogItemDto): GoldPlan {
@@ -216,7 +212,17 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
   const [selectedDurationId, setSelectedDurationId] = useState<number | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(0);
+  const modalScrollerRef = useRef<HTMLDivElement | null>(null);
+
+  const scrollModalPlans = (direction: "next" | "prev") => {
+    const el = modalScrollerRef.current;
+    if (!el) return;
+    const amount = Math.min(340, el.clientWidth * 0.8);
+    el.scrollBy({
+      left: direction === "next" ? -amount : amount,
+      behavior: "smooth",
+    });
+  };
 
   useEffect(() => {
     setIsLoggedIn(Boolean(getAccessToken()));
@@ -252,10 +258,6 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
           ...plans.filter((_, index) => index !== bundlePlanIndex).slice(1),
         ]
       : plans;
-  const mobilePlans = [...plans].sort((a, b) => {
-    if (a.comingSoon === b.comingSoon) return 0;
-    return a.comingSoon ? 1 : -1;
-  });
 
   const handlePurchase = async (planId: number) => {
     if (!planId) return;
@@ -326,52 +328,297 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
     onPurchaseSuccess?.();
   };
 
+  const getPlanTheme = (plan: GoldPlan, index: number) => {
+    const isBundle = !!plan.isBundle;
+
+    let theme = {
+      cardBg:
+        "border-white/10 bg-gradient-to-br from-white/[0.08] to-[#02000B]/50 hover:border-white/20",
+      glow: "bg-white/5",
+      priceBox: "border-white/10 bg-white/[0.03]",
+      check: "text-white/60",
+      button: "bg-[#5D31A0] hover:bg-[#6A3D9C] text-white",
+      priceText: "text-white",
+    };
+
+    if (index % 3 === 0) {
+      theme = {
+        cardBg:
+          "border-indigo-400/35 bg-gradient-to-br from-indigo-500/12 via-[#3B216A]/20 to-[#02000B]/70 hover:border-indigo-400/55",
+        glow: "bg-indigo-400/15",
+        priceBox: "border-indigo-400/25 bg-indigo-400/[0.08]",
+        check: "text-indigo-300",
+        button:
+          "bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/20",
+        priceText: "text-white",
+      };
+    } else if (index % 3 === 1) {
+      theme = {
+        cardBg:
+          "border-fuchsia-400/35 bg-gradient-to-br from-fuchsia-500/12 via-[#542C85]/20 to-[#02000B]/70 hover:border-fuchsia-400/55",
+        glow: "bg-fuchsia-400/15",
+        priceBox: "border-fuchsia-400/25 bg-fuchsia-400/[0.08]",
+        check: "text-fuchsia-300",
+        button:
+          "bg-fuchsia-600 hover:bg-fuchsia-500 text-white shadow-lg shadow-fuchsia-600/20",
+        priceText: "text-white",
+      };
+    }
+
+    if (isBundle) {
+      theme = {
+        cardBg:
+          "border-amber-300/60 bg-gradient-to-br from-amber-400/20 via-[#5F2E96]/30 to-[#090613]/95 lg:z-10 shadow-[0_0_40px_-12px_rgba(245,158,11,0.35)]",
+        glow: "bg-amber-300/20",
+        priceBox: "border-amber-300/35 bg-amber-400/[0.08]",
+        check: "text-amber-400",
+        button:
+          "bg-amber-400 hover:bg-amber-300 text-black font-bold shadow-lg shadow-amber-500/20",
+        priceText: "text-amber-200",
+      };
+    }
+
+    return theme;
+  };
+
+  const renderPlanCard = (plan: GoldPlan, index: number, compact = false) => {
+    const isBundle = !!plan.isBundle;
+    const theme = getPlanTheme(plan, index);
+
+    return (
+      <Card
+        className={cn(
+          "relative flex h-full w-full flex-col overflow-hidden border transition-all duration-300 group",
+          compact ? "rounded-[22px] text-white" : "rounded-4xl",
+          theme.cardBg,
+          compact
+            ? "shadow-[0_12px_36px_-18px_rgba(7,2,20,0.7)]"
+            : "shadow-none md:shadow-[0_16px_40px_rgba(7,2,20,0.45)] hover:md:shadow-[0_20px_52px_rgba(11,4,28,0.55)]",
+        )}
+      >
+        <div className="pointer-events-none absolute inset-0">
+          <div
+            className={`absolute -top-20 -right-20 h-44 w-44 rounded-full blur-3xl ${theme.glow}`}
+          />
+          <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-l from-transparent via-white/25 to-transparent" />
+        </div>
+
+        {isBundle && (
+          <div
+            className={cn(
+              "absolute inline-flex items-center gap-1 rounded-full border border-amber-200/55 bg-amber-400/20 font-semibold text-amber-100 backdrop-blur-sm",
+              compact
+                ? "left-3 top-3 px-2.5 py-1 text-[10px]"
+                : "left-3 top-3 px-3 py-1.5 text-[11px]",
+            )}
+          >
+            <Sparkles className="h-3 w-3" />
+            پیشنهاد ویژه
+          </div>
+        )}
+
+        <CardContent
+          className={cn(
+            "relative z-10 flex h-full flex-1 flex-col",
+            compact ? "p-4 sm:p-5" : "p-5 md:p-6",
+            isBundle && (compact ? "pt-11" : "pt-14"),
+          )}
+        >
+          <div
+            className={cn(
+              "flex h-full min-h-0 flex-1 flex-col",
+              compact ? "gap-3.5" : "gap-5",
+            )}
+          >
+            <div>
+              <h3
+                className={cn(
+                  "font-extrabold leading-8 text-white",
+                  compact ? "text-[16px] sm:text-[17px]" : "text-xl",
+                )}
+              >
+                {plan.displayName}
+              </h3>
+              <p
+                className={cn(
+                  "mt-1.5 leading-6 text-white/70",
+                  compact
+                    ? "line-clamp-2 min-h-[2.75rem] text-[12px]"
+                    : "min-h-[3rem] text-sm",
+                )}
+              >
+                {plan.subtitle}
+              </p>
+            </div>
+
+            <div
+              className={cn(
+                "border",
+                theme.priceBox,
+                compact ? "rounded-2xl p-3" : "rounded-3xl p-4",
+              )}
+            >
+              {plan.comingSoon ? (
+                <div className="flex flex-col items-start gap-2">
+                  <span className="inline-flex rounded-full border border-amber-300/40 bg-amber-400/10 px-3 py-1 text-[11px] font-bold text-amber-200">
+                    به‌زودی
+                  </span>
+                  <p
+                    className={cn(
+                      "font-black leading-none",
+                      theme.priceText,
+                      compact ? "text-2xl" : "text-3xl md:text-4xl",
+                    )}
+                  >
+                    بزودی
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <p className="mb-1.5 text-xs text-white/55">شروع از</p>
+                  <p
+                    className={cn(
+                      "font-black leading-none text-white",
+                      compact
+                        ? "text-[22px] sm:text-[26px]"
+                        : "text-3xl md:text-4xl",
+                    )}
+                  >
+                    {formatMoney(plan.monthlyPrice)}
+                  </p>
+                  <p className="mt-1.5 text-xs text-white/60">
+                    {plan.hasDurationChoices
+                      ? "ماهانه · دو هفته‌ای · هفتگی"
+                      : getPaymentPeriodLabel(plan.durationInDays)}
+                  </p>
+                </>
+              )}
+            </div>
+
+            <ul
+              className={cn(
+                "flex-1 text-white/85",
+                compact
+                  ? "space-y-1.5 text-[12px] leading-5"
+                  : "min-h-[194px] space-y-2 text-sm",
+              )}
+            >
+              {plan.features.map((feature) => (
+                <li
+                  key={feature}
+                  className="inline-flex w-full items-start gap-2"
+                >
+                  <Check
+                    className={cn(
+                      "mt-0.5 shrink-0",
+                      compact ? "h-3.5 w-3.5" : "h-4 w-4",
+                      theme.check,
+                    )}
+                  />
+                  <span>{feature}</span>
+                </li>
+              ))}
+              {plan.features.length === 0 && (
+                <li className="text-sm text-white/60">
+                  جزئیات ویژگی‌ها به‌زودی اعلام می‌شود.
+                </li>
+              )}
+            </ul>
+
+            <p
+              className={cn(
+                "border-t border-white/10 leading-5 text-white/60",
+                compact
+                  ? "mt-0.5 line-clamp-2 pt-2 text-[11px]"
+                  : "mt-1 min-h-[64px] pt-3 text-xs md:text-sm",
+              )}
+            >
+              {plan.footerText}
+            </p>
+
+            <div className={cn("mt-auto", compact ? "pt-2" : "pt-4")}>
+              <Button
+                type="button"
+                onClick={() => openConfirm(plan)}
+                disabled={
+                  plan.comingSoon ||
+                  (isLoggedIn && pendingPlanId === plan.id)
+                }
+                className={cn(
+                  "w-full font-semibold",
+                  plan.comingSoon
+                    ? "cursor-not-allowed border border-white/15 bg-white/10 text-white/70 opacity-80 hover:bg-white/10"
+                    : `cursor-pointer text-white ${theme.button}`,
+                  compact
+                    ? "h-11 rounded-2xl text-sm"
+                    : "h-12 rounded-3xl text-base",
+                )}
+              >
+                <span className="relative z-10">
+                  {plan.comingSoon
+                    ? "بزودی"
+                    : !isLoggedIn
+                      ? "ورود به اکانت"
+                      : pendingPlanId === plan.id
+                        ? "در حال انتقال..."
+                        : plan.ctaText || "فعال‌سازی اشتراک"}
+                </span>
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
   return (
-    <div className={showHeader ? "py-20 w-full" : "py-4 w-full"} id="plans">
+    <div className={showHeader ? "mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 py-16" : "w-full py-0"} id="plans">
       {showHeader && (
-        <div className="text-center mb-16 px-4">
-          <span className="text-[#A87FF3] text-sm font-bold tracking-wider bg-[#A87FF3]/10 px-4 py-2 rounded-full border border-[#A87FF3]/20 mb-4 inline-block">
+        <div className="mb-16 text-center">
+          <span className="mb-4 inline-block rounded-full border border-[#A87FF3]/20 bg-[#A87FF3]/10 px-4 py-2 text-sm font-bold tracking-wider text-[#A87FF3]">
             پلن‌های اشتراک طلا
           </span>
-          <h2 className="text-3xl md:text-5xl font-extrabold text-white mt-4 mb-6 leading-tight">
+          <h2 className="mt-4 mb-6 text-3xl font-extrabold leading-tight text-white md:text-5xl">
             تخصص ما <span className="text-[#EAB308]">فقط طلاست.</span>
             <br className="hidden md:block" /> تمرکز کامل روی یک بازار = دقت
             بالاتر
           </h2>
-          <p className="text-white/60 text-lg md:text-xl max-w-2xl mx-auto">
+          <p className="mx-auto max-w-2xl text-lg text-white/60 md:text-xl">
             برای تریدرهایی که دنبال سیگنال‌های دقیق، مطمئن و فیلتر شده از بازار
             طلا هستند.
           </p>
         </div>
       )}
 
-      {/* Single Unified Responsive Swiper Section */}
-      <div className="w-full overflow-visible relative px-1 mt-4">
+      <div className={cn(
+        "relative w-full transition-all duration-300",
+        showHeader 
+          ? "mt-4 sm:mt-6 sm:rounded-3xl sm:border sm:border-[#542C85]/35 sm:bg-[#02000B]/70 py-2 sm:px-5 sm:py-8 lg:px-6 lg:py-10 sm:backdrop-blur-xl sm:shadow-[0_0_60px_rgba(84,44,133,0.2)] overflow-hidden" 
+          : "mt-0"
+      )}>
+        {showHeader && (
+          <div className="pointer-events-none absolute inset-0 hidden sm:block bg-[radial-gradient(100%_70%_at_50%_0%,rgba(168,85,247,0.15)_0%,transparent_65%)]" />
+        )}
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-5">
             {Array.from({ length: 3 }).map((_, index) => (
               <Card
                 key={`plans-skeleton-${index}`}
-                className="relative overflow-hidden rounded-4xl border border-white/10 bg-gradient-to-br from-white/[0.08] to-[#02000B]/50 h-[680px] flex flex-col"
+                className="relative flex h-[520px] flex-col overflow-hidden rounded-[22px] border border-white/10 bg-gradient-to-br from-white/[0.08] to-[#02000B]/50"
               >
-                <CardContent className={`${showHeader ? "p-5 md:p-6" : "p-4 md:p-4.5"} flex-1 flex flex-col justify-between`}>
-                  <div className={`${showHeader ? "space-y-5" : "space-y-3.5"} flex-1 flex flex-col justify-between h-full`}>
+                <CardContent className="flex flex-1 flex-col justify-between p-5">
+                  <div className="flex h-full flex-1 flex-col justify-between space-y-4">
                     <div className="space-y-3">
-                      <Skeleton className="h-8 w-3/4 bg-white/10" />
-                      <Skeleton className="h-5 w-full bg-white/10" />
+                      <Skeleton className="h-7 w-3/4 bg-white/10" />
+                      <Skeleton className="h-4 w-full bg-white/10" />
                     </div>
-                    <div className={`border border-white/10 ${showHeader ? "rounded-3xl p-4 space-y-2" : "rounded-2xl p-3 space-y-1.5"}`}>
-                      <Skeleton className="h-4 w-16 bg-white/10" />
-                      <Skeleton className="h-10 w-2/3 bg-white/10" />
-                      <Skeleton className="h-4 w-24 bg-white/10" />
-                    </div>
+                    <Skeleton className="h-24 w-full rounded-2xl bg-white/10" />
                     <div className="space-y-2 flex-1">
-                      <Skeleton className="h-5 w-full bg-white/10" />
-                      <Skeleton className="h-5 w-11/12 bg-white/10" />
-                      <Skeleton className="h-5 w-10/12 bg-white/10" />
+                      <Skeleton className="h-4 w-full bg-white/10" />
+                      <Skeleton className="h-4 w-11/12 bg-white/10" />
+                      <Skeleton className="h-4 w-10/12 bg-white/10" />
                     </div>
-                    <Skeleton className="h-16 w-full bg-white/10" />
-                    <Skeleton className={`${showHeader ? "h-12 rounded-3xl" : "h-10 rounded-2xl"} w-full bg-white/10 mt-auto`} />
+                    <Skeleton className="mt-auto h-11 w-full rounded-2xl bg-white/10" />
                   </div>
                 </CardContent>
               </Card>
@@ -381,9 +628,14 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
           <div className="rounded-3xl border border-dashed border-white/20 bg-white/[0.02] p-8 text-center text-white/70">
             در حال حاضر پلن فعالی برای نمایش وجود ندارد.
           </div>
+
         ) : (
           <>
-            <style dangerouslySetInnerHTML={{ __html: `
+            {!showHeader && <div className="group/slider relative w-full absolute inset-0 z-0 pointer-events-none" />}
+            <div className={cn("relative w-full", !showHeader && "group/slider")}>
+              <style
+              dangerouslySetInnerHTML={{
+                __html: `
               .plans-swiper .swiper-pagination-bullet {
                 background: rgba(255, 255, 255, 0.2) !important;
                 opacity: 1 !important;
@@ -417,212 +669,86 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
                 opacity: 0.35 !important;
                 cursor: not-allowed !important;
               }
-              @media (min-width: 768px) {
-                .plans-swiper-mask {
-                  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 150px, black calc(100% - 150px), transparent 100%);
-                  mask-image: linear-gradient(to right, transparent 0%, black 150px, black calc(100% - 150px), transparent 100%);
-                }
-              }
-            `}} />
+            `,
+              }}
+            />
 
-            {/* Navigation Arrows for Desktop */}
-            <div className="hidden md:flex items-center justify-end gap-3 mb-6 px-4 md:px-8 relative z-20">
-              <button
-                type="button"
-                className="plans-swiper-prev p-3 rounded-full bg-white/5 border border-white/10 text-white hover:bg-white/15 hover:border-white/25 transition-all cursor-pointer shadow-[0_4px_15px_rgba(0,0,0,0.2)] group backdrop-blur-md"
-                aria-label="Previous Slide"
-              >
-                <ChevronRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
-              </button>
-              <button
-                type="button"
-                className="plans-swiper-next p-3 rounded-full bg-white/5 border border-white/10 text-white hover:bg-white/15 hover:border-white/25 transition-all cursor-pointer shadow-[0_4px_15px_rgba(0,0,0,0.2)] group backdrop-blur-md"
-                aria-label="Next Slide"
-              >
-                <ChevronLeft className="w-5 h-5 group-hover:-translate-x-0.5 transition-transform" />
-              </button>
-            </div>
+            {showHeader && (
+              <div className="relative z-20 mb-6 hidden items-center justify-end gap-3 md:flex">
+                <button
+                  type="button"
+                  className="plans-swiper-prev group cursor-pointer rounded-full border border-white/10 bg-white/5 p-3 text-white shadow-[0_4px_15px_rgba(0,0,0,0.2)] backdrop-blur-md transition-all hover:border-white/25 hover:bg-white/15"
+                  aria-label="Previous Slide"
+                >
+                  <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
+                </button>
+                <button
+                  type="button"
+                  className="plans-swiper-next group cursor-pointer rounded-full border border-white/10 bg-white/5 p-3 text-white shadow-[0_4px_15px_rgba(0,0,0,0.2)] backdrop-blur-md transition-all hover:border-white/25 hover:bg-white/15"
+                  aria-label="Next Slide"
+                >
+                  <ChevronLeft className="h-5 w-5 transition-transform group-hover:-translate-x-0.5" />
+                </button>
+              </div>
+            )}
 
             <Swiper
               modules={[Pagination, Navigation, Autoplay]}
-              spaceBetween={16}
-              slidesPerView={1.12}
+              spaceBetween={20}
+              slidesPerView={1.08}
               autoplay={{
-                delay: 3500,
+                delay: 4000,
                 disableOnInteraction: false,
                 pauseOnMouseEnter: true,
               }}
-              loop={true}
+              loop={desktopPlans.length > 1}
               navigation={{
                 nextEl: ".plans-swiper-next",
                 prevEl: ".plans-swiper-prev",
               }}
               breakpoints={{
                 640: {
-                  slidesPerView: 2.15,
-                  spaceBetween: 20,
+                  slidesPerView: 2,
+                  spaceBetween: 16,
                 },
                 1024: {
-                  slidesPerView: 3.15,
-                  spaceBetween: 24,
-                },
-                1280: {
-                  slidesPerView: 3.2,
-                  spaceBetween: 24,
+                  slidesPerView: 3,
+                  spaceBetween: 18,
                 },
               }}
               initialSlide={0}
               speed={400}
-              onSlideChange={(swiper) => setActiveIndex(swiper.realIndex)}
               pagination={{ clickable: true }}
-              className="plans-swiper plans-swiper-mask overflow-visible !py-12 !-my-12"
+              className="plans-swiper"
               dir="rtl"
-              style={{ 
-                direction: "rtl"
-              }}
+              style={{ direction: "rtl" }}
             >
-              {desktopPlans.map((plan, index) => {
-                const isBundle = !!plan.isBundle;
-
-                let theme = {
-                  cardBg:
-                    "border-white/10 bg-gradient-to-br from-white/[0.08] to-[#02000B]/50 hover:border-white/20",
-                  glow: "bg-white/5",
-                  priceBox: "border-white/10 bg-white/[0.03]",
-                  check: "text-white/60",
-                  button: "bg-[#5D31A0] hover:bg-[#6A3D9C] text-white",
-                };
-
-                if (index % 3 === 0) {
-                  theme = {
-                    cardBg:
-                      "border-indigo-400/40 bg-gradient-to-br from-indigo-500/15 via-[#3B216A]/25 to-[#02000B]/60 hover:border-indigo-400/60",
-                    glow: "bg-indigo-400/20",
-                    priceBox: "border-indigo-400/30 bg-indigo-400/10",
-                    check: "text-indigo-300",
-                    button:
-                      "bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/25",
-                  };
-                } else if (index % 3 === 1) {
-                  theme = {
-                    cardBg:
-                      "border-fuchsia-400/40 bg-gradient-to-br from-fuchsia-500/15 via-[#542C85]/25 to-[#02000B]/60 hover:border-fuchsia-400/60",
-                    glow: "bg-fuchsia-400/20",
-                    priceBox: "border-fuchsia-400/30 bg-fuchsia-400/10",
-                    check: "text-fuchsia-300",
-                    button:
-                      "bg-fuchsia-600 hover:bg-fuchsia-500 text-white shadow-lg shadow-fuchsia-600/25",
-                  };
-                }
-
-                if (isBundle) {
-                  theme = {
-                    cardBg:
-                      "border-amber-300/70 bg-gradient-to-br from-amber-400/30 via-[#5F2E96]/35 to-[#090613]/90 lg:z-10",
-                    glow: "bg-amber-300/25",
-                    priceBox: "border-amber-300/40 bg-amber-400/10",
-                    check: "text-amber-400",
-                    button:
-                      "bg-amber-400 hover:bg-amber-300 text-black font-bold shadow-lg shadow-amber-500/25",
-                  };
-                }
-
-                return (
-                  <SwiperSlide key={plan.id} className="overflow-visible py-2">
-                    <Card
-                      className={`relative overflow-hidden ${showHeader ? "rounded-4xl border h-[700px]" : "rounded-3xl border h-[680px]"} transition-all duration-300 group ${theme.cardBg} shadow-none md:shadow-[0_16px_40px_rgba(7,2,20,0.45)] hover:md:shadow-[0_20px_52px_rgba(11,4,28,0.55)] flex flex-col w-full`}
-                    >
-                      <div className="absolute inset-0 pointer-events-none">
-                        <div
-                          className={`absolute -top-20 -right-20 w-48 h-48 rounded-full blur-3xl ${theme.glow}`}
-                        />
-                      </div>
-
-                      {isBundle && (
-                        <div className={`absolute ${showHeader ? "top-3 left-3 px-3 py-1.5" : "top-2.5 left-2.5 px-2.5 py-1"} rounded-3xl text-[11px] border border-amber-200/60 bg-amber-400/25 text-amber-100 inline-flex items-center gap-1 font-semibold backdrop-blur-sm`}>
-                          <Sparkles className="w-3 h-3" />
-                          پیشنهاد ویژه
-                        </div>
-                      )}
-
-                      <CardContent
-                        className={`${showHeader ? "p-5 md:p-6" : "p-4 md:p-4.5"} ${isBundle ? (showHeader ? "pt-14" : "pt-12") : ""} flex-1 flex flex-col h-full`}
-                      >
-                        <div className={`${showHeader ? "space-y-5" : "space-y-3.5"} flex-1 flex flex-col h-full min-h-0`}>
-                          <div>
-                            <h3 className={`font-extrabold text-white leading-8 ${showHeader ? "text-xl" : "text-[17px]"}`}>
-                              {plan.displayName}
-                            </h3>
-                            <p className={`text-white/75 mt-1.5 leading-6 ${showHeader ? "text-sm min-h-[3rem]" : "text-[12px] min-h-[2.5rem]"}`}>
-                              {plan.subtitle}
-                            </p>
-                          </div>
-
-                          <div className={`${showHeader ? "rounded-3xl p-4" : "rounded-2xl p-3"} border ${theme.priceBox}`}>
-                            {!plan.comingSoon && (
-                              <p className="text-xs text-white/60 mb-1.5">شروع از</p>
-                            )}
-                            <p className={`font-black text-white leading-none ${showHeader ? "text-3xl md:text-4xl" : "text-2xl md:text-[26px]"}`}>
-                              {getPlanPriceLabel(plan)}
-                            </p>
-                            {!plan.comingSoon && (
-                              <p className="text-xs mt-1.5 text-white/65">
-                                {plan.hasDurationChoices
-                                  ? "ماهانه · دو هفته‌ای · هفتگی"
-                                  : getPaymentPeriodLabel(plan.durationInDays)}
-                              </p>
-                            )}
-                          </div>
-
-                          <ul className={`${showHeader ? "space-y-2 text-sm min-h-[194px]" : "space-y-1.5 text-[12px] min-h-[170px]"} text-white/85 flex-1`}>
-                            {plan.features.map((feature) => (
-                              <li
-                                key={feature}
-                                className="inline-flex items-start gap-2 w-full leading-5"
-                              >
-                                <Check
-                                  className={`shrink-0 mt-0.5 ${showHeader ? "w-4 h-4" : "w-3.5 h-3.5"} ${theme.check}`}
-                                />
-                                <span>{feature}</span>
-                              </li>
-                            ))}
-                            {plan.features.length === 0 && (
-                              <li className="text-white/60 text-sm">
-                                جزئیات ویژگی‌ها به‌زودی اعلام می‌شود.
-                              </li>
-                            )}
-                          </ul>
-
-                          <p className={`text-white/70 leading-5 border-t border-white/10 ${showHeader ? "text-xs md:text-sm pt-3 mt-1 min-h-[64px]" : "text-[11px] pt-2 mt-0.5 min-h-[48px]"}`}>
-                            {plan.footerText}
-                          </p>
-
-                          <div className="mt-auto pt-6">
-                            <Button
-                              type="button"
-                              onClick={() => openConfirm(plan)}
-                              disabled={
-                                plan.comingSoon ||
-                                (isLoggedIn && pendingPlanId === plan.id)
-                              }
-                              className={`w-full ${plan.comingSoon ? "cursor-not-allowed opacity-75 bg-white/10 hover:bg-white/10 text-white/70 border border-white/15" : `cursor-pointer ${theme.button}`} ${showHeader ? "rounded-3xl h-12 text-base" : "rounded-2xl h-10 text-sm"}`}
-                            >
-                              {plan.comingSoon
-                                ? "بزودی"
-                                : !isLoggedIn
-                                  ? "ورود به اکانت"
-                                  : pendingPlanId === plan.id
-                                    ? "در حال انتقال..."
-                                    : plan.ctaText}
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </SwiperSlide>
-                );
-              })}
+              {desktopPlans.map((plan, index) => (
+                <SwiperSlide key={plan.id} className="!h-auto py-2">
+                  {renderPlanCard(plan, index, !showHeader)}
+                </SwiperSlide>
+              ))}
             </Swiper>
+            
+            {!showHeader && (
+              <>
+                <button
+                  type="button"
+                  className="plans-swiper-prev absolute right-1 md:right-2 lg:right-3 top-[45%] z-20 -translate-y-1/2 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-[#0b0518]/60 text-white shadow-[0_0_20px_rgba(0,0,0,0.5)] backdrop-blur-md opacity-0 transition-all duration-300 group-hover/slider:opacity-100 hover:bg-[#0b0518]/90 hover:scale-110"
+                  aria-label="Previous Slide"
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </button>
+                <button
+                  type="button"
+                  className="plans-swiper-next absolute left-1 md:left-2 lg:left-3 top-[45%] z-20 -translate-y-1/2 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-[#0b0518]/60 text-white shadow-[0_0_20px_rgba(0,0,0,0.5)] backdrop-blur-md opacity-0 transition-all duration-300 group-hover/slider:opacity-100 hover:bg-[#0b0518]/90 hover:scale-110"
+                  aria-label="Next Slide"
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </button>
+              </>
+            )}
+          </div>
           </>
         )}
       </div>

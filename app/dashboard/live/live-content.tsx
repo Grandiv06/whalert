@@ -75,17 +75,17 @@ export function LiveContent() {
   if (!hasActiveSubscription) {
     return (
       <div className="relative z-10 mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 pt-4 sm:px-6 md:gap-8 md:pt-8 lg:px-8 pb-20 items-center justify-center min-h-[70vh]" dir="rtl">
-        <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto mb-8 bg-[#02000b]/60 backdrop-blur-md p-10 rounded-3xl border border-purple-500/20 shadow-2xl">
-          <div className="mb-6 rounded-full bg-purple-500/20 p-5 shadow-[0_0_20px_rgba(168,85,247,0.4)]">
-            <Lock className="h-12 w-12 text-purple-400" />
+        <div className="flex w-full flex-col items-center justify-center text-center max-w-2xl mx-auto mb-8 bg-[#02000b]/60 backdrop-blur-md p-6 sm:p-10 rounded-3xl border border-purple-500/20 shadow-2xl">
+          <div className="mb-4 sm:mb-6 rounded-full bg-purple-500/20 p-4 sm:p-5 shadow-[0_0_20px_rgba(168,85,247,0.4)]">
+            <Lock className="h-10 w-10 sm:h-12 sm:w-12 text-purple-400" />
           </div>
-          <h2 className="text-3xl font-bold text-white mb-4">دسترسی ویژه به لایو ترید</h2>
-          <p className="text-lg text-purple-200/80 mb-8 leading-relaxed">
+          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3 sm:mb-4">دسترسی ویژه به لایو ترید</h2>
+          <p className="text-base sm:text-lg text-purple-200/80 mb-6 sm:mb-8 leading-relaxed">
             برای شرکت در جلسات لایو ترید، مشاهده تحلیل‌های زنده و استفاده از فرصت‌های معاملاتی لحظه‌ای، لطفا اشتراک خود را فعال کنید.
           </p>
           <Button
             onClick={() => setIsPlansModalOpen(true)}
-            className="rounded-2xl bg-[#542C85] hover:bg-[#6b3ca8] text-white border-0 h-14 px-10 text-lg cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-[0_0_20px_rgba(84,44,133,0.6)]"
+            className="rounded-2xl bg-[#542C85] hover:bg-[#6b3ca8] text-white border-0 h-12 sm:h-14 px-6 sm:px-10 text-base sm:text-lg cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-[0_0_20px_rgba(84,44,133,0.6)]"
           >
             مشاهده پلن‌ها و خرید اشتراک
           </Button>
@@ -93,14 +93,22 @@ export function LiveContent() {
 
         <Dialog open={isPlansModalOpen} onOpenChange={setIsPlansModalOpen}>
           <DialogContent
-            className="max-w-6xl w-[95vw] max-h-[90vh] overflow-hidden border border-white/20 bg-[radial-gradient(130%_120%_at_100%_0%,rgba(181,124,255,0.26)_0%,rgba(41,18,73,0.94)_42%,rgba(9,2,20,0.98)_100%)] text-white p-4 sm:p-6 md:p-7 shadow-[0_28px_110px_rgba(93,49,160,0.45)] backdrop-blur-xl"
+            className="max-h-[92vh] w-[95vw] max-w-6xl overflow-hidden border border-white/15 bg-[#0b0518] p-0 text-white shadow-[0_28px_110px_rgba(93,49,160,0.5)] sm:rounded-3xl"
             dir="rtl"
           >
-            <div className="pointer-events-none absolute -top-20 -right-20 h-56 w-56 rounded-full bg-fuchsia-400/25 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-24 -left-20 h-64 w-64 rounded-full bg-indigo-400/20 blur-3xl" />
-            <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-l from-transparent via-[#D6B4FF]/80 to-transparent" />
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_80%_at_100%_0%,rgba(181,124,255,0.22)_0%,transparent_55%),radial-gradient(90%_70%_at_0%_100%,rgba(79,70,229,0.16)_0%,transparent_50%)]" />
+            <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-l from-transparent via-[#D6B4FF]/70 to-transparent" />
 
-            <div className="mt-2 w-full max-w-full overflow-hidden pb-2">
+            <div className="relative hidden sm:block border-b border-white/10 px-5 pb-4 pt-6 sm:px-7 sm:pt-7">
+              <h2 className="text-right text-xl font-extrabold tracking-tight text-white sm:text-2xl">
+                انتخاب پلن اشتراک
+              </h2>
+              <p className="mt-1.5 text-right text-sm text-white/55">
+                پلن مناسب خود را انتخاب کنید و دسترسی به لایو ترید را فعال کنید.
+              </p>
+            </div>
+
+            <div className="relative px-4 pt-10 pb-5 sm:px-6 sm:py-6 overflow-y-auto overflow-x-hidden max-h-[calc(92vh-100px)] custom-scrollbar">
               <PlansSection showHeader={false} onPurchaseSuccess={() => setIsPlansModalOpen(false)} />
             </div>
           </DialogContent>
