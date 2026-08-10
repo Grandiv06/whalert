@@ -57,7 +57,6 @@ function isSafeTelegramUrl(url: string): boolean {
 function openTelegramUrl(url: string) {
   const opened = window.open(url, "_blank", "noopener,noreferrer");
   if (!opened) {
-    // Popup blocked — fall back to same-tab navigation.
     window.location.assign(url);
   }
 }
@@ -91,9 +90,12 @@ export function ConnectTelegram({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [connectLink, setConnectLink] =
     useState<TelegramConnectLinkOutput | null>(null);
+  const [linkedTelegramId, setLinkedTelegramId] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const pollRef = useRef<number | null>(null);
+  const checkingRef = useRef(false);
   const connectedNotifiedRef = useRef(false);
+  const connectLinkRef = useRef<TelegramConnectLinkOutput | null>(null);
 
   const {
     data: profile,
@@ -108,8 +110,10 @@ export function ConnectTelegram({
     },
   });
 
-  const telegramId = profile?.telegramId?.trim() || null;
-  const isConnected = Boolean(telegramId) || status === "connected";
+  const profileTelegramId = profile?.telegramId?.trim() || null;
+  const telegramId = linkedTelegramId || profileTelegramId;
+  const isConnected =
+    Boolean(telegramId) || status === "connected";
 
   const clearPoll = useCallback(() => {
     if (pollRef.current) {
@@ -121,9 +125,11 @@ export function ConnectTelegram({
   const markConnected = useCallback(
     (id: string) => {
       clearPoll();
+      setLinkedTelegramId(id === "connected" ? null : id);
       setStatus("connected");
       setErrorMessage(null);
       setConnectLink(null);
+      connectLinkRef.current = null;
       void queryClient.invalidateQueries({
         queryKey: ["currentUserProfileForEdit"],
       });
@@ -146,24 +152,20 @@ export function ConnectTelegram({
   );
 
   useEffect(() => {
-    if (telegramId) {
+    if (profileTelegramId) {
+      setLinkedTelegramId(profileTelegramId);
       setStatus("connected");
       connectedNotifiedRef.current = true;
-    } else if (status === "connected") {
-      connectedNotifiedRef.current = false;
-      setStatus("idle");
     }
-    // Only react to telegramId changes from profile.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [telegramId]);
+  }, [profileTelegramId]);
 
   const syncFromBot = useCallback(async (): Promise<string | null> => {
     try {
       const res =
         await UserDashboardService.apiServicesAppUserdashboardSynctelegramconnectPost();
       const sync = unwrapAbp<TelegramConnectSyncOutput>(res);
-      if (sync?.connected && sync.telegramId) {
-        return sync.telegramId;
+      if (sync?.connected) {
+        return sync.telegramId?.trim() || "connected";
       }
     } catch {
       // Sync is best-effort while waiting; profile poll remains the fallback.
@@ -172,39 +174,40 @@ export function ConnectTelegram({
   }, []);
 
   const checkConnection = useCallback(async () => {
-    const syncedId = await syncFromBot();
-    if (syncedId) {
-      markConnected(syncedId);
-      return true;
-    }
-
-    const { data: updated } = await refetchProfile();
-    const id = updated?.telegramId?.trim();
-    if (id) {
-      markConnected(id);
-      return true;
-    }
-
-    if (connectLink?.expiresAtUtc) {
-      const expiresAt = new Date(connectLink.expiresAtUtc).getTime();
-      if (Number.isFinite(expiresAt) && Date.now() > expiresAt) {
-        clearPoll();
-        setStatus("expired");
-        setErrorMessage(
-          "لینک اتصال منقضی شده است. لطفاً دوباره اتصال را شروع کنید.",
-        );
+    if (checkingRef.current) return false;
+    checkingRef.current = true;
+    try {
+      const syncedId = await syncFromBot();
+      if (syncedId) {
+        markConnected(syncedId);
         return true;
       }
-    }
 
-    return false;
-  }, [
-    clearPoll,
-    connectLink?.expiresAtUtc,
-    markConnected,
-    refetchProfile,
-    syncFromBot,
-  ]);
+      const { data: updated } = await refetchProfile();
+      const id = updated?.telegramId?.trim();
+      if (id) {
+        markConnected(id);
+        return true;
+      }
+
+      const expiresAtUtc = connectLinkRef.current?.expiresAtUtc;
+      if (expiresAtUtc) {
+        const expiresAt = new Date(expiresAtUtc).getTime();
+        if (Number.isFinite(expiresAt) && Date.now() > expiresAt) {
+          clearPoll();
+          setStatus("expired");
+          setErrorMessage(
+            "لینک اتصال منقضی شده است. لطفاً دوباره اتصال را شروع کنید.",
+          );
+          return true;
+        }
+      }
+
+      return false;
+    } finally {
+      checkingRef.current = false;
+    }
+  }, [clearPoll, markConnected, refetchProfile, syncFromBot]);
 
   useEffect(() => {
     if (status !== "waiting") {
@@ -215,15 +218,32 @@ export function ConnectTelegram({
     void checkConnection();
     pollRef.current = window.setInterval(() => {
       void checkConnection();
-    }, 3000);
+    }, 1500);
 
     return clearPoll;
   }, [status, checkConnection, clearPoll]);
+
+  // When user returns from Telegram, sync immediately.
+  useEffect(() => {
+    if (status !== "waiting") return;
+
+    const onResume = () => {
+      void checkConnection();
+    };
+
+    window.addEventListener("focus", onResume);
+    document.addEventListener("visibilitychange", onResume);
+    return () => {
+      window.removeEventListener("focus", onResume);
+      document.removeEventListener("visibilitychange", onResume);
+    };
+  }, [status, checkConnection]);
 
   const handleConnect = useCallback(async () => {
     setStatus("loading");
     setErrorMessage(null);
     setConnectLink(null);
+    connectLinkRef.current = null;
     connectedNotifiedRef.current = false;
     clearPoll();
 
@@ -237,6 +257,7 @@ export function ConnectTelegram({
         throw new Error("invalid-link");
       }
 
+      connectLinkRef.current = link;
       setConnectLink(link);
       openTelegramUrl(url);
       setStatus("waiting");
@@ -244,6 +265,15 @@ export function ConnectTelegram({
       fail("دریافت لینک اتصال تلگرام ناموفق بود. دوباره تلاش کنید.");
     }
   }, [clearPoll, fail]);
+
+  const handleReopenLink = useCallback(() => {
+    const url = connectLinkRef.current?.url?.trim() || connectLink?.url?.trim();
+    if (url && isSafeTelegramUrl(url)) {
+      openTelegramUrl(url);
+      return;
+    }
+    void handleConnect();
+  }, [connectLink?.url, handleConnect]);
 
   const handleManualSync = useCallback(async () => {
     setIsSyncing(true);
@@ -329,8 +359,11 @@ export function ConnectTelegram({
             {isConnected ? (
               <p className="text-sm leading-6 text-white/55">
                 حساب تلگرام شما متصل است و سیگنال‌ها به ربات ارسال می‌شوند.
-                {telegramId ? (
-                  <span className="mt-1 block font-mono text-xs text-white/35" dir="ltr">
+                {telegramId && telegramId !== "connected" ? (
+                  <span
+                    className="mt-1 block font-mono text-xs text-white/35"
+                    dir="ltr"
+                  >
                     ID · {telegramId}
                   </span>
                 ) : null}
@@ -379,7 +412,11 @@ export function ConnectTelegram({
             <>
               <Button
                 type="button"
-                onClick={() => void handleConnect()}
+                onClick={() =>
+                  status === "waiting"
+                    ? handleReopenLink()
+                    : void handleConnect()
+                }
                 disabled={status === "loading"}
                 className={cn(
                   "h-9 w-full rounded-xl border-0 px-3 text-xs font-semibold text-white transition-all duration-300",
@@ -395,7 +432,7 @@ export function ConnectTelegram({
                 ) : status === "waiting" ? (
                   <>
                     <ExternalLink className="ml-2 h-4 w-4" />
-                    باز کردن دوباره تلگرام
+                    باز کردن دوباره
                   </>
                 ) : status === "expired" || status === "error" ? (
                   <>
@@ -412,15 +449,6 @@ export function ConnectTelegram({
 
               {status === "waiting" ? (
                 <div className="flex w-full flex-col gap-2">
-                  {connectLink?.url ? (
-                    <button
-                      type="button"
-                      onClick={() => openTelegramUrl(connectLink.url!)}
-                      className="text-xs text-white/40 underline-offset-4 transition-colors hover:text-white/70 hover:underline"
-                    >
-                      لینک باز نشد؟ اینجا کلیک کنید
-                    </button>
-                  ) : null}
                   <Button
                     type="button"
                     variant="ghost"
@@ -436,7 +464,7 @@ export function ConnectTelegram({
                     ) : (
                       <>
                         <RefreshCw className="ml-2 h-4 w-4" />
-                        Start زدم — بررسی اتصال
+                        Start زدم — بررسی
                       </>
                     )}
                   </Button>
