@@ -13,7 +13,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Check, Sparkles, Crown, ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Check,
+  Sparkles,
+  Crown,
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { toPersianDigits, cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -59,7 +66,8 @@ type AbpWrapper<T> = {
 function unwrapAbp<T>(value: unknown): T | null {
   if (!value || typeof value !== "object") return null;
   const wrapper = value as AbpWrapper<T>;
-  if (wrapper.result && typeof wrapper.result === "object") return wrapper.result;
+  if (wrapper.result && typeof wrapper.result === "object")
+    return wrapper.result;
   return value as T;
 }
 
@@ -75,7 +83,10 @@ function formatMoneyAmount(value?: number | null): string {
   return toPersianDigits(displayValue.toLocaleString("fa-IR"));
 }
 
-function getDailyPriceLabel(price?: number | null, days?: number | null): string | null {
+function getDailyPriceLabel(
+  price?: number | null,
+  days?: number | null,
+): string | null {
   if (!price || !days || days <= 0) return null;
   const daily = Math.round(price / 10 / days);
   return `${toPersianDigits(daily.toLocaleString("fa-IR"))} تومان / روز`;
@@ -120,20 +131,22 @@ function buildDisplayPlans(plans: GoldPlan[]): GoldPlan[] {
   const onsVariants = plans
     .filter((plan) => plan.isOns && !plan.comingSoon)
     .sort((a, b) => (b.durationInDays ?? 0) - (a.durationInDays ?? 0));
-    
+
   const baseMazanehVariants = plans
     .filter((plan) => plan.isMazaneh && !plan.comingSoon && !plan.isBundle)
     .sort((a, b) => (b.durationInDays ?? 0) - (a.durationInDays ?? 0));
 
   const otherPlans = plans.filter(
-    (plan) => 
+    (plan) =>
       !(plan.isOns && !plan.comingSoon) &&
-      !(plan.isMazaneh && !plan.comingSoon && !plan.isBundle)
+      !(plan.isMazaneh && !plan.comingSoon && !plan.isBundle),
   );
 
   // Mock missing Mazaneh durations based on the monthly plan
   const finalMazanehVariants = [...baseMazanehVariants];
-  const monthlyMazaneh = finalMazanehVariants.find((p) => p.durationInDays === 30) || finalMazanehVariants[0];
+  const monthlyMazaneh =
+    finalMazanehVariants.find((p) => p.durationInDays === 30) ||
+    finalMazanehVariants[0];
   if (monthlyMazaneh) {
     if (!finalMazanehVariants.some((p) => p.durationInDays === 14)) {
       finalMazanehVariants.push({
@@ -153,7 +166,9 @@ function buildDisplayPlans(plans: GoldPlan[]): GoldPlan[] {
         monthlyPrice: Math.round(monthlyMazaneh.monthlyPrice / 4),
       });
     }
-    finalMazanehVariants.sort((a, b) => (b.durationInDays ?? 0) - (a.durationInDays ?? 0));
+    finalMazanehVariants.sort(
+      (a, b) => (b.durationInDays ?? 0) - (a.durationInDays ?? 0),
+    );
   }
 
   const result: GoldPlan[] = [];
@@ -162,8 +177,12 @@ function buildDisplayPlans(plans: GoldPlan[]): GoldPlan[] {
     if (onsVariants.length === 1) {
       result.push(onsVariants[0]);
     } else {
-      const preferred = onsVariants.find((plan) => plan.durationInDays === 30) ?? onsVariants[0];
-      const lowestPrice = Math.min(...onsVariants.map((plan) => plan.monthlyPrice));
+      const preferred =
+        onsVariants.find((plan) => plan.durationInDays === 30) ??
+        onsVariants[0];
+      const lowestPrice = Math.min(
+        ...onsVariants.map((plan) => plan.monthlyPrice),
+      );
       result.push({
         ...preferred,
         id: preferred.id,
@@ -171,26 +190,38 @@ function buildDisplayPlans(plans: GoldPlan[]): GoldPlan[] {
         monthlyPrice: lowestPrice,
         variants: onsVariants,
         hasDurationChoices: true,
-        ctaText: preferred.ctaText.includes("انس") ? preferred.ctaText : "فعال‌سازی اشتراک انس",
+        ctaText: preferred.ctaText.includes("انس")
+          ? preferred.ctaText
+          : "فعال‌سازی اشتراک انس",
       });
     }
   }
 
   if (finalMazanehVariants.length > 0) {
-    if (finalMazanehVariants.length === 1 && !finalMazanehVariants[0].hasDurationChoices && !baseMazanehVariants.length) {
-       result.push(finalMazanehVariants[0]);
+    if (
+      finalMazanehVariants.length === 1 &&
+      !finalMazanehVariants[0].hasDurationChoices &&
+      !baseMazanehVariants.length
+    ) {
+      result.push(finalMazanehVariants[0]);
     } else {
-       const preferred = finalMazanehVariants.find((plan) => plan.durationInDays === 30) ?? finalMazanehVariants[0];
-       const lowestPrice = Math.min(...finalMazanehVariants.map((plan) => plan.monthlyPrice));
-       result.push({
-         ...preferred,
-         id: preferred.id,
-         displayName: "اشتراک مظنه",
-         monthlyPrice: lowestPrice,
-         variants: finalMazanehVariants,
-         hasDurationChoices: finalMazanehVariants.length > 1,
-         ctaText: preferred.ctaText.includes("مظنه") ? preferred.ctaText : "فعال‌سازی اشتراک مظنه",
-       });
+      const preferred =
+        finalMazanehVariants.find((plan) => plan.durationInDays === 30) ??
+        finalMazanehVariants[0];
+      const lowestPrice = Math.min(
+        ...finalMazanehVariants.map((plan) => plan.monthlyPrice),
+      );
+      result.push({
+        ...preferred,
+        id: preferred.id,
+        displayName: "اشتراک مظنه",
+        monthlyPrice: lowestPrice,
+        variants: finalMazanehVariants,
+        hasDurationChoices: finalMazanehVariants.length > 1,
+        ctaText: preferred.ctaText.includes("مظنه")
+          ? preferred.ctaText
+          : "فعال‌سازی اشتراک مظنه",
+      });
     }
   }
 
@@ -198,18 +229,33 @@ function buildDisplayPlans(plans: GoldPlan[]): GoldPlan[] {
   return result;
 }
 
+function isLiveCatalogPlan(plan: SubscriptionPlanCatalogItemDto): boolean {
+  if (plan.includesLiveSessions === true) return true;
+  const name = (plan.name ?? "").toLowerCase();
+  const displayName = plan.displayName ?? "";
+  return name.includes("live") || displayName.includes("لایو");
+}
+
 interface PlansSectionProps {
   showHeader?: boolean;
   onPurchaseSuccess?: () => void;
+  /** When true, only plans that unlock live trade sessions are shown. */
+  onlyLiveSessions?: boolean;
 }
 
-export default function PlansSection({ showHeader = true, onPurchaseSuccess }: PlansSectionProps) {
+export default function PlansSection({
+  showHeader = true,
+  onPurchaseSuccess,
+  onlyLiveSessions = false,
+}: PlansSectionProps) {
   const router = useRouter();
   const [pendingPlanId, setPendingPlanId] = useState<number | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<GoldPlan | null>(null);
   const [durationGroup, setDurationGroup] = useState<GoldPlan | null>(null);
   const [durationOpen, setDurationOpen] = useState(false);
-  const [selectedDurationId, setSelectedDurationId] = useState<number | null>(null);
+  const [selectedDurationId, setSelectedDurationId] = useState<number | null>(
+    null,
+  );
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const modalScrollerRef = useRef<HTMLDivElement | null>(null);
@@ -245,8 +291,14 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
       ? normalizedPlansResponse.result
       : [];
 
-  const catalogPlans = plansFromApi.map(mapCatalogPlan);
-  const plans = buildDisplayPlans(catalogPlans);
+  const scopedPlansFromApi = onlyLiveSessions
+    ? plansFromApi.filter(isLiveCatalogPlan)
+    : plansFromApi;
+
+  const catalogPlans = scopedPlansFromApi.map(mapCatalogPlan);
+  const plans = onlyLiveSessions
+    ? catalogPlans.filter((plan) => !plan.comingSoon)
+    : buildDisplayPlans(catalogPlans);
   const allPurchaseablePlans = catalogPlans.filter((plan) => !plan.comingSoon);
 
   const bundlePlanIndex = plans.findIndex((plan) => plan.isBundle);
@@ -265,12 +317,20 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
     if (!plan || plan.comingSoon) return;
     setPendingPlanId(planId);
     try {
-      const response = await SubscriptionPurchaseService.apiServicesAppSubscriptionpurchaseRequestpaymentPost({
-        subscriptionPlanId: planId,
-      });
+      const response =
+        await SubscriptionPurchaseService.apiServicesAppSubscriptionpurchaseRequestpaymentPost(
+          {
+            subscriptionPlanId: planId,
+          },
+        );
 
       const payload = unwrapAbp<{ checkoutUrl?: string | null }>(response);
-      if (payload && typeof payload === "object" && "checkoutUrl" in payload && payload.checkoutUrl) {
+      if (
+        payload &&
+        typeof payload === "object" &&
+        "checkoutUrl" in payload &&
+        payload.checkoutUrl
+      ) {
         window.location.href = payload.checkoutUrl;
         return;
       }
@@ -541,8 +601,7 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
                 type="button"
                 onClick={() => openConfirm(plan)}
                 disabled={
-                  plan.comingSoon ||
-                  (isLoggedIn && pendingPlanId === plan.id)
+                  plan.comingSoon || (isLoggedIn && pendingPlanId === plan.id)
                 }
                 className={cn(
                   "w-full font-semibold",
@@ -572,7 +631,14 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
   };
 
   return (
-    <div className={showHeader ? "mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 py-16" : "w-full py-0"} id="plans">
+    <div
+      className={
+        showHeader
+          ? "mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 py-16"
+          : "w-full py-0"
+      }
+      id="plans"
+    >
       {showHeader && (
         <div className="mb-16 text-center">
           <span className="mb-4 inline-block rounded-full border border-[#A87FF3]/20 bg-[#A87FF3]/10 px-4 py-2 text-sm font-bold tracking-wider text-[#A87FF3]">
@@ -590,18 +656,27 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
         </div>
       )}
 
-      <div className={cn(
-        "relative w-full transition-all duration-300",
-        showHeader 
-          ? "mt-4 sm:mt-6 sm:rounded-3xl sm:border sm:border-[#542C85]/35 sm:bg-[#02000B]/70 py-2 sm:px-5 sm:py-8 lg:px-6 lg:py-10 sm:backdrop-blur-xl sm:shadow-[0_0_60px_rgba(84,44,133,0.2)] overflow-hidden" 
-          : "mt-0"
-      )}>
+      <div
+        className={cn(
+          "relative w-full transition-all duration-300",
+          showHeader
+            ? "mt-4 sm:mt-6 sm:rounded-3xl sm:border sm:border-[#542C85]/35 sm:bg-[#02000B]/70 py-2 sm:px-5 sm:py-8 lg:px-6 lg:py-10 sm:backdrop-blur-xl sm:shadow-[0_0_60px_rgba(84,44,133,0.2)] overflow-hidden"
+            : "mt-0",
+        )}
+      >
         {showHeader && (
           <div className="pointer-events-none absolute inset-0 hidden sm:block bg-[radial-gradient(100%_70%_at_50%_0%,rgba(168,85,247,0.15)_0%,transparent_65%)]" />
         )}
         {isLoading ? (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-5">
-            {Array.from({ length: 3 }).map((_, index) => (
+          <div
+            className={cn(
+              "grid gap-4",
+              onlyLiveSessions
+                ? "mx-auto max-w-md grid-cols-1"
+                : "grid-cols-1 md:grid-cols-3 md:gap-5",
+            )}
+          >
+            {Array.from({ length: onlyLiveSessions ? 1 : 3 }).map((_, index) => (
               <Card
                 key={`plans-skeleton-${index}`}
                 className="relative flex h-[520px] flex-col overflow-hidden rounded-[22px] border border-white/10 bg-gradient-to-br from-white/[0.08] to-[#02000B]/50"
@@ -628,14 +703,23 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
           <div className="rounded-3xl border border-dashed border-white/20 bg-white/[0.02] p-8 text-center text-white/70">
             در حال حاضر پلن فعالی برای نمایش وجود ندارد.
           </div>
-
+        ) : onlyLiveSessions ? (
+          <div className="mx-auto flex w-full max-w-md flex-col gap-4">
+            {desktopPlans.map((plan, index) => (
+              <div key={plan.id}>{renderPlanCard(plan, index, true)}</div>
+            ))}
+          </div>
         ) : (
           <>
-            {!showHeader && <div className="group/slider relative w-full absolute inset-0 z-0 pointer-events-none" />}
-            <div className={cn("relative w-full", !showHeader && "group/slider")}>
+            {!showHeader && (
+              <div className="group/slider relative w-full absolute inset-0 z-0 pointer-events-none" />
+            )}
+            <div
+              className={cn("relative w-full", !showHeader && "group/slider")}
+            >
               <style
-              dangerouslySetInnerHTML={{
-                __html: `
+                dangerouslySetInnerHTML={{
+                  __html: `
               .plans-swiper .swiper-pagination-bullet {
                 background: rgba(255, 255, 255, 0.2) !important;
                 opacity: 1 !important;
@@ -670,85 +754,85 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
                 cursor: not-allowed !important;
               }
             `,
-              }}
-            />
+                }}
+              />
 
-            {showHeader && (
-              <div className="relative z-20 mb-6 hidden items-center justify-end gap-3 md:flex">
-                <button
-                  type="button"
-                  className="plans-swiper-prev group cursor-pointer rounded-full border border-white/10 bg-white/5 p-3 text-white shadow-[0_4px_15px_rgba(0,0,0,0.2)] backdrop-blur-md transition-all hover:border-white/25 hover:bg-white/15"
-                  aria-label="Previous Slide"
-                >
-                  <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
-                </button>
-                <button
-                  type="button"
-                  className="plans-swiper-next group cursor-pointer rounded-full border border-white/10 bg-white/5 p-3 text-white shadow-[0_4px_15px_rgba(0,0,0,0.2)] backdrop-blur-md transition-all hover:border-white/25 hover:bg-white/15"
-                  aria-label="Next Slide"
-                >
-                  <ChevronLeft className="h-5 w-5 transition-transform group-hover:-translate-x-0.5" />
-                </button>
-              </div>
-            )}
+              {showHeader && (
+                <div className="relative z-20 mb-6 hidden items-center justify-end gap-3 md:flex">
+                  <button
+                    type="button"
+                    className="plans-swiper-prev group cursor-pointer rounded-full border border-white/10 bg-white/5 p-3 text-white shadow-[0_4px_15px_rgba(0,0,0,0.2)] backdrop-blur-md transition-all hover:border-white/25 hover:bg-white/15"
+                    aria-label="Previous Slide"
+                  >
+                    <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
+                  </button>
+                  <button
+                    type="button"
+                    className="plans-swiper-next group cursor-pointer rounded-full border border-white/10 bg-white/5 p-3 text-white shadow-[0_4px_15px_rgba(0,0,0,0.2)] backdrop-blur-md transition-all hover:border-white/25 hover:bg-white/15"
+                    aria-label="Next Slide"
+                  >
+                    <ChevronLeft className="h-5 w-5 transition-transform group-hover:-translate-x-0.5" />
+                  </button>
+                </div>
+              )}
 
-            <Swiper
-              modules={[Pagination, Navigation, Autoplay]}
-              spaceBetween={20}
-              slidesPerView={1.08}
-              autoplay={{
-                delay: 4000,
-                disableOnInteraction: false,
-                pauseOnMouseEnter: true,
-              }}
-              loop={desktopPlans.length > 1}
-              navigation={{
-                nextEl: ".plans-swiper-next",
-                prevEl: ".plans-swiper-prev",
-              }}
-              breakpoints={{
-                640: {
-                  slidesPerView: 2,
-                  spaceBetween: 16,
-                },
-                1024: {
-                  slidesPerView: 3,
-                  spaceBetween: 18,
-                },
-              }}
-              initialSlide={0}
-              speed={400}
-              pagination={{ clickable: true }}
-              className="plans-swiper"
-              dir="rtl"
-              style={{ direction: "rtl" }}
-            >
-              {desktopPlans.map((plan, index) => (
-                <SwiperSlide key={plan.id} className="!h-auto py-2">
-                  {renderPlanCard(plan, index, !showHeader)}
-                </SwiperSlide>
-              ))}
-            </Swiper>
-            
-            {!showHeader && (
-              <>
-                <button
-                  type="button"
-                  className="plans-swiper-prev absolute right-1 md:right-2 lg:right-3 top-[45%] z-20 -translate-y-1/2 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-[#0b0518]/60 text-white shadow-[0_0_20px_rgba(0,0,0,0.5)] backdrop-blur-md opacity-0 transition-all duration-300 group-hover/slider:opacity-100 hover:bg-[#0b0518]/90 hover:scale-110"
-                  aria-label="Previous Slide"
-                >
-                  <ChevronRight className="h-6 w-6" />
-                </button>
-                <button
-                  type="button"
-                  className="plans-swiper-next absolute left-1 md:left-2 lg:left-3 top-[45%] z-20 -translate-y-1/2 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-[#0b0518]/60 text-white shadow-[0_0_20px_rgba(0,0,0,0.5)] backdrop-blur-md opacity-0 transition-all duration-300 group-hover/slider:opacity-100 hover:bg-[#0b0518]/90 hover:scale-110"
-                  aria-label="Next Slide"
-                >
-                  <ChevronLeft className="h-6 w-6" />
-                </button>
-              </>
-            )}
-          </div>
+              <Swiper
+                modules={[Pagination, Navigation, Autoplay]}
+                spaceBetween={20}
+                slidesPerView={1.08}
+                autoplay={{
+                  delay: 4000,
+                  disableOnInteraction: false,
+                  pauseOnMouseEnter: true,
+                }}
+                loop={desktopPlans.length > 1}
+                navigation={{
+                  nextEl: ".plans-swiper-next",
+                  prevEl: ".plans-swiper-prev",
+                }}
+                breakpoints={{
+                  640: {
+                    slidesPerView: 2,
+                    spaceBetween: 16,
+                  },
+                  1024: {
+                    slidesPerView: 3,
+                    spaceBetween: 18,
+                  },
+                }}
+                initialSlide={0}
+                speed={400}
+                pagination={{ clickable: true }}
+                className="plans-swiper"
+                dir="rtl"
+                style={{ direction: "rtl" }}
+              >
+                {desktopPlans.map((plan, index) => (
+                  <SwiperSlide key={plan.id} className="!h-auto py-2">
+                    {renderPlanCard(plan, index, !showHeader)}
+                  </SwiperSlide>
+                ))}
+              </Swiper>
+
+              {!showHeader && (
+                <>
+                  <button
+                    type="button"
+                    className="plans-swiper-prev absolute right-1 md:right-2 lg:right-3 top-[45%] z-20 -translate-y-1/2 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-[#0b0518]/60 text-white shadow-[0_0_20px_rgba(0,0,0,0.5)] backdrop-blur-md opacity-0 transition-all duration-300 group-hover/slider:opacity-100 hover:bg-[#0b0518]/90 hover:scale-110"
+                    aria-label="Previous Slide"
+                  >
+                    <ChevronRight className="h-6 w-6" />
+                  </button>
+                  <button
+                    type="button"
+                    className="plans-swiper-next absolute left-1 md:left-2 lg:left-3 top-[45%] z-20 -translate-y-1/2 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-[#0b0518]/60 text-white shadow-[0_0_20px_rgba(0,0,0,0.5)] backdrop-blur-md opacity-0 transition-all duration-300 group-hover/slider:opacity-100 hover:bg-[#0b0518]/90 hover:scale-110"
+                    aria-label="Next Slide"
+                  >
+                    <ChevronLeft className="h-6 w-6" />
+                  </button>
+                </>
+              )}
+            </div>
           </>
         )}
       </div>
@@ -845,7 +929,9 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
                           : "border-white/10 bg-black/20"
                       }`}
                     >
-                      <p className="text-[11px] text-white/50 mb-1">مبلغ پرداخت</p>
+                      <p className="text-[11px] text-white/50 mb-1">
+                        مبلغ پرداخت
+                      </p>
                       <div className="flex min-w-0 flex-wrap items-baseline gap-1">
                         <span className="text-[22px] md:text-[24px] font-black leading-none tracking-tight text-white break-all">
                           {formatMoneyAmount(variant.monthlyPrice)}
@@ -938,7 +1024,9 @@ export default function PlansSection({ showHeader = true, onPurchaseSuccess }: P
               disabled={pendingPlanId === selectedPlan?.id}
               className="rounded-2xl border-0 bg-gradient-to-r from-[#6E3BC2] via-[#9D4EDD] to-[#B15CFF] text-white shadow-[0_10px_30px_rgba(168,127,243,0.45)] hover:brightness-110 cursor-pointer"
             >
-              {pendingPlanId === selectedPlan?.id ? "در حال انتقال..." : "بله، خرید پلن"}
+              {pendingPlanId === selectedPlan?.id
+                ? "در حال انتقال..."
+                : "بله، خرید پلن"}
             </Button>
           </DialogFooter>
         </DialogContent>
