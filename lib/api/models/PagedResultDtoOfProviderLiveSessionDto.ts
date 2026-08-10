@@ -3,7 +3,8 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { ProviderLiveSessionDto } from './ProviderLiveSessionDto';
-export type GetProviderLiveSessionsOutput = {
+export type PagedResultDtoOfProviderLiveSessionDto = {
     items?: Array<ProviderLiveSessionDto> | null;
+    totalCount?: number;
 };
 
