@@ -12,12 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  CalendarClock,
-  Crown,
-  CreditCard,
-  CircleAlert,
-} from "lucide-react";
+import { CalendarClock, Crown, CreditCard, CircleAlert } from "lucide-react";
 import {
   SubscriptionPurchaseService,
   type GetSubscriptionPaymentHistoryOutput,
@@ -27,7 +22,7 @@ import {
 } from "@/lib/api/client";
 import { toPersianDigits } from "@/lib/utils";
 import { getSubscriptionCheckoutStatusMeta } from "@/lib/subscription-checkout-status";
-import PlansSection from "@/components/shared/plans-section";
+import { PlansModal } from "@/components/shared/plans-modal";
 
 type AbpWrapper<T> = { result?: T };
 
@@ -48,7 +43,8 @@ function formatDate(date?: string | null): string {
 }
 
 function remainingDaysLabel(remainingDays?: number | null): string {
-  if (typeof remainingDays !== "number" || !Number.isFinite(remainingDays)) return "—";
+  if (typeof remainingDays !== "number" || !Number.isFinite(remainingDays))
+    return "—";
   return `${toPersianDigits(Math.max(0, Math.floor(remainingDays)))} روز فعال`;
 }
 
@@ -93,7 +89,8 @@ export function SubscriptionContent() {
   const hasActiveSubscription =
     !!subscriptionDetails?.hasSubscription &&
     (subscriptionDetails?.remainingDays ?? 0) > 0;
-  const historyItems = (paymentHistory?.items ?? []) as SubscriptionPaymentHistoryItemDto[];
+  const historyItems = (paymentHistory?.items ??
+    []) as SubscriptionPaymentHistoryItemDto[];
   const visibleHistoryItems = historyItems.slice(0, 3);
   const hasMoreHistory = historyItems.length > 3;
 
@@ -148,7 +145,9 @@ export function SubscriptionContent() {
                 </div>
               ) : !hasActiveSubscription ? (
                 <div className="rounded-3xl border border-dashed border-white/20 bg-white/[0.03] p-6 text-center">
-                  <p className="text-white font-semibold">اشتراک فعالی ندارید.</p>
+                  <p className="text-white font-semibold">
+                    اشتراک فعالی ندارید.
+                  </p>
                   <p className="text-sm text-white/65 mt-2">
                     برای خرید اشتراک، به بخش پلن‌ها مراجعه کنید.
                   </p>
@@ -213,26 +212,28 @@ export function SubscriptionContent() {
               ) : historyItems.length > 0 ? (
                 <div className="space-y-3">
                   {visibleHistoryItems.map((item, index) => {
-                    const statusMeta = getSubscriptionCheckoutStatusMeta(item.status);
+                    const statusMeta = getSubscriptionCheckoutStatusMeta(
+                      item.status,
+                    );
                     return (
-                    <div
-                      key={item.id ?? `payment-${index}`}
-                      className="rounded-3xl border border-white/10 bg-gradient-to-l from-white/[0.05] to-[#7A46BA]/[0.06] p-3.5 transition-all duration-300 hover:border-[#B57CFF]/30 hover:bg-gradient-to-l hover:from-white/[0.08] hover:to-[#7A46BA]/[0.12]"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm text-white font-semibold">
-                          {formatRialAmount(item.price)}
-                        </span>
-                        <span
-                          className={`text-xs px-2.5 py-1 rounded-full border font-medium ${statusMeta.className}`}
-                        >
-                          {statusMeta.label}
-                        </span>
+                      <div
+                        key={item.id ?? `payment-${index}`}
+                        className="rounded-3xl border border-white/10 bg-gradient-to-l from-white/[0.05] to-[#7A46BA]/[0.06] p-3.5 transition-all duration-300 hover:border-[#B57CFF]/30 hover:bg-gradient-to-l hover:from-white/[0.08] hover:to-[#7A46BA]/[0.12]"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm text-white font-semibold">
+                            {formatRialAmount(item.price)}
+                          </span>
+                          <span
+                            className={`text-xs px-2.5 py-1 rounded-full border font-medium ${statusMeta.className}`}
+                          >
+                            {statusMeta.label}
+                          </span>
+                        </div>
+                        <p className="text-xs text-white/65 mt-1.5">
+                          {formatDate(item.date)}
+                        </p>
                       </div>
-                      <p className="text-xs text-white/65 mt-1.5">
-                        {formatDate(item.date)}
-                      </p>
-                    </div>
                     );
                   })}
                   {hasMoreHistory && (
@@ -253,7 +254,6 @@ export function SubscriptionContent() {
             </CardContent>
           </Card>
         </div>
-
       </div>
 
       <Dialog open={showAllPayments} onOpenChange={setShowAllPayments}>
@@ -262,56 +262,43 @@ export function SubscriptionContent() {
           dir="rtl"
         >
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold">همه پرداخت‌ها</DialogTitle>
+            <DialogTitle className="text-xl font-bold">
+              همه پرداخت‌ها
+            </DialogTitle>
           </DialogHeader>
           <div className="mt-2 max-h-[60vh] space-y-3 overflow-y-auto pr-1 scrollbar-subscription">
             {historyItems.map((item, index) => {
               const statusMeta = getSubscriptionCheckoutStatusMeta(item.status);
               return (
-              <div
-                key={item.id ?? `payment-all-${index}`}
-                className="rounded-2xl border border-white/10 bg-gradient-to-l from-white/[0.05] to-[#7A46BA]/[0.06] p-3.5"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm text-white font-semibold">
-                    {formatRialAmount(item.price)}
-                  </span>
-                  <span
-                    className={`text-xs px-2.5 py-1 rounded-full border font-medium ${statusMeta.className}`}
-                  >
-                    {statusMeta.label}
-                  </span>
+                <div
+                  key={item.id ?? `payment-all-${index}`}
+                  className="rounded-2xl border border-white/10 bg-gradient-to-l from-white/[0.05] to-[#7A46BA]/[0.06] p-3.5"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm text-white font-semibold">
+                      {formatRialAmount(item.price)}
+                    </span>
+                    <span
+                      className={`text-xs px-2.5 py-1 rounded-full border font-medium ${statusMeta.className}`}
+                    >
+                      {statusMeta.label}
+                    </span>
+                  </div>
+                  <p className="text-xs text-white/65 mt-1.5">
+                    {formatDate(item.date)}
+                  </p>
                 </div>
-                <p className="text-xs text-white/65 mt-1.5">{formatDate(item.date)}</p>
-              </div>
               );
             })}
           </div>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isPlansModalOpen} onOpenChange={setIsPlansModalOpen}>
-        <DialogContent
-          className="max-h-[92vh] w-[95vw] max-w-6xl overflow-hidden border border-white/15 bg-[#0b0518] p-0 text-white shadow-[0_28px_110px_rgba(93,49,160,0.5)] sm:rounded-3xl"
-          dir="rtl"
-        >
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_80%_at_100%_0%,rgba(181,124,255,0.22)_0%,transparent_55%),radial-gradient(90%_70%_at_0%_100%,rgba(79,70,229,0.16)_0%,transparent_50%)]" />
-          <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-l from-transparent via-[#D6B4FF]/70 to-transparent" />
-
-          <div className="relative border-b border-white/10 px-5 pb-4 pt-6 sm:px-7 sm:pt-7">
-            <h2 className="text-right text-xl font-extrabold tracking-tight text-white sm:text-2xl">
-              انتخاب پلن اشتراک
-            </h2>
-            <p className="mt-1.5 text-right text-sm text-white/55">
-              پلن مناسب خود را انتخاب کنید و اشتراک خود را فعال کنید.
-            </p>
-          </div>
-
-          <div className="relative px-4 py-5 sm:px-6 sm:py-6">
-            <PlansSection showHeader={false} onPurchaseSuccess={() => setIsPlansModalOpen(false)} />
-          </div>
-        </DialogContent>
-      </Dialog>
+      <PlansModal
+        open={isPlansModalOpen}
+        onOpenChange={setIsPlansModalOpen}
+        description="پلن مناسب خود را انتخاب کنید و اشتراک خود را فعال کنید."
+      />
 
       <Dialog open={isRenewalInfoOpen} onOpenChange={setIsRenewalInfoOpen}>
         <DialogContent className="max-w-md border border-white/15 bg-[#120A24] text-white shadow-[0_24px_90px_rgba(93,49,160,0.45)]">
