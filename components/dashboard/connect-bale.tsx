@@ -95,7 +95,9 @@ export function ConnectBale({
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const pollRef = useRef<number | null>(null);
+  const checkingRef = useRef(false);
   const connectedNotifiedRef = useRef(false);
+  const connectLinkRef = useRef<BaleConnectLinkOutput | null>(null);
 
   const isConnected = Boolean(baleId) || status === "connected";
 
@@ -113,6 +115,7 @@ export function ConnectBale({
       setStatus("connected");
       setErrorMessage(null);
       setConnectLink(null);
+      connectLinkRef.current = null;
       if (!connectedNotifiedRef.current) {
         connectedNotifiedRef.current = true;
         onConnected?.(id);
@@ -146,26 +149,33 @@ export function ConnectBale({
   }, []);
 
   const checkConnection = useCallback(async () => {
-    const syncedId = await syncFromBot();
-    if (syncedId) {
-      markConnected(syncedId);
-      return true;
-    }
-
-    if (connectLink?.expiresAtUtc) {
-      const expiresAt = new Date(connectLink.expiresAtUtc).getTime();
-      if (Number.isFinite(expiresAt) && Date.now() > expiresAt) {
-        clearPoll();
-        setStatus("expired");
-        setErrorMessage(
-          "لینک اتصال منقضی شده است. لطفاً دوباره اتصال را شروع کنید.",
-        );
+    if (checkingRef.current) return false;
+    checkingRef.current = true;
+    try {
+      const syncedId = await syncFromBot();
+      if (syncedId) {
+        markConnected(syncedId);
         return true;
       }
-    }
 
-    return false;
-  }, [clearPoll, connectLink?.expiresAtUtc, markConnected, syncFromBot]);
+      const expiresAtUtc = connectLinkRef.current?.expiresAtUtc;
+      if (expiresAtUtc) {
+        const expiresAt = new Date(expiresAtUtc).getTime();
+        if (Number.isFinite(expiresAt) && Date.now() > expiresAt) {
+          clearPoll();
+          setStatus("expired");
+          setErrorMessage(
+            "لینک اتصال منقضی شده است. لطفاً دوباره اتصال را شروع کنید.",
+          );
+          return true;
+        }
+      }
+
+      return false;
+    } finally {
+      checkingRef.current = false;
+    }
+  }, [clearPoll, markConnected, syncFromBot]);
 
   useEffect(() => {
     let cancelled = false;
@@ -200,15 +210,31 @@ export function ConnectBale({
     void checkConnection();
     pollRef.current = window.setInterval(() => {
       void checkConnection();
-    }, 3000);
+    }, 1500);
 
     return clearPoll;
   }, [status, checkConnection, clearPoll]);
+
+  useEffect(() => {
+    if (status !== "waiting") return;
+
+    const onResume = () => {
+      void checkConnection();
+    };
+
+    window.addEventListener("focus", onResume);
+    document.addEventListener("visibilitychange", onResume);
+    return () => {
+      window.removeEventListener("focus", onResume);
+      document.removeEventListener("visibilitychange", onResume);
+    };
+  }, [status, checkConnection]);
 
   const handleConnect = useCallback(async () => {
     setStatus("loading");
     setErrorMessage(null);
     setConnectLink(null);
+    connectLinkRef.current = null;
     connectedNotifiedRef.current = false;
     clearPoll();
 
@@ -222,6 +248,7 @@ export function ConnectBale({
         throw new Error("invalid-link");
       }
 
+      connectLinkRef.current = link;
       setConnectLink(link);
       openBaleUrl(url);
       setStatus("waiting");
@@ -229,6 +256,15 @@ export function ConnectBale({
       fail("دریافت لینک اتصال بله ناموفق بود. دوباره تلاش کنید.");
     }
   }, [clearPoll, fail]);
+
+  const handleReopenLink = useCallback(() => {
+    const url = connectLinkRef.current?.url?.trim() || connectLink?.url?.trim();
+    if (url && isSafeBaleUrl(url)) {
+      openBaleUrl(url);
+      return;
+    }
+    void handleConnect();
+  }, [connectLink?.url, handleConnect]);
 
   const handleManualSync = useCallback(async () => {
     setIsSyncing(true);
@@ -367,7 +403,9 @@ export function ConnectBale({
             <>
               <Button
                 type="button"
-                onClick={() => void handleConnect()}
+                onClick={() =>
+                  status === "waiting" ? handleReopenLink() : void handleConnect()
+                }
                 disabled={status === "loading"}
                 className={cn(
                   "h-9 w-full rounded-xl border-0 px-3 text-xs font-semibold text-white transition-all duration-300",
@@ -383,7 +421,7 @@ export function ConnectBale({
                 ) : status === "waiting" ? (
                   <>
                     <ExternalLink className="ml-2 h-4 w-4" />
-                    باز کردن دوباره بله
+                    باز کردن دوباره
                   </>
                 ) : status === "expired" || status === "error" ? (
                   <>
@@ -400,15 +438,6 @@ export function ConnectBale({
 
               {status === "waiting" ? (
                 <div className="flex w-full flex-col gap-2">
-                  {connectLink?.url ? (
-                    <button
-                      type="button"
-                      onClick={() => openBaleUrl(connectLink.url!)}
-                      className="text-xs text-white/40 underline-offset-4 transition-colors hover:text-white/70 hover:underline"
-                    >
-                      لینک باز نشد؟ اینجا کلیک کنید
-                    </button>
-                  ) : null}
                   <Button
                     type="button"
                     variant="ghost"
@@ -424,7 +453,7 @@ export function ConnectBale({
                     ) : (
                       <>
                         <RefreshCw className="ml-2 h-4 w-4" />
-                        Start زدم — بررسی اتصال
+                        Start زدم — بررسی
                       </>
                     )}
                   </Button>
