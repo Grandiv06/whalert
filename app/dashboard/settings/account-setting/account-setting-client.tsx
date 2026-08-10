@@ -34,7 +34,6 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
-  Send,
   Activity,
   Download,
 } from "lucide-react";
@@ -52,6 +51,8 @@ import {
   uploadProfilePicture,
   validateProfileImageFile,
 } from "@/lib/profile-avatar-upload";
+import { ConnectTelegram } from "@/components/dashboard/connect-telegram";
+import { ConnectBale } from "@/components/dashboard/connect-bale";
 
 type AbpWrapper<T> = { result?: T };
 
@@ -113,14 +114,6 @@ type AvatarToast = {
   kind: AvatarToastKind;
   message: string;
 };
-
-type TelegramConnectResponse = {
-  url: string;
-  botUsername: string;
-  expiresAtUtc: string;
-};
-
-type TelegramStatus = "idle" | "loading" | "waiting" | "connected" | "expired" | "error";
 
 type CropSourceImage = {
   src: string;
@@ -1086,9 +1079,6 @@ export function AccountSettingClient() {
   >(undefined);
   const [avatarToasts, setAvatarToasts] = useState<AvatarToast[]>([]);
   const [isMetaTraderTokenCopied, setIsMetaTraderTokenCopied] = useState(false);
-  const [telegramStatus, setTelegramStatus] = useState<TelegramStatus>("idle");
-  const [telegramConnectLink, setTelegramConnectLink] = useState<TelegramConnectResponse | null>(null);
-  const [pollingActive, setPollingActive] = useState(false);
   const avatarToastTimersRef = useRef<Map<number, number>>(new Map());
   const metaTraderCopiedTimerRef = useRef<number | null>(null);
   const metaTraderTokenInputRef = useRef<HTMLInputElement>(null);
@@ -1249,68 +1239,6 @@ export function AccountSettingClient() {
       return unwrapAbp<CurrentUserProfileEditDto>(res);
     },
   });
-
-  useEffect(() => {
-    if (profile?.telegramId) {
-      setTelegramStatus("connected");
-    } else if (telegramStatus === "connected") {
-      setTelegramStatus("idle");
-    }
-  }, [profile?.telegramId, telegramStatus]);
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (telegramStatus === "waiting" && pollingActive) {
-      interval = setInterval(async () => {
-        try {
-          const { data: updatedProfile } = await refetchProfile();
-          if (updatedProfile?.telegramId) {
-            setTelegramStatus("connected");
-            setPollingActive(false);
-            pushAvatarToast("تلگرام با موفقیت متصل شد.", "success");
-            return;
-          }
-
-          if (telegramConnectLink?.expiresAtUtc) {
-            const expiresAt = new Date(telegramConnectLink.expiresAtUtc).getTime();
-            const now = new Date().getTime();
-            if (now > expiresAt) {
-              setTelegramStatus("expired");
-              setPollingActive(false);
-            }
-          }
-        } catch (err) {
-          console.error("Polling profile failed:", err);
-        }
-      }, 3000);
-    }
-    return () => clearInterval(interval);
-  }, [telegramStatus, pollingActive, refetchProfile, telegramConnectLink, pushAvatarToast]);
-
-  const handleConnectTelegram = useCallback(async () => {
-    setTelegramStatus("loading");
-    setTelegramConnectLink(null);
-    setPollingActive(false);
-    try {
-      const res =
-        await UserDashboardService.apiServicesAppUserdashboardGettelegramconnectlinkGet();
-      const link = unwrapAbp<TelegramConnectResponse>(res);
-
-      if (!link?.url) {
-        throw new Error("Telegram connect link is missing.");
-      }
-
-      setTelegramConnectLink(link);
-      window.open(link.url, "_blank", "noopener,noreferrer");
-      setTelegramStatus("waiting");
-      setPollingActive(true);
-    } catch (error) {
-      console.error("GetTelegramConnectLink failed:", error);
-      setTelegramStatus("error");
-      setPollingActive(false);
-      pushAvatarToast("دریافت لینک اتصال به تلگرام ناموفق بود.", "error");
-    }
-  }, [pushAvatarToast]);
 
   const { data: pictureOut, isLoading: pictureLoading } = useQuery({
     queryKey: ["profilePicture"],
@@ -1646,130 +1574,19 @@ export function AccountSettingClient() {
             {/* Integration Tab */}
             <TabsContent value="integration" className="mt-0">
               <div className="space-y-6" dir="rtl" style={{ direction: "rtl" }}>
-                {/* Telegram Integration */}
-                <div
-                  className={`rounded-xl p-6 border transition-all  ${
-                    theme === "dark"
-                      ? "bg-white/5 border-white/10 hover:border-white/20"
-                      : "bg-white border-gray-200 hover:border-gray-300 shadow-sm"
-                  }`}
-                  dir="rtl"
-                  style={{ direction: "rtl" }}
-                >
-                  <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-                    <div className="flex items-center gap-4 text-right">
-                      <div
-                        className={`w-14 h-14 rounded-2xl flex items-center justify-center border transition-all shrink-0 ${
-                          telegramStatus === "connected"
-                            ? theme === "dark"
-                              ? "bg-green-500/10 border-green-500/20 shadow-[0_0_15px_rgba(34,197,94,0.1)]"
-                              : "bg-green-50 border-green-100"
-                            : theme === "dark"
-                            ? "bg-blue-500/10 border-blue-500/20"
-                            : "bg-blue-50 border-blue-100"
-                        }`}
-                      >
-                        {telegramStatus === "connected" ? (
-                          <CheckCircle2
-                            size={28}
-                            className={
-                              theme === "dark" ? "text-green-400" : "text-green-600"
-                            }
-                          />
-                        ) : (
-                          <Send
-                            size={28}
-                            className={
-                              theme === "dark" ? "text-blue-400" : "text-blue-600"
-                            }
-                          />
-                        )}
-                      </div>
-                      <div>
-                        <h3
-                          className={`text-xl font-bold mb-1 ${
-                            theme === "dark" ? "text-white" : "text-gray-900"
-                          }`}
-                        >
-                          تلگرام
-                        </h3>
-                        <div
-                          className={`text-sm leading-relaxed ${
-                            theme === "dark" ? "text-gray-400" : "text-gray-600"
-                          }`}
-                        >
-                          {telegramStatus === "connected" ? (
-                            <div className="flex items-center gap-2 text-green-500 font-medium">
-                              <span>تلگرام متصل شد</span>
-                              {profile?.telegramId && (
-                                <span dir="ltr" className="opacity-70 text-xs">({profile.telegramId})</span>
-                              )}
-                            </div>
-                          ) : telegramStatus === "loading" ? (
-                            "در حال ایجاد لینک اتصال به تلگرام..."
-                          ) : telegramStatus === "waiting" ? (
-                            <div className="space-y-1">
-                              <p className="text-blue-400">در انتظار زدن دکمه Start در تلگرام...</p>
-                              {telegramConnectLink && (
-                                <button 
-                                  onClick={() => window.open(telegramConnectLink.url, "_blank")}
-                                  className="text-xs underline hover:text-blue-300"
-                                >
-                                  لینک باز نشد؟ دوباره کلیک کنید
-                                </button>
-                              )}
-                            </div>
-                          ) : telegramStatus === "expired" ? (
-                            <span className="text-red-400">لینک اتصال منقضی شده است. لطفا دوباره تلاش کنید.</span>
-                          ) : telegramStatus === "error" ? (
-                            <span className="text-red-400">خطا در برقراری ارتباط. لطفا دوباره تلاش کنید.</span>
-                          ) : (
-                            "برای دریافت سیگنال‌ها در تلگرام، حساب خود را متصل کنید"
-                          )}
-                        </div>
-                      </div>
-                    </div>
+                <ConnectTelegram
+                  onConnected={() =>
+                    pushAvatarToast("تلگرام با موفقیت متصل شد.", "success")
+                  }
+                  onError={(message) => pushAvatarToast(message, "error")}
+                />
 
-                    <div className="flex shrink-0">
-                      {telegramStatus === "connected" ? (
-                        <div className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 ${
-                          theme === "dark" ? "bg-green-500/10 text-green-400" : "bg-green-50 text-green-700"
-                        }`}>
-                          <CheckCircle2 size={16} />
-                          متصل
-                        </div>
-                      ) : (
-                        <Button
-                          variant={telegramStatus === "expired" || telegramStatus === "error" ? "destructive" : "default"}
-                          size="lg"
-                          className={`w-full md:w-auto font-bold px-8 h-12 rounded-xl transition-all ${
-                            telegramStatus === "waiting" 
-                              ? "bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-600/20" 
-                              : "shadow-lg"
-                          }`}
-                          onClick={handleConnectTelegram}
-                          disabled={telegramStatus === "loading" || telegramStatus === "waiting"}
-                        >
-                          {telegramStatus === "loading" ? (
-                            <>
-                              <Loader2 className="ml-2 h-5 w-5 animate-spin" />
-                              در حال پردازش...
-                            </>
-                          ) : telegramStatus === "waiting" ? (
-                            <>
-                              <Activity className="ml-2 h-5 w-5 animate-pulse" />
-                              در انتظار تایید...
-                            </>
-                          ) : telegramStatus === "expired" || telegramStatus === "error" ? (
-                            "تلاش مجدد"
-                          ) : (
-                            "اتصال به تلگرام"
-                          )}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                <ConnectBale
+                  onConnected={() =>
+                    pushAvatarToast("بله با موفقیت متصل شد.", "success")
+                  }
+                  onError={(message) => pushAvatarToast(message, "error")}
+                />
 
                 {/* MetaTrader Integration */}
                 <div

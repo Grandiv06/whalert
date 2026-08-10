@@ -42,6 +42,7 @@ import type { SignalManagementMessageDto } from '../models/SignalManagementMessa
 import type { SignalProviderInfoInput } from '../models/SignalProviderInfoInput';
 import type { SubmitSignalFromUserInputDto } from '../models/SubmitSignalFromUserInputDto';
 import type { TelegramConnectLinkOutput } from '../models/TelegramConnectLinkOutput';
+import type { TelegramConnectSyncOutput } from '../models/TelegramConnectSyncOutput';
 import type { TradingSignalDetailDto } from '../models/TradingSignalDetailDto';
 import type { UploadSignalPictureOutput } from '../models/UploadSignalPictureOutput';
 import type { UserSubscriptionPlanDetailsDto } from '../models/UserSubscriptionPlanDetailsDto';
@@ -76,12 +77,32 @@ export class UserDashboardService {
         });
     }
     /**
+     * @returns TelegramConnectLinkOutput Success
+     * @throws ApiError
+     */
+    public static apiServicesAppUserdashboardGettelegramconnectlinkPost(): CancelablePromise<TelegramConnectLinkOutput> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/services/app/UserDashboard/GetTelegramConnectLink',
+        });
+    }
+    /**
      * @returns BaleConnectLinkOutput Success
      * @throws ApiError
      */
     public static apiServicesAppUserdashboardGetbaleconnectlinkGet(): CancelablePromise<BaleConnectLinkOutput> {
         return __request(OpenAPI, {
             method: 'GET',
+            url: '/api/services/app/UserDashboard/GetBaleConnectLink',
+        });
+    }
+    /**
+     * @returns BaleConnectLinkOutput Success
+     * @throws ApiError
+     */
+    public static apiServicesAppUserdashboardGetbaleconnectlinkPost(): CancelablePromise<BaleConnectLinkOutput> {
+        return __request(OpenAPI, {
+            method: 'POST',
             url: '/api/services/app/UserDashboard/GetBaleConnectLink',
         });
     }
@@ -93,6 +114,16 @@ export class UserDashboardService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/services/app/UserDashboard/SyncBaleConnect',
+        });
+    }
+    /**
+     * @returns TelegramConnectSyncOutput Success
+     * @throws ApiError
+     */
+    public static apiServicesAppUserdashboardSynctelegramconnectPost(): CancelablePromise<TelegramConnectSyncOutput> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/services/app/UserDashboard/SyncTelegramConnect',
         });
     }
     /**

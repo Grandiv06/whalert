@@ -18,5 +18,9 @@ export type ProviderSettingsOutput = {
     rating?: number;
     canEditProviderProfile?: boolean;
     canEditPersonalProfile?: boolean;
+    telegramConnected?: boolean;
+    baleConnected?: boolean;
+    telegramId?: string | null;
+    baleId?: string | null;
 };
 

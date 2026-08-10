@@ -4,6 +4,7 @@
 /* eslint-disable */
 import type { JalaliDateTimeInput } from './JalaliDateTimeInput';
 export type CreateProviderLiveSessionInput = {
+    signalProviderId?: number | null;
     title?: string | null;
     meetingUrl?: string | null;
     scheduledAt?: JalaliDateTimeInput;

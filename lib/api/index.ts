@@ -231,7 +231,7 @@ export type { GetProfilePictureOutput } from './models/GetProfilePictureOutput';
 export type { GetProfitShareOutput } from './models/GetProfitShareOutput';
 export type { GetProvidedOutPut } from './models/GetProvidedOutPut';
 export type { GetProvidedSignalDetailInput } from './models/GetProvidedSignalDetailInput';
-export type { GetProviderLiveSessionsOutput } from './models/GetProviderLiveSessionsOutput';
+export type { GetProviderLiveSessionsInput } from './models/GetProviderLiveSessionsInput';
 export type { GetProviderSubscribersInput } from './models/GetProviderSubscribersInput';
 export type { GetProviderTeamAccountsOutput } from './models/GetProviderTeamAccountsOutput';
 export type { GetPublishedNotificationsOutput } from './models/GetPublishedNotificationsOutput';
@@ -409,6 +409,7 @@ export type { PagedResultDtoOfPlatformUserListItemDto } from './models/PagedResu
 export type { PagedResultDtoOfPositionResultSignalExecutionLookupTableDto } from './models/PagedResultDtoOfPositionResultSignalExecutionLookupTableDto';
 export type { PagedResultDtoOfPositionViewDto } from './models/PagedResultDtoOfPositionViewDto';
 export type { PagedResultDtoOfProviderAdminListItemDto } from './models/PagedResultDtoOfProviderAdminListItemDto';
+export type { PagedResultDtoOfProviderLiveSessionDto } from './models/PagedResultDtoOfProviderLiveSessionDto';
 export type { PagedResultDtoOfProviderSubscriberDto } from './models/PagedResultDtoOfProviderSubscriberDto';
 export type { PagedResultDtoOfReferralTransactionMarketLookupTableDto } from './models/PagedResultDtoOfReferralTransactionMarketLookupTableDto';
 export type { PagedResultDtoOfReferralTransactionOutPutDto } from './models/PagedResultDtoOfReferralTransactionOutPutDto';
@@ -580,6 +581,7 @@ export type { SwitchToLinkedAccountInput } from './models/SwitchToLinkedAccountI
 export type { SwitchToLinkedAccountOutput } from './models/SwitchToLinkedAccountOutput';
 export { TargetType } from './models/TargetType';
 export type { TelegramConnectLinkOutput } from './models/TelegramConnectLinkOutput';
+export type { TelegramConnectSyncOutput } from './models/TelegramConnectSyncOutput';
 export { TenantAvailabilityState } from './models/TenantAvailabilityState';
 export type { TenantBillingSettingsEditDto } from './models/TenantBillingSettingsEditDto';
 export type { TenantEditDto } from './models/TenantEditDto';

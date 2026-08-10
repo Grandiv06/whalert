@@ -3,6 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { TelegramConnectLinkOutput } from '../models/TelegramConnectLinkOutput';
+import type { TelegramConnectSyncOutput } from '../models/TelegramConnectSyncOutput';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -31,6 +32,16 @@ export class TelegramConnectService {
             query: {
                 'requestBody': requestBody,
             },
+        });
+    }
+    /**
+     * @returns TelegramConnectSyncOutput Success
+     * @throws ApiError
+     */
+    public static apiServicesAppTelegramconnectSyncconnectfrombotupdatesPost(): CancelablePromise<TelegramConnectSyncOutput> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/services/app/TelegramConnect/SyncConnectFromBotUpdates',
         });
     }
 }

@@ -14,12 +14,13 @@ import type { GetDeliveryChannelsOutput } from '../models/GetDeliveryChannelsOut
 import type { GetMySignalForEditInput } from '../models/GetMySignalForEditInput';
 import type { GetMySignalForEditOutput } from '../models/GetMySignalForEditOutput';
 import type { GetProvidedSignalDetailInput } from '../models/GetProvidedSignalDetailInput';
-import type { GetProviderLiveSessionsOutput } from '../models/GetProviderLiveSessionsOutput';
+import type { GetProviderLiveSessionsInput } from '../models/GetProviderLiveSessionsInput';
 import type { GetProviderSubscribersInput } from '../models/GetProviderSubscribersInput';
 import type { GetProviderTeamAccountsOutput } from '../models/GetProviderTeamAccountsOutput';
 import type { GetSignalManagementMessagesInput } from '../models/GetSignalManagementMessagesInput';
 import type { NewSignalInput } from '../models/NewSignalInput';
 import type { PagedResultDtoOfGetProvidedOutPut } from '../models/PagedResultDtoOfGetProvidedOutPut';
+import type { PagedResultDtoOfProviderLiveSessionDto } from '../models/PagedResultDtoOfProviderLiveSessionDto';
 import type { PagedResultDtoOfProviderSubscriberDto } from '../models/PagedResultDtoOfProviderSubscriberDto';
 import type { PostSignalManagementMessageInput } from '../models/PostSignalManagementMessageInput';
 import type { PostSignalManagementMessageOutput } from '../models/PostSignalManagementMessageOutput';
@@ -393,13 +394,18 @@ export class SignalProviderService {
         });
     }
     /**
-     * @returns GetProviderLiveSessionsOutput Success
+     * @param requestBody
+     * @returns PagedResultDtoOfProviderLiveSessionDto Success
      * @throws ApiError
      */
-    public static apiServicesAppSignalproviderGetproviderlivesessionsPost(): CancelablePromise<GetProviderLiveSessionsOutput> {
+    public static apiServicesAppSignalproviderGetproviderlivesessionsPost(
+        requestBody?: GetProviderLiveSessionsInput,
+    ): CancelablePromise<PagedResultDtoOfProviderLiveSessionDto> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/services/app/SignalProvider/GetProviderLiveSessions',
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
     /**
