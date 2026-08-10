@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,19 +12,42 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { CalendarClock, Crown, CreditCard, CircleAlert } from "lucide-react";
+import {
+  CalendarClock,
+  Crown,
+  CreditCard,
+  CircleAlert,
+  Radio,
+  Coins,
+  Hourglass,
+} from "lucide-react";
 import {
   SubscriptionPurchaseService,
+  SubscriptionDashboardService,
   type GetSubscriptionPaymentHistoryOutput,
   type SubscriptionPaymentHistoryItemDto,
-  UserDashboardService,
-  type UserSubscriptionPlanDetailsDto,
+  type MySubscriptionQueueDto,
+  type ReservedSubscriptionItemDto,
+  type SubscriptionPlanCatalogItemDto,
+  UserSubscriptionStatus,
 } from "@/lib/api/client";
-import { toPersianDigits } from "@/lib/utils";
+import { cn, toPersianDigits } from "@/lib/utils";
 import { getSubscriptionCheckoutStatusMeta } from "@/lib/subscription-checkout-status";
+import {
+  isOnsCatalogPlan,
+  isMazanehCatalogPlan,
+} from "@/lib/subscription-plan-duration";
 import { PlansModal } from "@/components/shared/plans-modal";
 
 type AbpWrapper<T> = { result?: T };
+
+type SubscriptionKind = "live" | "asset" | "other";
+
+type DisplaySubscription = ReservedSubscriptionItemDto & {
+  kind: SubscriptionKind;
+  kindLabel: string;
+  isQueued: boolean;
+};
 
 function unwrapAbp<T>(res: unknown): T {
   const w = res as AbpWrapper<T>;
@@ -53,6 +76,73 @@ function formatRialAmount(amount?: number): string {
   return `${toPersianDigits(amount.toLocaleString("fa-IR"))} ریال`;
 }
 
+function isActiveStatus(status?: UserSubscriptionStatus | number | null) {
+  return status === UserSubscriptionStatus._2 || status === 2;
+}
+
+function isQueuedStatus(status?: UserSubscriptionStatus | number | null) {
+  return status === UserSubscriptionStatus._1 || status === 1;
+}
+
+function isLiveCatalogPlan(plan: SubscriptionPlanCatalogItemDto): boolean {
+  if (plan.includesLiveSessions === true) return true;
+  const name = (plan.name ?? "").toLowerCase();
+  const displayName = plan.displayName ?? "";
+  return name.includes("live") || displayName.includes("لایو");
+}
+
+function resolveSubscriptionKind(
+  item: ReservedSubscriptionItemDto,
+  catalogById: Map<number, SubscriptionPlanCatalogItemDto>,
+): { kind: SubscriptionKind; kindLabel: string } {
+  const catalog = item.subscriptionPlanId
+    ? catalogById.get(item.subscriptionPlanId)
+    : undefined;
+  const planName = (
+    item.planDisplayName ??
+    item.planName ??
+    catalog?.displayName ??
+    catalog?.name ??
+    ""
+  ).toLowerCase();
+  const displayName =
+    item.planDisplayName ?? item.planName ?? catalog?.displayName ?? "";
+
+  if (
+    (catalog && isLiveCatalogPlan(catalog)) ||
+    planName.includes("live") ||
+    displayName.includes("لایو")
+  ) {
+    return { kind: "live", kindLabel: "لایو ترید" };
+  }
+
+  if (catalog && isOnsCatalogPlan(catalog)) {
+    return { kind: "asset", kindLabel: "انس جهانی" };
+  }
+
+  if (catalog && isMazanehCatalogPlan(catalog)) {
+    return { kind: "asset", kindLabel: "مظنه" };
+  }
+
+  if (
+    displayName.includes("انس") ||
+    displayName.includes("مظنه") ||
+    displayName.includes("طلا") ||
+    planName.includes("xau") ||
+    planName.includes("mozaneh")
+  ) {
+    return { kind: "asset", kindLabel: "اشتراک ارز" };
+  }
+
+  return { kind: "other", kindLabel: "اشتراک" };
+}
+
+function KindIcon({ kind }: { kind: SubscriptionKind }) {
+  if (kind === "live") return <Radio className="h-4 w-4" />;
+  if (kind === "asset") return <Coins className="h-4 w-4" />;
+  return <Crown className="h-4 w-4" />;
+}
+
 export function SubscriptionContent() {
   const searchParams = useSearchParams();
   const [showAllPayments, setShowAllPayments] = useState(false);
@@ -61,12 +151,22 @@ export function SubscriptionContent() {
   );
   const [isRenewalInfoOpen, setIsRenewalInfoOpen] = useState(false);
 
-  const { data: subscriptionDetails, isLoading: detailsLoading } = useQuery({
-    queryKey: ["mySubscriptionPlanDetails"],
+  const { data: subscriptionQueue, isLoading: queueLoading } = useQuery({
+    queryKey: ["mySubscriptionQueue"],
     queryFn: async () => {
       const res =
-        await UserDashboardService.apiServicesAppUserdashboardGetmysubscriptionplandetailsGet();
-      return unwrapAbp<UserSubscriptionPlanDetailsDto>(res);
+        await SubscriptionDashboardService.apiServicesAppSubscriptiondashboardGetmysubscriptionqueueGet();
+      return unwrapAbp<MySubscriptionQueueDto>(res);
+    },
+  });
+
+  const { data: catalogPlans = [], isLoading: catalogLoading } = useQuery({
+    queryKey: ["landing-active-subscription-plans"],
+    queryFn: async () => {
+      const res =
+        await SubscriptionDashboardService.apiServicesAppSubscriptiondashboardGetactivesubscriptionplansGet();
+      const unwrapped = unwrapAbp<SubscriptionPlanCatalogItemDto[]>(res);
+      return Array.isArray(unwrapped) ? unwrapped : [];
     },
   });
 
@@ -79,16 +179,49 @@ export function SubscriptionContent() {
     },
   });
 
-  const currentEditionName =
-    subscriptionDetails?.planDisplayName ??
-    subscriptionDetails?.planName ??
-    "پلن مشخص نشده";
-  const activationDate = formatDate(subscriptionDetails?.startDateUtc);
-  const endDate = formatDate(subscriptionDetails?.endDateUtc);
-  const activeDaysText = remainingDaysLabel(subscriptionDetails?.remainingDays);
-  const hasActiveSubscription =
-    !!subscriptionDetails?.hasSubscription &&
-    (subscriptionDetails?.remainingDays ?? 0) > 0;
+  const catalogById = useMemo(() => {
+    const map = new Map<number, SubscriptionPlanCatalogItemDto>();
+    for (const plan of catalogPlans) {
+      if (typeof plan.id === "number") map.set(plan.id, plan);
+    }
+    return map;
+  }, [catalogPlans]);
+
+  const displaySubscriptions = useMemo(() => {
+    const items = subscriptionQueue?.items ?? [];
+    const mapped: DisplaySubscription[] = items
+      .filter(
+        (item) => isActiveStatus(item.status) || isQueuedStatus(item.status),
+      )
+      .map((item) => {
+        const { kind, kindLabel } = resolveSubscriptionKind(item, catalogById);
+        const isQueued = isQueuedStatus(item.status) && !isActiveStatus(item.status);
+        return {
+          ...item,
+          kind,
+          kindLabel: isQueued ? "در صف فعال‌سازی" : kindLabel,
+          isQueued,
+        };
+      })
+      .sort((a, b) => {
+        if (a.isQueued !== b.isQueued) return a.isQueued ? 1 : -1;
+        if (a.kind === "live" && b.kind !== "live") return -1;
+        if (b.kind === "live" && a.kind !== "live") return 1;
+        return (b.remainingDays ?? 0) - (a.remainingDays ?? 0);
+      });
+
+    return mapped;
+  }, [subscriptionQueue?.items, catalogById]);
+
+  const activeSubscriptions = displaySubscriptions.filter(
+    (item) => !item.isQueued,
+  );
+  const queuedSubscriptions = displaySubscriptions.filter(
+    (item) => item.isQueued,
+  );
+  const hasAnySubscription = displaySubscriptions.length > 0;
+  const detailsLoading = queueLoading || catalogLoading;
+
   const historyItems = (paymentHistory?.items ??
     []) as SubscriptionPaymentHistoryItemDto[];
   const visibleHistoryItems = historyItems.slice(0, 3);
@@ -104,7 +237,8 @@ export function SubscriptionContent() {
                 اشتراک من
               </h1>
               <p className="text-sm md:text-base text-white/70">
-                وضعیت پلن فعلی، تاریخ انقضا و سابقه پرداخت‌ها را اینجا می‌بینید.
+                همه اشتراک‌های فعال شما مثل لایو ترید و اشتراک ارز، تاریخ انقضا و
+                سابقه پرداخت‌ها را اینجا می‌بینید.
               </p>
             </div>
             <Button
@@ -122,9 +256,9 @@ export function SubscriptionContent() {
               <div className="flex items-center justify-between gap-3 text-white">
                 <div className="flex items-center gap-2">
                   <Crown className="w-5 h-5 text-[#B57CFF]" />
-                  <h2 className="font-bold text-lg">وضعیت اشتراک فعلی</h2>
+                  <h2 className="font-bold text-lg">اشتراک‌های فعال</h2>
                 </div>
-                {detailsLoading ? null : hasActiveSubscription ? (
+                {detailsLoading ? null : hasAnySubscription ? (
                   <Button
                     type="button"
                     variant="ghost"
@@ -138,18 +272,19 @@ export function SubscriptionContent() {
               </div>
 
               {detailsLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {[1, 2, 3].map((i) => (
-                    <Skeleton key={i} className="h-24 bg-white/10" />
+                <div className="grid grid-cols-1 gap-4">
+                  {[1, 2].map((i) => (
+                    <Skeleton key={i} className="h-36 bg-white/10 rounded-3xl" />
                   ))}
                 </div>
-              ) : !hasActiveSubscription ? (
+              ) : !hasAnySubscription ? (
                 <div className="rounded-3xl border border-dashed border-white/20 bg-white/[0.03] p-6 text-center">
                   <p className="text-white font-semibold">
                     اشتراک فعالی ندارید.
                   </p>
                   <p className="text-sm text-white/65 mt-2">
-                    برای خرید اشتراک، به بخش پلن‌ها مراجعه کنید.
+                    برای خرید اشتراک لایو ترید یا اشتراک ارز، به بخش پلن‌ها
+                    مراجعه کنید.
                   </p>
                   <Button
                     onClick={() => setIsPlansModalOpen(true)}
@@ -160,32 +295,29 @@ export function SubscriptionContent() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="rounded-3xl border border-white/5 bg-white/[0.04] p-4">
-                      <p className="text-xs text-white/60 mb-2">پلن فعال</p>
-                      <p className="text-lg text-white font-bold break-words leading-8">
-                        {currentEditionName}
-                      </p>
-                    </div>
+                  {activeSubscriptions.map((item, index) => (
+                    <SubscriptionCard
+                      key={item.subscriptionId ?? `active-${index}`}
+                      item={item}
+                    />
+                  ))}
 
-                    <div className="rounded-3xl border border-white/5 bg-white/[0.04] p-4">
-                      <p className="text-xs text-white/60 mb-2">
-                        تاریخ فعال‌سازی
-                      </p>
-                      <p className="text-lg text-white font-bold">
-                        {activationDate}
-                      </p>
-                    </div>
-
-                    <div className="rounded-3xl border border-white/5 bg-white/[0.04] p-4">
-                      <p className="text-xs text-white/60 mb-2">پایان اشتراک</p>
-                      <p className="text-lg text-white font-bold">{endDate}</p>
-                      <div className="mt-3 text-xs text-white/60 flex items-center gap-1">
-                        <CalendarClock className="w-3 h-3" />
-                        {activeDaysText}
+                  {queuedSubscriptions.length > 0 ? (
+                    <div className="space-y-3 pt-2">
+                      <div className="flex items-center gap-2 text-white/70">
+                        <Hourglass className="h-4 w-4 text-amber-300" />
+                        <p className="text-sm font-medium">
+                          اشتراک‌های در صف فعال‌سازی
+                        </p>
                       </div>
+                      {queuedSubscriptions.map((item, index) => (
+                        <SubscriptionCard
+                          key={item.subscriptionId ?? `queued-${index}`}
+                          item={item}
+                        />
+                      ))}
                     </div>
-                  </div>
+                  ) : null}
                 </div>
               )}
             </CardContent>
@@ -308,11 +440,88 @@ export function SubscriptionContent() {
             </DialogTitle>
           </DialogHeader>
           <div className="rounded-3xl border border-[#B57CFF]/25 bg-[#B57CFF]/10 p-4 text-sm leading-7 text-white/80">
-            اگر اشتراک جدیدی بخرید و اشتراک فعلی هنوز تمام نشده باشد، اشتراک
-            جدید بعد از پایان اشتراک فعلی فعال می‌شود.
+            اگر برای یک نوع اشتراک (مثلاً لایو ترید یا یک ارز) اشتراک جدیدی
+            بخرید و اشتراک فعلی همان نوع هنوز تمام نشده باشد، اشتراک جدید بعد از
+            پایان اشتراک فعلی فعال می‌شود.
           </div>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function SubscriptionCard({ item }: { item: DisplaySubscription }) {
+  const planName =
+    item.planDisplayName ?? item.planName ?? "پلن مشخص نشده";
+
+  return (
+    <div
+      className={cn(
+        "rounded-3xl border p-4 md:p-5 transition-colors",
+        item.isQueued
+          ? "border-amber-400/20 bg-amber-500/[0.06]"
+          : item.kind === "live"
+            ? "border-purple-400/25 bg-gradient-to-l from-[#7A46BA]/[0.12] to-white/[0.03]"
+            : "border-white/10 bg-white/[0.04]",
+      )}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div className="space-y-1.5 min-w-0">
+          <span
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold",
+              item.isQueued
+                ? "border-amber-400/30 bg-amber-500/10 text-amber-200"
+                : item.kind === "live"
+                  ? "border-purple-400/35 bg-purple-500/15 text-purple-200"
+                  : "border-emerald-400/30 bg-emerald-500/10 text-emerald-200",
+            )}
+          >
+            {item.isQueued ? (
+              <Hourglass className="h-3.5 w-3.5" />
+            ) : (
+              <KindIcon kind={item.kind} />
+            )}
+            {item.kindLabel}
+          </span>
+          <h3 className="text-base md:text-lg font-bold text-white break-words leading-8">
+            {planName}
+          </h3>
+        </div>
+        {!item.isQueued ? (
+          <span className="rounded-full border border-emerald-400/25 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-200">
+            فعال
+          </span>
+        ) : typeof item.queuePosition === "number" && item.queuePosition > 0 ? (
+          <span className="rounded-full border border-amber-400/25 bg-amber-500/10 px-2.5 py-1 text-[11px] font-medium text-amber-200">
+            {`نوبت ${toPersianDigits(item.queuePosition)}`}
+          </span>
+        ) : null}
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="rounded-2xl border border-white/5 bg-black/20 p-3">
+          <p className="text-xs text-white/55 mb-1.5">تاریخ فعال‌سازی</p>
+          <p className="text-sm text-white font-semibold">
+            {formatDate(item.startDateUtc)}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-white/5 bg-black/20 p-3">
+          <p className="text-xs text-white/55 mb-1.5">پایان اشتراک</p>
+          <p className="text-sm text-white font-semibold">
+            {formatDate(item.endDateUtc)}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-white/5 bg-black/20 p-3">
+          <p className="text-xs text-white/55 mb-1.5">مانده</p>
+          <p className="text-sm text-white font-semibold flex items-center gap-1.5">
+            <CalendarClock className="w-3.5 h-3.5 text-white/50 shrink-0" />
+            {item.isQueued
+              ? "پس از پایان اشتراک فعلی"
+              : remainingDaysLabel(item.remainingDays)}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
