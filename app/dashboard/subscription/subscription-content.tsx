@@ -160,7 +160,7 @@ export function SubscriptionContent() {
     },
   });
 
-  const { data: catalogPlans = [], isLoading: catalogLoading } = useQuery({
+  const { data: catalogPlansData, isLoading: catalogLoading } = useQuery({
     queryKey: ["landing-active-subscription-plans"],
     queryFn: async () => {
       const res =
@@ -169,6 +169,16 @@ export function SubscriptionContent() {
       return Array.isArray(unwrapped) ? unwrapped : [];
     },
   });
+
+  // Shared cache may hold a raw ABP wrapper from other callers — always normalize.
+  const catalogPlans = Array.isArray(catalogPlansData)
+    ? catalogPlansData
+    : Array.isArray(
+          (catalogPlansData as AbpWrapper<SubscriptionPlanCatalogItemDto[]> | undefined)
+            ?.result,
+        )
+      ? (catalogPlansData as AbpWrapper<SubscriptionPlanCatalogItemDto[]>).result!
+      : [];
 
   const { data: paymentHistory, isLoading: paymentsLoading } = useQuery({
     queryKey: ["currentUserPaymentHistory"],

@@ -97,7 +97,31 @@ function isComingSoonPlan(plan: SubscriptionPlanCatalogItemDto): boolean {
   return isBundle;
 }
 
+const LIVE_PLAN_DEFAULT_FEATURES = [
+  "دسترسی به لایو ترید روزانه در لحظه",
+  "نمایش کامل ورود، خروج و مدیریت معامله",
+  "تحلیل لحظه‌ای شرایط بازار",
+  "مدیریت سرمایه و کنترل ریسک در زمان واقعی",
+  "پاسخگویی زنده به سوالات اعضا",
+  "آرشیو کامل لایو تریدها و تحلیل جلسات",
+  "تعداد محدود اعضا برای حفظ کیفیت",
+  "پشتیبانی اختصاصی و اولویت‌دار",
+];
+
+const LIVE_PLAN_DEFAULT_FOOTER =
+  "مناسب برای تریدرهایی که می‌خواهند تجربه واقعی معامله‌گری حرفه‌ای را ببینند و یاد بگیرند.";
+
+const LIVE_PLAN_DEFAULT_SUBTITLE = "ترید زنده، شفاف و بدون هیچ پنهان‌کاری";
+
 function mapCatalogPlan(plan: SubscriptionPlanCatalogItemDto): GoldPlan {
+  const isLive = isLiveCatalogPlan(plan);
+  const apiFeatures =
+    plan.features
+      ?.filter((f) => f.isEnabled !== false)
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+      .map((f) => f.value)
+      .filter((v): v is string => Boolean(v && v.trim().length > 0)) ?? [];
+
   return {
     id: plan.id ?? 0,
     displayName: plan.displayName ?? plan.name ?? "پلن اشتراک",
@@ -105,19 +129,14 @@ function mapCatalogPlan(plan: SubscriptionPlanCatalogItemDto): GoldPlan {
       plan.subtitle ??
       plan.summaryText ??
       plan.description ??
-      "جزئیات پلن در دسترس است.",
+      (isLive ? LIVE_PLAN_DEFAULT_SUBTITLE : "جزئیات پلن در دسترس است."),
     monthlyPrice: plan.price ?? 0,
-    features:
-      plan.features
-        ?.filter((f) => f.isEnabled !== false)
-        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-        .map((f) => f.value)
-        .filter((v): v is string => Boolean(v && v.trim().length > 0)) ?? [],
+    features: apiFeatures.length > 0 ? apiFeatures : isLive ? LIVE_PLAN_DEFAULT_FEATURES : [],
     footerText:
       plan.summaryText ??
       plan.description ??
-      "برای مشاهده اطلاعات کامل این پلن اقدام کنید.",
-    ctaText: plan.callToActionText ?? "مشاهده و فعال‌سازی پلن",
+      (isLive ? LIVE_PLAN_DEFAULT_FOOTER : "برای مشاهده اطلاعات کامل این پلن اقدام کنید."),
+    ctaText: plan.callToActionText ?? (isLive ? "فعال‌سازی اشتراک لایو ترید" : "مشاهده و فعال‌سازی پلن"),
     isBundle: plan.isHighlighted === true,
     comingSoon: isComingSoonPlan(plan),
     durationInDays: plan.durationInDays,
@@ -276,20 +295,19 @@ export default function PlansSection({
 
   const { data: plansResponse, isLoading } = useQuery({
     queryKey: ["landing-active-subscription-plans"],
-    queryFn: () =>
-      SubscriptionDashboardService.apiServicesAppSubscriptiondashboardGetactivesubscriptionplansGet(),
+    queryFn: async () => {
+      const res =
+        await SubscriptionDashboardService.apiServicesAppSubscriptiondashboardGetactivesubscriptionplansGet();
+      const wrapped = res as
+        | SubscriptionPlanCatalogItemDto[]
+        | { result?: SubscriptionPlanCatalogItemDto[] };
+      if (Array.isArray(wrapped)) return wrapped;
+      if (Array.isArray(wrapped?.result)) return wrapped.result;
+      return [] as SubscriptionPlanCatalogItemDto[];
+    },
   });
 
-  const normalizedPlansResponse = plansResponse as
-    | SubscriptionPlanCatalogItemDto[]
-    | AbpWrapper<SubscriptionPlanCatalogItemDto[]>
-    | undefined;
-
-  const plansFromApi = Array.isArray(normalizedPlansResponse)
-    ? normalizedPlansResponse
-    : Array.isArray(normalizedPlansResponse?.result)
-      ? normalizedPlansResponse.result
-      : [];
+  const plansFromApi = Array.isArray(plansResponse) ? plansResponse : [];
 
   const scopedPlansFromApi = onlyLiveSessions
     ? plansFromApi.filter(isLiveCatalogPlan)
