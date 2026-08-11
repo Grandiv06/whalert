@@ -5,6 +5,19 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/**
+ * Parse a backend UTC datetime string.
+ * Many APIs send `2026-08-12T10:46:00` without `Z`; browsers treat that as local time.
+ * This forces UTC when no timezone offset is present.
+ */
+export function parseUtcDate(value: string): Date {
+  const trimmed = value.trim().replace(" ", "T");
+  if (/[zZ]$/.test(trimmed) || /[+-]\d{2}:?\d{2}$/.test(trimmed)) {
+    return new Date(trimmed);
+  }
+  return new Date(`${trimmed}Z`);
+}
+
 /** Convert ASCII digits to Persian digits (for RTL display). */
 export function toPersianDigits(str: string | number): string {
   const map = ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"] as const;

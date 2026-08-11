@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Calendar, Sparkles, Video, CheckCircle2, Clock } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, parseUtcDate } from "@/lib/utils";
 import type { LiveSessionDto } from "@/lib/api/client";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -13,13 +13,19 @@ interface SessionsTableProps {
 }
 
 function parseSessionDateTime(session: LiveSessionDto) {
-  const dateObj = session.scheduledStartUtc ? new Date(session.scheduledStartUtc) : null;
+  const dateObj = session.scheduledStartUtc
+    ? parseUtcDate(session.scheduledStartUtc)
+    : null;
   const isValidDate = dateObj && !isNaN(dateObj.getTime());
 
   let dateStr = session.scheduledAtPersian || "-";
   if (isValidDate) {
     try {
-      dateStr = dateObj.toLocaleDateString("fa-IR", { day: "numeric", month: "long" });
+      dateStr = dateObj.toLocaleDateString("fa-IR", {
+        day: "numeric",
+        month: "long",
+        timeZone: "Asia/Tehran",
+      });
     } catch {
       dateStr = session.scheduledAtPersian || "-";
     }
@@ -28,7 +34,10 @@ function parseSessionDateTime(session: LiveSessionDto) {
   let dayStr = "-";
   if (isValidDate) {
     try {
-      dayStr = dateObj.toLocaleDateString("fa-IR", { weekday: "long" });
+      dayStr = dateObj.toLocaleDateString("fa-IR", {
+        weekday: "long",
+        timeZone: "Asia/Tehran",
+      });
     } catch {
       dayStr = "-";
     }
@@ -36,9 +45,18 @@ function parseSessionDateTime(session: LiveSessionDto) {
 
   let timeStr = "-";
   if (isValidDate) {
-    const hours = String(dateObj.getHours()).padStart(2, "0");
-    const minutes = String(dateObj.getMinutes()).padStart(2, "0");
-    timeStr = `${hours}:${minutes}`;
+    try {
+      timeStr = dateObj.toLocaleTimeString("fa-IR", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+        timeZone: "Asia/Tehran",
+      });
+    } catch {
+      const hours = String(dateObj.getHours()).padStart(2, "0");
+      const minutes = String(dateObj.getMinutes()).padStart(2, "0");
+      timeStr = `${hours}:${minutes}`;
+    }
   }
 
   return { dateStr, dayStr, timeStr, isValidDate, dateObj };

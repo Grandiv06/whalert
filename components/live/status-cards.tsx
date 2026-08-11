@@ -4,6 +4,7 @@ import { Clock, Radio, Sparkles, ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { LiveSessionDto } from "@/lib/api/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { parseUtcDate } from "@/lib/utils";
 
 interface StatusCardsProps {
   type: "countdown" | "status";
@@ -22,7 +23,7 @@ export function StatusCards({ type, nextSession, isLoading }: StatusCardsProps) 
 
       if (!nextSession?.scheduledStartUtc) return;
 
-      const targetDate = new Date(nextSession.scheduledStartUtc);
+      const targetDate = parseUtcDate(nextSession.scheduledStartUtc);
       if (isNaN(targetDate.getTime())) return;
 
       const diff = Math.floor((targetDate.getTime() - currentTime) / 1000);
@@ -149,7 +150,9 @@ export function StatusCards({ type, nextSession, isLoading }: StatusCardsProps) 
   const persianDate = nextSession?.scheduledAtPersian;
 
   // 5 minutes before scheduled start logic
-  const scheduledTime = nextSession?.scheduledStartUtc ? new Date(nextSession.scheduledStartUtc).getTime() : NaN;
+  const scheduledTime = nextSession?.scheduledStartUtc
+    ? parseUtcDate(nextSession.scheduledStartUtc).getTime()
+    : NaN;
   const isValidTime = !isNaN(scheduledTime);
   const fiveMinBefore = isValidTime ? scheduledTime - 5 * 60 * 1000 : null;
   const sessionEnd = isValidTime ? scheduledTime + 2 * 60 * 60 * 1000 : null;

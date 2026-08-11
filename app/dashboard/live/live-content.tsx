@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PlansModal } from "@/components/shared/plans-modal";
 import { Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { parseUtcDate } from "@/lib/utils";
 
 import { HeroSection } from "@/components/live/hero-section";
 import { StatusCards } from "@/components/live/status-cards";
@@ -55,10 +56,10 @@ export function LiveContent() {
 
   const sortedSessions = [...sessions].sort((a, b) => {
     const tA = a.scheduledStartUtc
-      ? new Date(a.scheduledStartUtc).getTime()
+      ? parseUtcDate(a.scheduledStartUtc).getTime()
       : 0;
     const tB = b.scheduledStartUtc
-      ? new Date(b.scheduledStartUtc).getTime()
+      ? parseUtcDate(b.scheduledStartUtc).getTime()
       : 0;
     return tA - tB;
   });
@@ -68,7 +69,7 @@ export function LiveContent() {
     sortedSessions.find(
       (s) =>
         s.scheduledStartUtc &&
-        new Date(s.scheduledStartUtc).getTime() + 2 * 60 * 60 * 1000 >= now,
+        parseUtcDate(s.scheduledStartUtc).getTime() + 2 * 60 * 60 * 1000 >= now,
     ) ||
     sortedSessions[0] ||
     null;

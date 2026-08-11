@@ -14,10 +14,10 @@ export interface DashboardNavItem {
 }
 
 export const dashboardNavItems: DashboardNavItem[] = [
-  { label: "پیشخوان", href: "/dashboard/", icon: LayoutDashboard },
-  { label: "لایو طلا", href: "/dashboard/live/", icon: Radio },
+  { label: "آمار سود و ضرر روزانه", href: "/dashboard/", icon: LayoutDashboard },
+  { label: "لایو ترید", href: "/dashboard/live/", icon: Radio },
   { label: "فرصت های من", href: "/dashboard/opportunities/", icon: Trophy },
-  { label: "پروفایل اساتید", href: "/dashboard/analysis/", icon: TrendingUp },
+  { label: "استیتمنت والرت", href: "/dashboard/analysis/", icon: TrendingUp },
   { label: "لیست سیگنال ها", href: "/dashboard/suggested/", icon: Sparkles },
 ];
 
