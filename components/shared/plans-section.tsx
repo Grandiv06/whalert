@@ -410,49 +410,54 @@ export default function PlansSection({
     const isBundle = !!plan.isBundle;
 
     let theme = {
-      cardBg:
-        "border-white/10 bg-gradient-to-br from-white/[0.08] to-[#02000B]/50 hover:border-white/20",
+      border: "border-white/10 hover:border-white/20",
+      fill: "bg-gradient-to-br from-white/[0.08] to-[#02000B]/50",
       glow: "bg-white/5",
       priceBox: "border-white/10 bg-white/[0.03]",
       check: "text-white/60",
       button: "bg-[#5D31A0] hover:bg-[#6A3D9C] text-white",
       priceText: "text-white",
+      accentShadow: "",
     };
 
     if (index % 3 === 0) {
       theme = {
-        cardBg:
-          "border-indigo-400/35 bg-gradient-to-br from-indigo-500/12 via-[#3B216A]/20 to-[#02000B]/70 hover:border-indigo-400/55",
+        border: "border-indigo-400/35 hover:border-indigo-400/55",
+        fill: "bg-gradient-to-br from-indigo-500/12 via-[#3B216A]/20 to-[#02000B]/70",
         glow: "bg-indigo-400/15",
         priceBox: "border-indigo-400/25 bg-indigo-400/[0.08]",
         check: "text-indigo-300",
         button:
           "bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/20",
         priceText: "text-white",
+        accentShadow: "",
       };
     } else if (index % 3 === 1) {
       theme = {
-        cardBg:
-          "border-fuchsia-400/35 bg-gradient-to-br from-fuchsia-500/12 via-[#542C85]/20 to-[#02000B]/70 hover:border-fuchsia-400/55",
+        border: "border-fuchsia-400/35 hover:border-fuchsia-400/55",
+        fill: "bg-gradient-to-br from-fuchsia-500/12 via-[#542C85]/20 to-[#02000B]/70",
         glow: "bg-fuchsia-400/15",
         priceBox: "border-fuchsia-400/25 bg-fuchsia-400/[0.08]",
         check: "text-fuchsia-300",
         button:
           "bg-fuchsia-600 hover:bg-fuchsia-500 text-white shadow-lg shadow-fuchsia-600/20",
         priceText: "text-white",
+        accentShadow: "",
       };
     }
 
     if (isBundle) {
       theme = {
-        cardBg:
-          "border-amber-300/60 bg-gradient-to-br from-amber-400/20 via-[#5F2E96]/30 to-[#090613]/95 lg:z-10 shadow-[0_0_40px_-12px_rgba(245,158,11,0.35)]",
+        border: "border-amber-300/60",
+        fill: "bg-gradient-to-br from-amber-400/20 via-[#5F2E96]/30 to-[#090613]/95",
         glow: "bg-amber-300/20",
         priceBox: "border-amber-300/35 bg-amber-400/[0.08]",
         check: "text-amber-400",
         button:
           "bg-amber-400 hover:bg-amber-300 text-black font-bold shadow-lg shadow-amber-500/20",
         priceText: "text-amber-200",
+        accentShadow:
+          "lg:z-10 shadow-[0_0_40px_-12px_rgba(245,158,11,0.35)]",
       };
     }
 
@@ -462,46 +467,63 @@ export default function PlansSection({
   const renderPlanCard = (plan: GoldPlan, index: number, compact = false) => {
     const isBundle = !!plan.isBundle;
     const theme = getPlanTheme(plan, index);
+    const radius = compact ? "rounded-[22px]" : "rounded-[1.75rem]";
+    // Safari paints gradient/fill as a sharp rect past border-radius; clip-path fixes it.
+    const safariClip = compact
+      ? "[clip-path:inset(0_round_22px)]"
+      : "[clip-path:inset(0_round_1.75rem)]";
 
     return (
-      <Card
+      <div
         className={cn(
-          "relative flex h-full w-full flex-col overflow-hidden border transition-all duration-300 group",
-          compact ? "rounded-[22px] text-white" : "rounded-4xl",
-          theme.cardBg,
+          "relative h-full w-full",
+          theme.accentShadow,
           compact
             ? "shadow-[0_12px_36px_-18px_rgba(7,2,20,0.7)]"
             : "shadow-none md:shadow-[0_16px_40px_rgba(7,2,20,0.45)] hover:md:shadow-[0_20px_52px_rgba(11,4,28,0.55)]",
         )}
       >
-        <div className="pointer-events-none absolute inset-0">
-          <div
-            className={`absolute -top-20 -right-20 h-44 w-44 rounded-full blur-3xl ${theme.glow}`}
-          />
-          <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-l from-transparent via-white/25 to-transparent" />
-        </div>
-
-        {isBundle && (
-          <div
-            className={cn(
-              "absolute inline-flex items-center gap-1 rounded-full border border-amber-200/55 bg-amber-400/20 font-semibold text-amber-100 backdrop-blur-sm",
-              compact
-                ? "left-3 top-3 px-2.5 py-1 text-[10px]"
-                : "left-3 top-3 px-3 py-1.5 text-[11px]",
-            )}
-          >
-            <Sparkles className="h-3 w-3" />
-            پیشنهاد ویژه
-          </div>
-        )}
-
-        <CardContent
+        <div
           className={cn(
-            "relative z-10 flex h-full flex-1 flex-col",
-            compact ? "p-4 sm:p-5" : "p-5 md:p-6",
-            isBundle && (compact ? "pt-11" : "pt-14"),
+            "relative flex h-full w-full flex-col overflow-hidden border transition-[border-color] duration-300 group",
+            "bg-[#02000B] isolate",
+            radius,
+            safariClip,
+            theme.border,
+            compact && "text-white",
           )}
         >
+          <div
+            aria-hidden
+            className={cn("pointer-events-none absolute inset-0", theme.fill)}
+          >
+            <div
+              className={`absolute -top-20 -right-20 h-44 w-44 rounded-full blur-3xl ${theme.glow}`}
+            />
+            <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-l from-transparent via-white/25 to-transparent" />
+          </div>
+
+          {isBundle && (
+            <div
+              className={cn(
+                "absolute z-20 inline-flex items-center gap-1 rounded-full border border-amber-200/55 bg-amber-400/20 font-semibold text-amber-100 backdrop-blur-sm",
+                compact
+                  ? "left-3 top-3 px-2.5 py-1 text-[10px]"
+                  : "left-3 top-3 px-3 py-1.5 text-[11px]",
+              )}
+            >
+              <Sparkles className="h-3 w-3" />
+              پیشنهاد ویژه
+            </div>
+          )}
+
+          <div
+            className={cn(
+              "relative z-10 flex h-full flex-1 flex-col",
+              compact ? "p-4 sm:p-5" : "p-5 md:p-6",
+              isBundle && (compact ? "pt-11" : "pt-14"),
+            )}
+          >
           <div
             className={cn(
               "flex h-full min-h-0 flex-1 flex-col",
@@ -643,8 +665,9 @@ export default function PlansSection({
               </Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+        </div>
+      </div>
     );
   };
 

@@ -63,7 +63,7 @@ function parseSessionDateTime(session: LiveSessionDto) {
 }
 
 export function SessionsTable({ sessions = [], nextSessionId, isLoading }: SessionsTableProps) {
-  const [now, setNow] = useState<number>(Date.now());
+  const [now, setNow] = useState<number>(() => Date.now());
 
   useEffect(() => {
     const timer = setInterval(() => {

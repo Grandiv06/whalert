@@ -41,6 +41,38 @@ export default function RootLayout({
             gtag('config', 'G-S52CBMEZ9K');
           `}
         </Script>
+        <Script id="raychat-widget" strategy="afterInteractive">
+          {`
+            window.RAYCHAT_TOKEN = "757731e6-1e56-4b1f-ba75-f512a58c7f6e";
+            (function () {
+              function setRaychatLeft() {
+                if (window.Raychat && typeof window.Raychat.setPosition === "function") {
+                  window.Raychat.setPosition({
+                    left: "24px",
+                    bottom: "24px"
+                  });
+                }
+              }
+              window.addEventListener("raychat_ready", setRaychatLeft);
+
+              var count = 0;
+              var interval = setInterval(function () {
+                count++;
+                if (window.Raychat && typeof window.Raychat.setPosition === "function") {
+                  setRaychatLeft();
+                  clearInterval(interval);
+                }
+                if (count > 50) clearInterval(interval);
+              }, 200);
+
+              var d = document;
+              var s = d.createElement("script");
+              s.src = "https://widget-react.raychat.io/install/widget.js";
+              s.async = 1;
+              d.getElementsByTagName("head")[0].appendChild(s);
+            })();
+          `}
+        </Script>
         <Providers>{children}</Providers>
       </body>
     </html>

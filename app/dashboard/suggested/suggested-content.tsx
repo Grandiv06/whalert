@@ -373,7 +373,12 @@ export function SuggestedContent() {
       position.tradingSignalId != null
         ? signalDetailsById[position.tradingSignalId]
         : null;
-    const posAny = position as any;
+    const posAny = position as unknown as {
+      signalStatus?: number;
+      statusLabel?: string;
+      outcomeStatus?: number;
+      outcomeSource?: number;
+    };
     const statusMeta = resolveSignalStatusMeta({
       signalStatus: posAny.signalStatus ?? detail?.signalStatus,
       statusLabel: posAny.statusLabel,
