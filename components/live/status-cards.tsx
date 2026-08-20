@@ -13,7 +13,7 @@ interface StatusCardsProps {
 }
 
 export function StatusCards({ type, nextSession, isLoading }: StatusCardsProps) {
-  const [now, setNow] = useState<number>(Date.now());
+  const [now, setNow] = useState<number>(() => Date.now());
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0, isLive: false });
 
   useEffect(() => {

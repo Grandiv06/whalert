@@ -526,3 +526,12 @@
 .plans-arrival-pulse {
   animation: plansArrivalPulse 1.25s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
+
+/* Raychat support widget position (move to bottom-left to avoid overlapping sidebar and logout button) */
+#raychat_widget,
+.raychat_frame,
+iframe[id*="raychat"] {
+  left: 20px !important;
+  right: auto !important;
+}
+

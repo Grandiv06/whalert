@@ -171,13 +171,16 @@ export function SubscriptionContent() {
   });
 
   // Shared cache may hold a raw ABP wrapper from other callers — always normalize.
-  const catalogPlans = Array.isArray(catalogPlansData)
+  const catalogPlans: SubscriptionPlanCatalogItemDto[] = Array.isArray(
+    catalogPlansData,
+  )
     ? catalogPlansData
     : Array.isArray(
-          (catalogPlansData as AbpWrapper<SubscriptionPlanCatalogItemDto[]> | undefined)
+          (catalogPlansData as unknown as AbpWrapper<SubscriptionPlanCatalogItemDto[]>)
             ?.result,
         )
-      ? (catalogPlansData as AbpWrapper<SubscriptionPlanCatalogItemDto[]>).result!
+      ? ((catalogPlansData as unknown as AbpWrapper<SubscriptionPlanCatalogItemDto[]>)
+          .result ?? [])
       : [];
 
   const { data: paymentHistory, isLoading: paymentsLoading } = useQuery({
