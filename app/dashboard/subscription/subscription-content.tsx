@@ -36,12 +36,13 @@ import { getSubscriptionCheckoutStatusMeta } from "@/lib/subscription-checkout-s
 import {
   isOnsCatalogPlan,
   isMazanehCatalogPlan,
+  isBundleCatalogPlan,
 } from "@/lib/subscription-plan-duration";
 import { PlansModal } from "@/components/shared/plans-modal";
 
 type AbpWrapper<T> = { result?: T };
 
-type SubscriptionKind = "live" | "asset" | "other";
+type SubscriptionKind = "live" | "bundle" | "asset" | "other";
 
 type DisplaySubscription = ReservedSubscriptionItemDto & {
   kind: SubscriptionKind;
@@ -116,6 +117,14 @@ function resolveSubscriptionKind(
     return { kind: "live", kindLabel: "لایو ترید" };
   }
 
+  if (
+    (catalog && isBundleCatalogPlan(catalog)) ||
+    planName.includes("bundle") ||
+    displayName.includes("باندل")
+  ) {
+    return { kind: "bundle", kindLabel: "باندل ویژه (انس + مظنه)" };
+  }
+
   if (catalog && isOnsCatalogPlan(catalog)) {
     return { kind: "asset", kindLabel: "انس جهانی" };
   }
@@ -139,6 +148,7 @@ function resolveSubscriptionKind(
 
 function KindIcon({ kind }: { kind: SubscriptionKind }) {
   if (kind === "live") return <Radio className="h-4 w-4" />;
+  if (kind === "bundle") return <Crown className="h-4 w-4" />;
   if (kind === "asset") return <Coins className="h-4 w-4" />;
   return <Crown className="h-4 w-4" />;
 }
@@ -473,9 +483,11 @@ function SubscriptionCard({ item }: { item: DisplaySubscription }) {
         "rounded-3xl border p-4 md:p-5 transition-colors",
         item.isQueued
           ? "border-amber-400/20 bg-amber-500/[0.06]"
-          : item.kind === "live"
-            ? "border-purple-400/25 bg-gradient-to-l from-[#7A46BA]/[0.12] to-white/[0.03]"
-            : "border-white/10 bg-white/[0.04]",
+          : item.kind === "bundle"
+            ? "border-amber-400/35 bg-gradient-to-l from-amber-500/[0.12] via-[#542C85]/[0.15] to-[#02000B]/60"
+            : item.kind === "live"
+              ? "border-purple-400/25 bg-gradient-to-l from-[#7A46BA]/[0.12] to-white/[0.03]"
+              : "border-white/10 bg-white/[0.04]",
       )}
     >
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
@@ -485,9 +497,11 @@ function SubscriptionCard({ item }: { item: DisplaySubscription }) {
               "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold",
               item.isQueued
                 ? "border-amber-400/30 bg-amber-500/10 text-amber-200"
-                : item.kind === "live"
-                  ? "border-purple-400/35 bg-purple-500/15 text-purple-200"
-                  : "border-emerald-400/30 bg-emerald-500/10 text-emerald-200",
+                : item.kind === "bundle"
+                  ? "border-amber-400/35 bg-amber-500/15 text-amber-200"
+                  : item.kind === "live"
+                    ? "border-purple-400/35 bg-purple-500/15 text-purple-200"
+                    : "border-emerald-400/30 bg-emerald-500/10 text-emerald-200",
             )}
           >
             {item.isQueued ? (
