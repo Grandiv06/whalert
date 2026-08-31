@@ -16,7 +16,23 @@ export function getPaymentPeriodLabel(days?: number | null): string {
   return "پرداخت دوره‌ای";
 }
 
+export function isBundleCatalogPlan(
+  plan: SubscriptionPlanCatalogItemDto,
+): boolean {
+  if (plan.marketFocus === 3) return true;
+  if (plan.isHighlighted === true) return true;
+
+  const name = (plan.name ?? "").toLowerCase();
+  const displayName = plan.displayName ?? "";
+
+  return (
+    name.includes("bundle") ||
+    displayName.includes("باندل")
+  );
+}
+
 export function isOnsCatalogPlan(plan: SubscriptionPlanCatalogItemDto): boolean {
+  if (isBundleCatalogPlan(plan)) return false;
   if (plan.marketFocus === 1) return true;
 
   const name = (plan.name ?? "").toLowerCase();
@@ -31,13 +47,12 @@ export function isOnsCatalogPlan(plan: SubscriptionPlanCatalogItemDto): boolean 
 }
 
 export function isMazanehCatalogPlan(plan: SubscriptionPlanCatalogItemDto): boolean {
+  if (isBundleCatalogPlan(plan)) return false;
   if (plan.marketFocus === 2) return true;
 
   const name = (plan.name ?? "").toLowerCase();
   const displayName = plan.displayName ?? "";
 
-  // The bundle is usually "BundleXauUsdMozaneh", so we exclude bundle via `isBundle` check elsewhere.
-  // But strictly, we can check if it explicitly contains mozaneh or مظنه
   return (
     name.includes("mozaneh") ||
     displayName.includes("مظنه")

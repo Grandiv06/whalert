@@ -39,6 +39,7 @@ import {
   getPaymentPeriodLabel,
   isOnsCatalogPlan,
   isMazanehCatalogPlan,
+  isBundleCatalogPlan,
 } from "@/lib/subscription-plan-duration";
 
 type GoldPlan = {
@@ -92,9 +93,8 @@ function getDailyPriceLabel(
   return `${toPersianDigits(daily.toLocaleString("fa-IR"))} تومان / روز`;
 }
 
-function isComingSoonPlan(plan: SubscriptionPlanCatalogItemDto): boolean {
-  const isBundle = plan.isHighlighted === true;
-  return isBundle;
+function isComingSoonPlan(_plan: SubscriptionPlanCatalogItemDto): boolean {
+  return false;
 }
 
 const LIVE_PLAN_DEFAULT_FEATURES = [
@@ -115,6 +115,7 @@ const LIVE_PLAN_DEFAULT_SUBTITLE = "ترید زنده، شفاف و بدون ه�
 
 function mapCatalogPlan(plan: SubscriptionPlanCatalogItemDto): GoldPlan {
   const isLive = isLiveCatalogPlan(plan);
+  const isBundle = isBundleCatalogPlan(plan);
   const apiFeatures =
     plan.features
       ?.filter((f) => f.isEnabled !== false)
@@ -136,8 +137,8 @@ function mapCatalogPlan(plan: SubscriptionPlanCatalogItemDto): GoldPlan {
       plan.summaryText ??
       plan.description ??
       (isLive ? LIVE_PLAN_DEFAULT_FOOTER : "برای مشاهده اطلاعات کامل این پلن اقدام کنید."),
-    ctaText: plan.callToActionText ?? (isLive ? "فعال‌سازی اشتراک لایو ترید" : "مشاهده و فعال‌سازی پلن"),
-    isBundle: plan.isHighlighted === true,
+    ctaText: plan.callToActionText ?? (isLive ? "فعال‌سازی اشتراک لایو ترید" : isBundle ? "فعال‌سازی باندل کامل" : "مشاهده و فعال‌سازی پلن"),
+    isBundle: isBundle,
     comingSoon: isComingSoonPlan(plan),
     durationInDays: plan.durationInDays,
     marketFocus: plan.marketFocus,
@@ -155,10 +156,15 @@ function buildDisplayPlans(plans: GoldPlan[]): GoldPlan[] {
     .filter((plan) => plan.isMazaneh && !plan.comingSoon && !plan.isBundle)
     .sort((a, b) => (b.durationInDays ?? 0) - (a.durationInDays ?? 0));
 
+  const bundleVariants = plans
+    .filter((plan) => plan.isBundle && !plan.comingSoon)
+    .sort((a, b) => (b.durationInDays ?? 0) - (a.durationInDays ?? 0));
+
   const otherPlans = plans.filter(
     (plan) =>
       !(plan.isOns && !plan.comingSoon) &&
-      !(plan.isMazaneh && !plan.comingSoon && !plan.isBundle),
+      !(plan.isMazaneh && !plan.comingSoon && !plan.isBundle) &&
+      !(plan.isBundle && !plan.comingSoon),
   );
 
   // Mock missing Mazaneh durations based on the monthly plan
@@ -212,6 +218,30 @@ function buildDisplayPlans(plans: GoldPlan[]): GoldPlan[] {
         ctaText: preferred.ctaText.includes("انس")
           ? preferred.ctaText
           : "فعال‌سازی اشتراک انس",
+      });
+    }
+  }
+
+  if (bundleVariants.length > 0) {
+    if (bundleVariants.length === 1) {
+      result.push(bundleVariants[0]);
+    } else {
+      const preferred =
+        bundleVariants.find((plan) => plan.durationInDays === 30) ??
+        bundleVariants[0];
+      const lowestPrice = Math.min(
+        ...bundleVariants.map((plan) => plan.monthlyPrice),
+      );
+      result.push({
+        ...preferred,
+        id: preferred.id,
+        displayName: "باندل ویژه انس + مظنه",
+        monthlyPrice: lowestPrice,
+        variants: bundleVariants,
+        hasDurationChoices: bundleVariants.length > 1,
+        ctaText: preferred.ctaText.includes("باندل")
+          ? preferred.ctaText
+          : "فعال‌سازی باندل کامل",
       });
     }
   }
@@ -575,13 +605,16 @@ export default function PlansSection({
                 </div>
               ) : (
                 <>
-                  <p className="mb-1.5 text-xs text-white/55">شروع از</p>
+                  <p className="mb-1.5 text-xs text-white/55">
+                    {plan.hasDurationChoices ? "شروع از" : "قیمت اشتراک"}
+                  </p>
                   <p
                     className={cn(
                       "font-black leading-none text-white",
                       compact
                         ? "text-[22px] sm:text-[26px]"
                         : "text-3xl md:text-4xl",
+                      isBundle && "text-amber-100",
                     )}
                   >
                     {formatMoney(plan.monthlyPrice)}
@@ -647,7 +680,7 @@ export default function PlansSection({
                   "w-full font-semibold",
                   plan.comingSoon
                     ? "cursor-not-allowed border border-white/15 bg-white/10 text-white/70 opacity-80 hover:bg-white/10"
-                    : `cursor-pointer text-white ${theme.button}`,
+                    : `cursor-pointer ${theme.button}`,
                   compact
                     ? "h-11 rounded-2xl text-sm"
                     : "h-12 rounded-3xl text-base",
@@ -899,15 +932,22 @@ export default function PlansSection({
             <DialogHeader className="space-y-2 text-right pe-8 md:space-y-2.5">
               <div className="inline-flex w-fit items-center gap-1.5 rounded-full border border-[#E8C878]/35 bg-[#E8C878]/10 px-3 py-1 text-[11px] font-semibold tracking-wide text-[#F3D98A]">
                 <Crown className="h-3.5 w-3.5" />
-                تجربه پریمیوم انس
+                {durationGroup?.isBundle
+                  ? "تجربه پریمیوم باندل"
+                  : durationGroup?.isMazaneh
+                    ? "اشتراک مظنه"
+                    : "تجربه پریمیوم انس"}
               </div>
               <div className="space-y-1.5 md:space-y-2">
                 <DialogTitle className="text-right text-[22px] md:text-[26px] font-black leading-tight tracking-tight text-white break-words">
                   {durationGroup?.displayName ?? "اشتراک انس جهانی"}
                 </DialogTitle>
                 <DialogDescription className="text-right text-[13px] md:text-[14px] leading-6 md:leading-7 text-white/60 md:max-w-2xl">
-                  مدت دسترسی خود را انتخاب کنید. هر پلن همان سیگنال‌های انس را
-                  با پوشش کامل ارائه می‌دهد.
+                  {durationGroup?.isBundle
+                    ? "مدت دسترسی خود را انتخاب کنید. با خرید باندل به سیگنال‌های انس و مظنه با پوشش کامل دسترسی خواهید داشت."
+                    : durationGroup?.isMazaneh
+                      ? "مدت دسترسی خود را انتخاب کنید. هر پلن سیگنال‌های مظنه را با پوشش کامل ارائه می‌دهد."
+                      : "مدت دسترسی خود را انتخاب کنید. هر پلن همان سیگنال‌های انس را با پوشش کامل ارائه می‌دهد."}
                 </DialogDescription>
               </div>
             </DialogHeader>
