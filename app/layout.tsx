@@ -4,7 +4,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "والرت | پلتفرم سیگنال معاملاتی",
+  title: "1156211",
   description: "پلتفرمی پیشرو برای ارائه سیگنال‌های معاملاتی",
   icons: {
     icon: "/icon.svg?v=1",
