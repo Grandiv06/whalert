@@ -10,5 +10,7 @@ export type LiveSessionDto = {
     meetingUrl?: string | null;
     scheduledStartUtc?: string;
     scheduledAtPersian?: string | null;
+    isActive?: boolean;
+    canJoin?: boolean;
 };
 

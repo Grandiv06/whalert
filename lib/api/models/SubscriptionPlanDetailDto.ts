@@ -19,10 +19,13 @@ export type SubscriptionPlanDetailDto = {
     themeColor?: string | null;
     displayOrder?: number;
     isHighlighted?: boolean;
+    isPurchasable?: boolean;
     marketFocus?: SubscriptionMarketFocus;
     tier?: SubscriptionTier;
     billingCycle?: BillingCycle;
     price?: number;
+    discountPercent?: number;
+    discountedPrice?: number;
     durationInDays?: number;
     trialDays?: number | null;
     maxDailySignals?: number | null;

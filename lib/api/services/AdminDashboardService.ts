@@ -7,6 +7,7 @@ import type { CreateProviderWithUserInput } from '../models/CreateProviderWithUs
 import type { EntityDtoOfInt64 } from '../models/EntityDtoOfInt64';
 import type { GetAllProvidersForPanelInput } from '../models/GetAllProvidersForPanelInput';
 import type { GetAllUsersForPanelInput } from '../models/GetAllUsersForPanelInput';
+import type { ListResultDtoOfSubscriptionPlanAdminListItemDto } from '../models/ListResultDtoOfSubscriptionPlanAdminListItemDto';
 import type { PagedResultDtoOfPlatformUserListItemDto } from '../models/PagedResultDtoOfPlatformUserListItemDto';
 import type { PagedResultDtoOfProviderAdminListItemDto } from '../models/PagedResultDtoOfProviderAdminListItemDto';
 import type { PanelContextOutput } from '../models/PanelContextOutput';
@@ -15,8 +16,13 @@ import type { ProviderAdminEditOutput } from '../models/ProviderAdminEditOutput'
 import type { ResetProviderPasswordInput } from '../models/ResetProviderPasswordInput';
 import type { SetPlatformUserActiveInput } from '../models/SetPlatformUserActiveInput';
 import type { SetProviderActiveInput } from '../models/SetProviderActiveInput';
+import type { SetSubscriptionPlanActiveInput } from '../models/SetSubscriptionPlanActiveInput';
+import type { SetSubscriptionPlanPurchasableInput } from '../models/SetSubscriptionPlanPurchasableInput';
+import type { SubscriptionPlanAdminListItemDto } from '../models/SubscriptionPlanAdminListItemDto';
 import type { UpdatePlatformUserInput } from '../models/UpdatePlatformUserInput';
 import type { UpdateProviderAdminInput } from '../models/UpdateProviderAdminInput';
+import type { UpdateSubscriptionPlanDiscountInput } from '../models/UpdateSubscriptionPlanDiscountInput';
+import type { UpdateSubscriptionPlanInput } from '../models/UpdateSubscriptionPlanInput';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -237,6 +243,76 @@ export class AdminDashboardService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/services/app/AdminDashboard/ResetPlatformUserPassword',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns ListResultDtoOfSubscriptionPlanAdminListItemDto Success
+     * @throws ApiError
+     */
+    public static apiServicesAppAdmindashboardGetallsubscriptionplansforpanelPost(): CancelablePromise<ListResultDtoOfSubscriptionPlanAdminListItemDto> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/services/app/AdminDashboard/GetAllSubscriptionPlansForPanel',
+        });
+    }
+    /**
+     * @param requestBody
+     * @returns SubscriptionPlanAdminListItemDto Success
+     * @throws ApiError
+     */
+    public static apiServicesAppAdmindashboardUpdatesubscriptionplandiscountPost(
+        requestBody?: UpdateSubscriptionPlanDiscountInput,
+    ): CancelablePromise<SubscriptionPlanAdminListItemDto> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/services/app/AdminDashboard/UpdateSubscriptionPlanDiscount',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @param requestBody
+     * @returns SubscriptionPlanAdminListItemDto Success
+     * @throws ApiError
+     */
+    public static apiServicesAppAdmindashboardUpdatesubscriptionplanPost(
+        requestBody?: UpdateSubscriptionPlanInput,
+    ): CancelablePromise<SubscriptionPlanAdminListItemDto> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/services/app/AdminDashboard/UpdateSubscriptionPlan',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @param requestBody
+     * @returns any Success
+     * @throws ApiError
+     */
+    public static apiServicesAppAdmindashboardSetsubscriptionplanactivePost(
+        requestBody?: SetSubscriptionPlanActiveInput,
+    ): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/services/app/AdminDashboard/SetSubscriptionPlanActive',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @param requestBody
+     * @returns any Success
+     * @throws ApiError
+     */
+    public static apiServicesAppAdmindashboardSetsubscriptionplanpurchasablePost(
+        requestBody?: SetSubscriptionPlanPurchasableInput,
+    ): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/services/app/AdminDashboard/SetSubscriptionPlanPurchasable',
             body: requestBody,
             mediaType: 'application/json',
         });

@@ -4,11 +4,9 @@
 /* eslint-disable */
 import type { BillingCycle } from './BillingCycle';
 import type { SubscriptionMarketFocus } from './SubscriptionMarketFocus';
-import type { SubscriptionPlanFeatureItemDto } from './SubscriptionPlanFeatureItemDto';
 import type { SubscriptionTier } from './SubscriptionTier';
-export type SubscriptionPlanCatalogItemDto = {
+export type UpdateSubscriptionPlanInput = {
     id?: number;
-    name?: string | null;
     displayName?: string | null;
     subtitle?: string | null;
     description?: string | null;
@@ -16,15 +14,10 @@ export type SubscriptionPlanCatalogItemDto = {
     callToActionText?: string | null;
     highlightTag?: string | null;
     themeColor?: string | null;
-    displayOrder?: number;
-    isHighlighted?: boolean;
-    isPurchasable?: boolean;
     marketFocus?: SubscriptionMarketFocus;
     tier?: SubscriptionTier;
     billingCycle?: BillingCycle;
     price?: number;
-    discountPercent?: number;
-    discountedPrice?: number;
     durationInDays?: number;
     trialDays?: number | null;
     maxDailySignals?: number | null;
@@ -32,6 +25,7 @@ export type SubscriptionPlanCatalogItemDto = {
     includesHumanAnalyst?: boolean;
     supportsAdvancedFilters?: boolean;
     includesLiveSessions?: boolean;
-    features?: Array<SubscriptionPlanFeatureItemDto> | null;
+    displayOrder?: number;
+    isHighlighted?: boolean;
 };
 

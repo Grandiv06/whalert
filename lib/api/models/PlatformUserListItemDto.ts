@@ -16,5 +16,13 @@ export type PlatformUserListItemDto = {
     subscriptionPlanDisplayName?: string | null;
     subscriptionPlanName?: string | null;
     subscriptionEndDateUtc?: string | null;
+    hasActiveLiveSubscription?: boolean;
+    liveSubscriptionPlanDisplayName?: string | null;
+    liveSubscriptionPlanName?: string | null;
+    liveSubscriptionEndDateUtc?: string | null;
+    hasActiveMarketSubscription?: boolean;
+    marketSubscriptionPlanDisplayName?: string | null;
+    marketSubscriptionPlanName?: string | null;
+    marketSubscriptionEndDateUtc?: string | null;
 };
 

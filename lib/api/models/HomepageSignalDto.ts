@@ -3,6 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { MarketType } from './MarketType';
+import type { SignalOutcomeStatus } from './SignalOutcomeStatus';
 import type { SignalSide } from './SignalSide';
 import type { SignalStatus } from './SignalStatus';
 export type HomepageSignalDto = {
@@ -13,6 +14,7 @@ export type HomepageSignalDto = {
     market?: MarketType;
     side?: SignalSide;
     signalStatus?: SignalStatus;
+    outcomeStatus?: SignalOutcomeStatus;
     statusLabel?: string | null;
     entryPrice?: number;
     stopLoss?: number;

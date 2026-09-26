@@ -2,6 +2,8 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { ClaimFreeSubscriptionInput } from '../models/ClaimFreeSubscriptionInput';
+import type { ClaimFreeSubscriptionOutput } from '../models/ClaimFreeSubscriptionOutput';
 import type { GetSubscriptionPaymentHistoryOutput } from '../models/GetSubscriptionPaymentHistoryOutput';
 import type { RequestSubscriptionPaymentInput } from '../models/RequestSubscriptionPaymentInput';
 import type { RequestSubscriptionPaymentOutput } from '../models/RequestSubscriptionPaymentOutput';
@@ -53,6 +55,21 @@ export class SubscriptionPurchaseService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/services/app/SubscriptionPurchase/RequestPayment',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @param requestBody
+     * @returns ClaimFreeSubscriptionOutput Success
+     * @throws ApiError
+     */
+    public static apiServicesAppSubscriptionpurchaseClaimfreesubscriptionPost(
+        requestBody?: ClaimFreeSubscriptionInput,
+    ): CancelablePromise<ClaimFreeSubscriptionOutput> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/services/app/SubscriptionPurchase/ClaimFreeSubscription',
             body: requestBody,
             mediaType: 'application/json',
         });

@@ -59,6 +59,8 @@ export type { ChatMessageDto } from './models/ChatMessageDto';
 export { ChatMessageReadState } from './models/ChatMessageReadState';
 export { ChatSide } from './models/ChatSide';
 export type { CheckDatabaseOutput } from './models/CheckDatabaseOutput';
+export type { ClaimFreeSubscriptionInput } from './models/ClaimFreeSubscriptionInput';
+export type { ClaimFreeSubscriptionOutput } from './models/ClaimFreeSubscriptionOutput';
 export type { CleanValuesInput } from './models/CleanValuesInput';
 export type { ComboboxItemDto } from './models/ComboboxItemDto';
 export type { ConfirmDetectedSignalOutcomeInput } from './models/ConfirmDetectedSignalOutcomeInput';
@@ -321,6 +323,7 @@ export type { ListResultDtoOfNameValueDto } from './models/ListResultDtoOfNameVa
 export type { ListResultDtoOfOrganizationUnitDto } from './models/ListResultDtoOfOrganizationUnitDto';
 export type { ListResultDtoOfRoleListDto } from './models/ListResultDtoOfRoleListDto';
 export type { ListResultDtoOfSubscribableEditionComboboxItemDto } from './models/ListResultDtoOfSubscribableEditionComboboxItemDto';
+export type { ListResultDtoOfSubscriptionPlanAdminListItemDto } from './models/ListResultDtoOfSubscriptionPlanAdminListItemDto';
 export type { LiveSessionDto } from './models/LiveSessionDto';
 export type { LocalizableComboboxItemDto } from './models/LocalizableComboboxItemDto';
 export type { LocalizableComboboxItemSourceDto } from './models/LocalizableComboboxItemSourceDto';
@@ -523,6 +526,8 @@ export type { SetNotificationAsReadOutput } from './models/SetNotificationAsRead
 export type { SetPlatformUserActiveInput } from './models/SetPlatformUserActiveInput';
 export type { SetProviderActiveInput } from './models/SetProviderActiveInput';
 export type { SetProviderTeamAccountPasswordInput } from './models/SetProviderTeamAccountPasswordInput';
+export type { SetSubscriptionPlanActiveInput } from './models/SetSubscriptionPlanActiveInput';
+export type { SetSubscriptionPlanPurchasableInput } from './models/SetSubscriptionPlanPurchasableInput';
 export type { Setting } from './models/Setting';
 export type { SettingInput } from './models/SettingInput';
 export { SettingScopes } from './models/SettingScopes';
@@ -570,6 +575,7 @@ export type { SubscriptionPaymentListDto } from './models/SubscriptionPaymentLis
 export type { SubscriptionPaymentProductDto } from './models/SubscriptionPaymentProductDto';
 export { SubscriptionPaymentStatus } from './models/SubscriptionPaymentStatus';
 export { SubscriptionPaymentType } from './models/SubscriptionPaymentType';
+export type { SubscriptionPlanAdminListItemDto } from './models/SubscriptionPlanAdminListItemDto';
 export type { SubscriptionPlanCatalogItemDto } from './models/SubscriptionPlanCatalogItemDto';
 export type { SubscriptionPlanDetailDto } from './models/SubscriptionPlanDetailDto';
 export type { SubscriptionPlanFeatureItemDto } from './models/SubscriptionPlanFeatureItemDto';
@@ -636,6 +642,8 @@ export type { UpdateProviderLiveSessionInput } from './models/UpdateProviderLive
 export type { UpdateProviderSettingsInput } from './models/UpdateProviderSettingsInput';
 export type { UpdateProviderSubscriberInput } from './models/UpdateProviderSubscriberInput';
 export type { UpdateProviderTeamAccountInput } from './models/UpdateProviderTeamAccountInput';
+export type { UpdateSubscriptionPlanDiscountInput } from './models/UpdateSubscriptionPlanDiscountInput';
+export type { UpdateSubscriptionPlanInput } from './models/UpdateSubscriptionPlanInput';
 export type { UpdateTenantFeaturesInput } from './models/UpdateTenantFeaturesInput';
 export type { UpdateUserPermissionsInput } from './models/UpdateUserPermissionsInput';
 export type { UpdateUserSignInTokenOutput } from './models/UpdateUserSignInTokenOutput';
