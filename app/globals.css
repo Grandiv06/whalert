@@ -535,3 +535,20 @@ iframe[id*="raychat"] {
   right: auto !important;
 }
 
+/* Hide Raychat when any modal/dialog is open or when hide-raychat class is present */
+body:has([data-state="open"]) #raychat_widget,
+body:has([data-state="open"]) .raychat_frame,
+body:has([data-state="open"]) #raychat_frame,
+body:has([data-state="open"]) iframe[id*="raychat"],
+body:has([data-state="open"]) [id*="raychat"],
+body.hide-raychat #raychat_widget,
+body.hide-raychat .raychat_frame,
+body.hide-raychat #raychat_frame,
+body.hide-raychat iframe[id*="raychat"],
+body.hide-raychat [id*="raychat"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+

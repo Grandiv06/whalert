@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import PlansSection from "@/components/shared/plans-section";
 import { cn } from "@/lib/utils";
@@ -20,6 +21,15 @@ export function PlansModal({
   description = "پلن مناسب خود را انتخاب کنید و اشتراک خود را فعال کنید.",
   onlyLiveSessions = false,
 }: PlansModalProps) {
+  useEffect(() => {
+    if (open) {
+      document.body.classList.add("hide-raychat");
+      return () => {
+        document.body.classList.remove("hide-raychat");
+      };
+    }
+  }, [open]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -39,7 +49,7 @@ export function PlansModal({
           <p className="mt-1.5 text-right text-sm text-white/55">{description}</p>
         </div>
 
-        <div className="relative max-h-[calc(92vh-100px)] overflow-y-auto overflow-x-hidden px-4 pb-5 pt-10 sm:px-6 sm:py-6 custom-scrollbar">
+        <div className="relative max-h-[calc(92vh-60px)] sm:max-h-[calc(92vh-100px)] overflow-y-auto overflow-x-hidden px-3 pb-3 pt-6 sm:px-6 sm:py-6 custom-scrollbar">
           <PlansSection
             showHeader={false}
             onlyLiveSessions={onlyLiveSessions}
