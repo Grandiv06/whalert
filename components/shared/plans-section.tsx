@@ -16,10 +16,12 @@ import {
 import {
   Check,
   Sparkles,
-  Crown,
-  ArrowLeft,
   ChevronLeft,
   ChevronRight,
+  Clock,
+  Radio,
+  Bot,
+  ArrowLeft,
 } from "lucide-react";
 import { toPersianDigits, cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
@@ -47,15 +49,32 @@ type GoldPlan = {
   displayName: string;
   subtitle: string;
   monthlyPrice: number;
+  originalPrice?: number | null;
+  discountedPrice?: number | null;
+  discountPercent?: number | null;
   features: string[];
   footerText: string;
   ctaText: string;
   isBundle?: boolean;
   comingSoon?: boolean;
+  isPurchasable?: boolean;
   durationInDays?: number | null;
   marketFocus?: number | null;
   isOns?: boolean;
   isMazaneh?: boolean;
+  isLive?: boolean;
+  isTrial?: boolean;
+  highlightTag?: string | null;
+  themeColor?: string | null;
+  displayOrder?: number;
+  isHighlighted?: boolean;
+  maxDailySignals?: number | null;
+  includesAiBots?: boolean;
+  includesHumanAnalyst?: boolean;
+  supportsAdvancedFilters?: boolean;
+  includesLiveSessions?: boolean;
+  description?: string | null;
+  summaryText?: string | null;
   variants?: GoldPlan[];
   hasDurationChoices?: boolean;
 };
@@ -93,8 +112,8 @@ function getDailyPriceLabel(
   return `${toPersianDigits(daily.toLocaleString("fa-IR"))} تومان / روز`;
 }
 
-function isComingSoonPlan(_plan: SubscriptionPlanCatalogItemDto): boolean {
-  return false;
+function isComingSoonPlan(plan: SubscriptionPlanCatalogItemDto): boolean {
+  return plan.isPurchasable === false;
 }
 
 const LIVE_PLAN_DEFAULT_FEATURES = [
@@ -108,6 +127,25 @@ const LIVE_PLAN_DEFAULT_FEATURES = [
   "پشتیبانی اختصاصی و اولویت‌دار",
 ];
 
+const ONS_PLAN_DEFAULT_FEATURES = [
+  "سیگنال‌های معاملاتی انس طلا (XAU/USD)",
+  "نقطه ورود، حد سود و حد ضرر دقیق",
+  "مدیریت معامله و ریسک به ریوارد اصولی",
+  "پوشش سشن‌های معاملاتی لندن و نیویورک",
+  "هشدارهای متنی ورود و خروج فوری",
+  "تعداد سیگنال در روز: بالای ۶ عدد با وین‌ریت بالا",
+  "پشتیبانی تمام وقت",
+];
+
+const MAZANEH_PLAN_DEFAULT_FEATURES = [
+  "تحلیل و سیگنال مظنه",
+  "نقاط ورود و خروج مشخص",
+  "مدیریت ریسک متناسب با بازار داخلی",
+  "پوشش نوسانات لحظه‌ای بازار طلا ایران",
+  "تعداد سیگنال در روز: بالای ۵ عدد با وین‌ریت بالا",
+  "پشتیبانی تمام وقت",
+];
+
 const LIVE_PLAN_DEFAULT_FOOTER =
   "مناسب برای تریدرهایی که می‌خواهند تجربه واقعی معامله‌گری حرفه‌ای را ببینند و یاد بگیرند.";
 
@@ -116,6 +154,15 @@ const LIVE_PLAN_DEFAULT_SUBTITLE = "ترید زنده، شفاف و بدون ه�
 function mapCatalogPlan(plan: SubscriptionPlanCatalogItemDto): GoldPlan {
   const isLive = isLiveCatalogPlan(plan);
   const isBundle = isBundleCatalogPlan(plan);
+  const isOns = isOnsCatalogPlan(plan);
+  const isMazaneh = isMazanehCatalogPlan(plan);
+  const isPurchasable = plan.isPurchasable !== false;
+  const isComingSoon = isComingSoonPlan(plan);
+  const isTrial =
+    plan.price === 0 ||
+    Boolean(plan.trialDays && plan.trialDays > 0) ||
+    (plan.name ?? "").toLowerCase().includes("trial");
+
   const apiFeatures =
     plan.features
       ?.filter((f) => f.isEnabled !== false)
@@ -123,159 +170,117 @@ function mapCatalogPlan(plan: SubscriptionPlanCatalogItemDto): GoldPlan {
       .map((f) => f.value)
       .filter((v): v is string => Boolean(v && v.trim().length > 0)) ?? [];
 
+  const rawPrice = plan.price ?? 0;
+  const rawDiscountedPrice =
+    plan.discountedPrice !== null && plan.discountedPrice !== undefined
+      ? plan.discountedPrice
+      : rawPrice;
+  const rawDiscountPercent = plan.discountPercent ?? 0;
+  const hasDiscount = rawDiscountedPrice > 0 && rawDiscountedPrice < rawPrice;
+  const calculatedPercent =
+    hasDiscount && rawPrice > 0
+      ? Math.round(((rawPrice - rawDiscountedPrice) / rawPrice) * 100)
+      : 0;
+  const discountPercent =
+    rawDiscountPercent > 0 ? rawDiscountPercent : calculatedPercent;
+  const effectivePrice = hasDiscount ? rawDiscountedPrice : rawPrice;
+
+  // Build features: prioritize backend features, or synthesize from backend flags if features list is empty
+  let finalFeatures = apiFeatures;
+  if (finalFeatures.length === 0) {
+    const syntheticFeatures: string[] = [];
+    if (plan.durationInDays) {
+      syntheticFeatures.push(
+        `دسترسی کامل ${toPersianDigits(plan.durationInDays)} روزه`,
+      );
+    }
+    if (isOns) {
+      syntheticFeatures.push("سیگنال‌های اختصاصی انس جهانی طلا");
+    }
+    if (isMazaneh) {
+      syntheticFeatures.push("سیگنال‌های تخصصی آبشده و مظنه طلا");
+    }
+    if (isBundle) {
+      syntheticFeatures.push("پوشش همزمان طلای جهانی و مظنه داخلی");
+    }
+    if (isLive || plan.includesLiveSessions) {
+      syntheticFeatures.push("دسترسی به جلسات لایو ترید");
+    }
+    if (plan.maxDailySignals) {
+      syntheticFeatures.push(
+        `تعداد سیگنال در روز: بالای ${toPersianDigits(plan.maxDailySignals)} عدد`,
+      );
+    }
+    if (plan.includesAiBots) {
+      syntheticFeatures.push("دسترسی به ربات اکسپرت متاتریدر EA");
+    }
+    if (plan.includesHumanAnalyst) {
+      syntheticFeatures.push("تحلیل اختصاصی توسط تحلیل‌گران ارشد");
+    }
+    if (plan.supportsAdvancedFilters) {
+      syntheticFeatures.push("امکان فیلترهای پیشرفته تحلیلی");
+    }
+    if (syntheticFeatures.length > 0) {
+      finalFeatures = syntheticFeatures;
+    } else {
+      finalFeatures = isLive
+        ? LIVE_PLAN_DEFAULT_FEATURES
+        : isOns
+          ? ONS_PLAN_DEFAULT_FEATURES
+          : isMazaneh
+            ? MAZANEH_PLAN_DEFAULT_FEATURES
+            : [];
+    }
+  }
+
   return {
     id: plan.id ?? 0,
-    displayName: plan.displayName ?? plan.name ?? "پلن اشتراک",
+    displayName: (plan.displayName ?? plan.name ?? "پلن اشتراک").trim(),
     subtitle:
-      plan.subtitle ??
-      plan.summaryText ??
-      plan.description ??
-      (isLive ? LIVE_PLAN_DEFAULT_SUBTITLE : "جزئیات پلن در دسترس است."),
-    monthlyPrice: plan.price ?? 0,
-    features: apiFeatures.length > 0 ? apiFeatures : isLive ? LIVE_PLAN_DEFAULT_FEATURES : [],
+      plan.subtitle?.trim() ||
+      plan.description?.trim() ||
+      plan.summaryText?.trim() ||
+      (isLive ? LIVE_PLAN_DEFAULT_SUBTITLE : ""),
+    description: plan.description?.trim() || null,
+    summaryText: plan.summaryText?.trim() || null,
+    monthlyPrice: effectivePrice,
+    originalPrice: rawPrice,
+    discountedPrice: rawDiscountedPrice,
+    discountPercent: discountPercent,
+    features: finalFeatures,
     footerText:
-      plan.summaryText ??
-      plan.description ??
-      (isLive ? LIVE_PLAN_DEFAULT_FOOTER : "برای مشاهده اطلاعات کامل این پلن اقدام کنید."),
-    ctaText: plan.callToActionText ?? (isLive ? "فعال‌سازی اشتراک لایو ترید" : isBundle ? "فعال‌سازی باندل کامل" : "مشاهده و فعال‌سازی پلن"),
+      plan.summaryText?.trim() ||
+      plan.description?.trim() ||
+      (isLive ? LIVE_PLAN_DEFAULT_FOOTER : ""),
+    ctaText: (
+      plan.callToActionText?.trim() ||
+      (isTrial
+        ? "شروع اشتراک رایگان"
+        : isLive
+          ? "فعال‌سازی اشتراک لایو ترید"
+          : isBundle
+            ? "فعال‌سازی باندل کامل"
+            : "فعال‌سازی اشتراک")
+    ),
     isBundle: isBundle,
-    comingSoon: isComingSoonPlan(plan),
+    isLive: isLive,
+    comingSoon: isComingSoon,
+    isPurchasable: isPurchasable,
     durationInDays: plan.durationInDays,
     marketFocus: plan.marketFocus,
-    isOns: isOnsCatalogPlan(plan),
-    isMazaneh: isMazanehCatalogPlan(plan),
+    isOns: isOns,
+    isMazaneh: isMazaneh,
+    isTrial: isTrial,
+    highlightTag: plan.highlightTag?.trim() || null,
+    themeColor: plan.themeColor?.trim() || null,
+    displayOrder: plan.displayOrder ?? 0,
+    isHighlighted: Boolean(plan.isHighlighted),
+    maxDailySignals: plan.maxDailySignals,
+    includesAiBots: plan.includesAiBots,
+    includesHumanAnalyst: plan.includesHumanAnalyst,
+    supportsAdvancedFilters: plan.supportsAdvancedFilters,
+    includesLiveSessions: plan.includesLiveSessions,
   };
-}
-
-function buildDisplayPlans(plans: GoldPlan[]): GoldPlan[] {
-  const onsVariants = plans
-    .filter((plan) => plan.isOns && !plan.comingSoon)
-    .sort((a, b) => (b.durationInDays ?? 0) - (a.durationInDays ?? 0));
-
-  const baseMazanehVariants = plans
-    .filter((plan) => plan.isMazaneh && !plan.comingSoon && !plan.isBundle)
-    .sort((a, b) => (b.durationInDays ?? 0) - (a.durationInDays ?? 0));
-
-  const bundleVariants = plans
-    .filter((plan) => plan.isBundle && !plan.comingSoon)
-    .sort((a, b) => (b.durationInDays ?? 0) - (a.durationInDays ?? 0));
-
-  const otherPlans = plans.filter(
-    (plan) =>
-      !(plan.isOns && !plan.comingSoon) &&
-      !(plan.isMazaneh && !plan.comingSoon && !plan.isBundle) &&
-      !(plan.isBundle && !plan.comingSoon),
-  );
-
-  // Mock missing Mazaneh durations based on the monthly plan
-  const finalMazanehVariants = [...baseMazanehVariants];
-  const monthlyMazaneh =
-    finalMazanehVariants.find((p) => p.durationInDays === 30) ||
-    finalMazanehVariants[0];
-  if (monthlyMazaneh) {
-    if (!finalMazanehVariants.some((p) => p.durationInDays === 14)) {
-      finalMazanehVariants.push({
-        ...monthlyMazaneh,
-        id: 999914, // Fake ID
-        displayName: "اشتراک دو هفته‌ای مظنه",
-        durationInDays: 14,
-        monthlyPrice: Math.round(monthlyMazaneh.monthlyPrice / 2),
-      });
-    }
-    if (!finalMazanehVariants.some((p) => p.durationInDays === 7)) {
-      finalMazanehVariants.push({
-        ...monthlyMazaneh,
-        id: 999907, // Fake ID
-        displayName: "اشتراک هفتگی مظنه",
-        durationInDays: 7,
-        monthlyPrice: Math.round(monthlyMazaneh.monthlyPrice / 4),
-      });
-    }
-    finalMazanehVariants.sort(
-      (a, b) => (b.durationInDays ?? 0) - (a.durationInDays ?? 0),
-    );
-  }
-
-  const result: GoldPlan[] = [];
-
-  if (onsVariants.length > 0) {
-    if (onsVariants.length === 1) {
-      result.push(onsVariants[0]);
-    } else {
-      const preferred =
-        onsVariants.find((plan) => plan.durationInDays === 30) ??
-        onsVariants[0];
-      const lowestPrice = Math.min(
-        ...onsVariants.map((plan) => plan.monthlyPrice),
-      );
-      result.push({
-        ...preferred,
-        id: preferred.id,
-        displayName: "اشتراک انس جهانی",
-        monthlyPrice: lowestPrice,
-        variants: onsVariants,
-        hasDurationChoices: true,
-        ctaText: preferred.ctaText.includes("انس")
-          ? preferred.ctaText
-          : "فعال‌سازی اشتراک انس",
-      });
-    }
-  }
-
-  if (bundleVariants.length > 0) {
-    if (bundleVariants.length === 1) {
-      result.push(bundleVariants[0]);
-    } else {
-      const preferred =
-        bundleVariants.find((plan) => plan.durationInDays === 30) ??
-        bundleVariants[0];
-      const lowestPrice = Math.min(
-        ...bundleVariants.map((plan) => plan.monthlyPrice),
-      );
-      result.push({
-        ...preferred,
-        id: preferred.id,
-        displayName: "باندل ویژه انس + مظنه",
-        monthlyPrice: lowestPrice,
-        variants: bundleVariants,
-        hasDurationChoices: bundleVariants.length > 1,
-        ctaText: preferred.ctaText.includes("باندل")
-          ? preferred.ctaText
-          : "فعال‌سازی باندل کامل",
-      });
-    }
-  }
-
-  if (finalMazanehVariants.length > 0) {
-    if (
-      finalMazanehVariants.length === 1 &&
-      !finalMazanehVariants[0].hasDurationChoices &&
-      !baseMazanehVariants.length
-    ) {
-      result.push(finalMazanehVariants[0]);
-    } else {
-      const preferred =
-        finalMazanehVariants.find((plan) => plan.durationInDays === 30) ??
-        finalMazanehVariants[0];
-      const lowestPrice = Math.min(
-        ...finalMazanehVariants.map((plan) => plan.monthlyPrice),
-      );
-      result.push({
-        ...preferred,
-        id: preferred.id,
-        displayName: "اشتراک مظنه",
-        monthlyPrice: lowestPrice,
-        variants: finalMazanehVariants,
-        hasDurationChoices: finalMazanehVariants.length > 1,
-        ctaText: preferred.ctaText.includes("مظنه")
-          ? preferred.ctaText
-          : "فعال‌سازی اشتراک مظنه",
-      });
-    }
-  }
-
-  result.push(...otherPlans);
-  return result;
 }
 
 function isLiveCatalogPlan(plan: SubscriptionPlanCatalogItemDto): boolean {
@@ -283,6 +288,81 @@ function isLiveCatalogPlan(plan: SubscriptionPlanCatalogItemDto): boolean {
   const name = (plan.name ?? "").toLowerCase();
   const displayName = plan.displayName ?? "";
   return name.includes("live") || displayName.includes("لایو");
+}
+
+function groupCatalogPlans(plans: GoldPlan[]): GoldPlan[] {
+  const trialPlans: GoldPlan[] = [];
+  const onsPlans: GoldPlan[] = [];
+  const mazanehPlans: GoldPlan[] = [];
+  const bundlePlans: GoldPlan[] = [];
+  const livePlans: GoldPlan[] = [];
+  const otherPlans: GoldPlan[] = [];
+
+  for (const plan of plans) {
+    if (plan.isTrial) {
+      trialPlans.push(plan);
+    } else if (plan.isBundle) {
+      bundlePlans.push(plan);
+    } else if (plan.isOns) {
+      onsPlans.push(plan);
+    } else if (plan.isMazaneh) {
+      mazanehPlans.push(plan);
+    } else if (plan.isLive) {
+      livePlans.push(plan);
+    } else {
+      otherPlans.push(plan);
+    }
+  }
+
+  const result: GoldPlan[] = [];
+
+  const createGroupCard = (groupList: GoldPlan[], defaultTitle: string): GoldPlan => {
+    const sorted = [...groupList].sort(
+      (a, b) => (a.durationInDays ?? 0) - (b.durationInDays ?? 0),
+    );
+
+    const primary =
+      sorted.find((p) => p.durationInDays === 30) ?? sorted[sorted.length - 1];
+
+    if (sorted.length <= 1) {
+      return primary;
+    }
+
+    return {
+      ...primary,
+      displayName: defaultTitle,
+      hasDurationChoices: true,
+      variants: sorted,
+    };
+  };
+
+  // 1. Trial
+  result.push(...trialPlans);
+
+  // 2. Ons
+  if (onsPlans.length > 0) {
+    result.push(createGroupCard(onsPlans, "اشتراک انس جهانی"));
+  }
+
+  // 3. Mazaneh
+  if (mazanehPlans.length > 0) {
+    result.push(createGroupCard(mazanehPlans, "اشتراک مظنه"));
+  }
+
+  // 4. Bundle
+  if (bundlePlans.length > 0) {
+    result.push(createGroupCard(bundlePlans, "باندل ویژه انس + مظنه"));
+  }
+
+  // 5. Live
+  if (livePlans.length > 0) {
+    result.push(createGroupCard(livePlans, "دسترسی به لایو"));
+  }
+
+  // 6. Others
+  result.push(...otherPlans);
+
+  return result;
 }
 
 interface PlansSectionProps {
@@ -302,26 +382,22 @@ export default function PlansSection({
   const [selectedPlan, setSelectedPlan] = useState<GoldPlan | null>(null);
   const [durationGroup, setDurationGroup] = useState<GoldPlan | null>(null);
   const [durationOpen, setDurationOpen] = useState(false);
-  const [selectedDurationId, setSelectedDurationId] = useState<number | null>(
-    null,
-  );
+  const [selectedDurationId, setSelectedDurationId] = useState<number | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const modalScrollerRef = useRef<HTMLDivElement | null>(null);
-
-  const scrollModalPlans = (direction: "next" | "prev") => {
-    const el = modalScrollerRef.current;
-    if (!el) return;
-    const amount = Math.min(340, el.clientWidth * 0.8);
-    el.scrollBy({
-      left: direction === "next" ? -amount : amount,
-      behavior: "smooth",
-    });
-  };
 
   useEffect(() => {
     setIsLoggedIn(Boolean(getAccessToken()));
   }, []);
+
+  useEffect(() => {
+    if (durationOpen || confirmOpen) {
+      document.body.classList.add("hide-raychat");
+      return () => {
+        document.body.classList.remove("hide-raychat");
+      };
+    }
+  }, [durationOpen, confirmOpen]);
 
   const { data: plansResponse, isLoading } = useQuery({
     queryKey: ["landing-active-subscription-plans"],
@@ -343,26 +419,28 @@ export default function PlansSection({
     ? plansFromApi.filter(isLiveCatalogPlan)
     : plansFromApi;
 
-  const catalogPlans = scopedPlansFromApi.map(mapCatalogPlan);
-  const plans = onlyLiveSessions
-    ? catalogPlans.filter((plan) => !plan.comingSoon)
-    : buildDisplayPlans(catalogPlans);
-  const allPurchaseablePlans = catalogPlans.filter((plan) => !plan.comingSoon);
+  const catalogPlans = scopedPlansFromApi
+    .map(mapCatalogPlan)
+    .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
 
-  const bundlePlanIndex = plans.findIndex((plan) => plan.isBundle);
-  const desktopPlans =
-    bundlePlanIndex > -1 && plans.length >= 3
-      ? [
-          ...plans.filter((_, index) => index !== bundlePlanIndex).slice(0, 1),
-          plans[bundlePlanIndex],
-          ...plans.filter((_, index) => index !== bundlePlanIndex).slice(1),
-        ]
-      : plans;
+  const plans = onlyLiveSessions
+    ? catalogPlans.filter((plan) => plan.isLive)
+    : catalogPlans;
+
+  const allPurchaseablePlans = catalogPlans.filter(
+    (plan) => plan.isPurchasable !== false && !plan.comingSoon,
+  );
+
+  const desktopPlans = onlyLiveSessions ? plans : groupCatalogPlans(plans);
 
   const handlePurchase = async (planId: number) => {
+    if (planId === -1) {
+      router.push("/auth/sign-in?redirect=/#plans");
+      return;
+    }
     if (!planId) return;
     const plan = allPurchaseablePlans.find((item) => item.id === planId);
-    if (!plan || plan.comingSoon) return;
+    if (!plan || plan.isPurchasable === false || plan.comingSoon) return;
     setPendingPlanId(planId);
     try {
       const response =
@@ -396,16 +474,15 @@ export default function PlansSection({
   };
 
   const openConfirm = (plan: GoldPlan) => {
-    if (plan.comingSoon) return;
-    if (!isLoggedIn) {
-      const redirectUrl = showHeader ? "/#plans" : "/dashboard/subscription";
-      router.push(`/auth/sign-in?redirect=${encodeURIComponent(redirectUrl)}`);
-      return;
-    }
+    if (plan.isPurchasable === false || plan.comingSoon) return;
 
     if (plan.hasDurationChoices && (plan.variants?.length ?? 0) > 1) {
+      const purchasableVariants = (plan.variants ?? []).filter(
+        (item) => item.isPurchasable !== false && !item.comingSoon,
+      );
       const preferred =
-        plan.variants?.find((item) => item.durationInDays === 30) ??
+        purchasableVariants.find((item) => item.durationInDays === 30) ??
+        purchasableVariants[0] ??
         plan.variants?.[0] ??
         null;
       setDurationGroup(plan);
@@ -414,19 +491,35 @@ export default function PlansSection({
       return;
     }
 
-    setSelectedPlan(plan.variants?.[0] ?? plan);
+    if (!isLoggedIn) {
+      const redirectUrl = showHeader ? "/#plans" : "/dashboard/subscription";
+      router.push(`/auth/sign-in?redirect=${encodeURIComponent(redirectUrl)}`);
+      return;
+    }
+
+    setSelectedPlan(plan);
     setConfirmOpen(true);
   };
 
-  const confirmDurationSelection = () => {
-    const variant =
-      durationGroup?.variants?.find((item) => item.id === selectedDurationId) ??
-      null;
-    if (!variant) return;
+  const selectedDurationVariant =
+    durationGroup?.variants?.find((item) => item.id === selectedDurationId) ??
+    durationGroup?.variants?.[0] ??
+    null;
+
+  const handleDurationPurchase = async () => {
+    const variant = selectedDurationVariant;
+    if (!variant?.id) return;
+
+    if (!isLoggedIn) {
+      setDurationOpen(false);
+      const redirectUrl = showHeader ? "/#plans" : "/dashboard/subscription";
+      router.push(`/auth/sign-in?redirect=${encodeURIComponent(redirectUrl)}`);
+      return;
+    }
+
+    await handlePurchase(variant.id);
     setDurationOpen(false);
-    setDurationGroup(null);
-    setSelectedPlan(variant);
-    setConfirmOpen(true);
+    onPurchaseSuccess?.();
   };
 
   const confirmPurchase = async () => {
@@ -438,6 +531,7 @@ export default function PlansSection({
 
   const getPlanTheme = (plan: GoldPlan, index: number) => {
     const isBundle = !!plan.isBundle;
+    const isTrial = !!plan.isTrial;
 
     let theme = {
       border: "border-white/10 hover:border-white/20",
@@ -476,6 +570,21 @@ export default function PlansSection({
       };
     }
 
+    if (isTrial) {
+      return {
+        border: "border-indigo-400/60",
+        fill: "bg-gradient-to-br from-indigo-500/20 via-[#3B216A]/40 to-[#02000B]/80",
+        glow: "bg-indigo-400/20",
+        priceBox: "border-indigo-400/30 bg-indigo-400/[0.1]",
+        check: "text-indigo-300",
+        button:
+          "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold shadow-lg shadow-indigo-600/25",
+        priceText: "text-white",
+        accentShadow:
+          "lg:z-10 shadow-[0_0_40px_-12px_rgba(99,102,241,0.35)]",
+      };
+    }
+
     if (isBundle) {
       theme = {
         border: "border-amber-300/60",
@@ -506,7 +615,7 @@ export default function PlansSection({
     return (
       <div
         className={cn(
-          "relative h-full w-full",
+          "relative flex flex-col flex-1 h-full w-full min-h-[500px] sm:min-h-[580px] md:min-h-[690px]",
           theme.accentShadow,
           compact
             ? "shadow-[0_12px_36px_-18px_rgba(7,2,20,0.7)]"
@@ -515,13 +624,18 @@ export default function PlansSection({
       >
         <div
           className={cn(
-            "relative flex h-full w-full flex-col overflow-hidden border transition-[border-color] duration-300 group",
+            "relative flex flex-col flex-1 h-full w-full overflow-hidden border transition-[border-color] duration-300 group",
             "bg-[#02000B] isolate",
             radius,
             safariClip,
             theme.border,
             compact && "text-white",
           )}
+          style={
+            plan.themeColor
+              ? { borderColor: `${plan.themeColor}55` }
+              : undefined
+          }
         >
           <div
             aria-hidden
@@ -529,11 +643,28 @@ export default function PlansSection({
           >
             <div
               className={`absolute -top-20 -right-20 h-44 w-44 rounded-full blur-3xl ${theme.glow}`}
+              style={
+                plan.themeColor
+                  ? { backgroundColor: plan.themeColor, opacity: 0.18 }
+                  : undefined
+              }
             />
             <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-l from-transparent via-white/25 to-transparent" />
           </div>
 
-          {isBundle && (
+          {plan.highlightTag ? (
+            <div
+              className={cn(
+                "absolute z-20 inline-flex items-center gap-1 rounded-full border border-amber-300/50 bg-amber-500/25 font-bold text-amber-200 backdrop-blur-sm shadow-md shadow-amber-950/40",
+                compact
+                  ? "left-3 top-3 px-2.5 py-1 text-[10px]"
+                  : "left-3 top-3 px-3 py-1.5 text-[11px]",
+              )}
+            >
+              <Sparkles className="h-3 w-3 text-amber-300" />
+              {plan.highlightTag}
+            </div>
+          ) : plan.isHighlighted ? (
             <div
               className={cn(
                 "absolute z-20 inline-flex items-center gap-1 rounded-full border border-amber-200/55 bg-amber-400/20 font-semibold text-amber-100 backdrop-blur-sm",
@@ -545,22 +676,60 @@ export default function PlansSection({
               <Sparkles className="h-3 w-3" />
               پیشنهاد ویژه
             </div>
+          ) : plan.hasDurationChoices ? (
+            <div
+              className={cn(
+                "absolute z-20 inline-flex items-center gap-1 rounded-full border border-amber-300/35 bg-amber-400/15 font-semibold text-amber-200 backdrop-blur-sm",
+                compact
+                  ? "left-3 top-3 px-2.5 py-0.5 text-[10px]"
+                  : "left-3 top-3 px-3 py-1 text-[11px]",
+              )}
+            >
+              <Clock className="h-3 w-3 text-amber-300" />
+              دوره‌های ۷، ۱۴ و ۳۰ روزه
+            </div>
+          ) : plan.durationInDays ? (
+            <div
+              className={cn(
+                "absolute z-20 inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/10 font-semibold text-white/85 backdrop-blur-sm",
+                compact
+                  ? "left-3 top-3 px-2.5 py-0.5 text-[10px]"
+                  : "left-3 top-3 px-3 py-1 text-[11px]",
+              )}
+            >
+              <Clock className="h-3 w-3 text-amber-300/80" />
+              {toPersianDigits(plan.durationInDays)} روزه
+            </div>
+          ) : null}
+
+          {Boolean(plan.discountPercent && plan.discountPercent > 0) && (
+            <div
+              className={cn(
+                "absolute z-20 inline-flex items-center gap-1 rounded-full border border-rose-400/40 bg-gradient-to-r from-rose-500/25 to-pink-500/20 font-bold text-rose-200 backdrop-blur-sm shadow-md shadow-rose-950/40",
+                compact
+                  ? "right-3 top-3 px-2 py-0.5 text-[10px]"
+                  : "right-3 top-3 px-2.5 py-1 text-[11px]",
+              )}
+            >
+              <Sparkles className="h-3 w-3 text-rose-300" />
+              {toPersianDigits(plan.discountPercent ?? 0)}٪ تخفیف
+            </div>
           )}
 
           <div
             className={cn(
-              "relative z-10 flex h-full flex-1 flex-col",
-              compact ? "p-4 sm:p-5" : "p-5 md:p-6",
-              isBundle && (compact ? "pt-11" : "pt-14"),
+              "relative z-10 flex h-full flex-1 flex-col justify-between",
+              compact ? "px-4 pb-5 sm:px-5 sm:pb-6" : "px-4 sm:px-5 pb-6 md:px-6 md:pb-8",
+              compact ? "pt-12 sm:pt-14" : "pt-12 sm:pt-14 md:pt-16"
             )}
           >
           <div
             className={cn(
               "flex h-full min-h-0 flex-1 flex-col",
-              compact ? "gap-3.5" : "gap-5",
+              compact ? "gap-4" : "gap-5 md:gap-6",
             )}
           >
-            <div>
+            <div className={compact ? "min-h-[4rem]" : "min-h-[5rem]"}>
               <h3
                 className={cn(
                   "font-extrabold leading-8 text-white",
@@ -569,23 +738,25 @@ export default function PlansSection({
               >
                 {plan.displayName}
               </h3>
-              <p
-                className={cn(
-                  "mt-1.5 leading-6 text-white/70",
-                  compact
-                    ? "line-clamp-2 min-h-[2.75rem] text-[12px]"
-                    : "min-h-[3rem] text-sm",
-                )}
-              >
-                {plan.subtitle}
-              </p>
+              {plan.subtitle ? (
+                <p
+                  className={cn(
+                    "mt-1.5 leading-6 text-white/70",
+                    compact
+                      ? "line-clamp-2 text-[12px]"
+                      : "text-sm",
+                  )}
+                >
+                  {plan.subtitle}
+                </p>
+              ) : null}
             </div>
 
             <div
               className={cn(
-                "border",
+                "border flex flex-col justify-center",
                 theme.priceBox,
-                compact ? "rounded-2xl p-3" : "rounded-3xl p-4",
+                compact ? "rounded-2xl p-3 min-h-[115px]" : "rounded-3xl p-4 md:p-5 min-h-[135px]",
               )}
             >
               {plan.comingSoon ? (
@@ -605,9 +776,23 @@ export default function PlansSection({
                 </div>
               ) : (
                 <>
-                  <p className="mb-1.5 text-xs text-white/55">
-                    {plan.hasDurationChoices ? "شروع از" : "قیمت اشتراک"}
-                  </p>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-xs text-white/55">قیمت اشتراک</p>
+                    {Boolean(plan.discountPercent && plan.discountPercent > 0) && (
+                      <span className="inline-flex items-center rounded-full border border-rose-400/40 bg-rose-500/20 px-2 py-0.5 text-[10px] font-black text-rose-300">
+                        {toPersianDigits(plan.discountPercent ?? 0)}٪ تخفیف
+                      </span>
+                    )}
+                  </div>
+
+                  {Boolean(plan.originalPrice && plan.monthlyPrice < plan.originalPrice) && (
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <span className="text-xs sm:text-sm text-white/40 line-through decoration-rose-400/60 decoration-1 font-medium">
+                        {formatMoney(plan.originalPrice)}
+                      </span>
+                    </div>
+                  )}
+
                   <p
                     className={cn(
                       "font-black leading-none text-white",
@@ -615,14 +800,17 @@ export default function PlansSection({
                         ? "text-[22px] sm:text-[26px]"
                         : "text-3xl md:text-4xl",
                       isBundle && "text-amber-100",
+                      Boolean(plan.originalPrice && plan.monthlyPrice < plan.originalPrice) && "text-emerald-300",
                     )}
                   >
-                    {formatMoney(plan.monthlyPrice)}
+                    {plan.isTrial ? "رایگان" : formatMoney(plan.monthlyPrice)}
                   </p>
                   <p className="mt-1.5 text-xs text-white/60">
                     {plan.hasDurationChoices
-                      ? "ماهانه · دو هفته‌ای · هفتگی"
-                      : getPaymentPeriodLabel(plan.durationInDays)}
+                      ? "دوره‌های ماهانه · دو هفته‌ای · هفتگی"
+                      : plan.durationInDays
+                        ? getPaymentPeriodLabel(plan.durationInDays)
+                        : "پرداخت دوره‌ای"}
                   </p>
                 </>
               )}
@@ -632,8 +820,8 @@ export default function PlansSection({
               className={cn(
                 "flex-1 text-white/85",
                 compact
-                  ? "space-y-1.5 text-[12px] leading-5"
-                  : "min-h-[194px] space-y-2 text-sm",
+                  ? "space-y-2 text-[12px] leading-5"
+                  : "space-y-2.5 text-sm",
               )}
             >
               {plan.features.map((feature) => (
@@ -658,42 +846,48 @@ export default function PlansSection({
               )}
             </ul>
 
-            <p
+            <div
               className={cn(
-                "border-t border-white/10 leading-5 text-white/60",
-                compact
-                  ? "mt-0.5 line-clamp-2 pt-2 text-[11px]"
-                  : "mt-1 min-h-[64px] pt-3 text-xs md:text-sm",
+                "border-t border-white/10 flex items-center",
+                compact ? "mt-1 pt-2 min-h-[46px]" : "mt-2 pt-3 min-h-[64px]",
               )}
             >
-              {plan.footerText}
-            </p>
+              {plan.footerText ? (
+                <p className="leading-5 text-white/60 text-xs md:text-sm">
+                  {plan.footerText}
+                </p>
+              ) : null}
+            </div>
 
-            <div className={cn("mt-auto", compact ? "pt-2" : "pt-4")}>
+            <div className={cn("mt-auto", compact ? "pt-3" : "pt-4 md:pt-6")}>
               <Button
                 type="button"
                 onClick={() => openConfirm(plan)}
                 disabled={
-                  plan.comingSoon || (isLoggedIn && pendingPlanId === plan.id)
+                  plan.isPurchasable === false ||
+                  plan.comingSoon ||
+                  (isLoggedIn && pendingPlanId === plan.id)
                 }
                 className={cn(
-                  "w-full font-semibold",
-                  plan.comingSoon
+                  "w-full font-semibold transition-all duration-200",
+                  plan.isPurchasable === false || plan.comingSoon
                     ? "cursor-not-allowed border border-white/15 bg-white/10 text-white/70 opacity-80 hover:bg-white/10"
                     : `cursor-pointer ${theme.button}`,
                   compact
-                    ? "h-11 rounded-2xl text-sm"
-                    : "h-12 rounded-3xl text-base",
+                    ? "h-11 rounded-2xl text-[13px]"
+                    : "h-13 rounded-3xl text-sm md:text-base py-3.5",
                 )}
               >
-                <span className="relative z-10">
-                  {plan.comingSoon
-                    ? "بزودی"
-                    : !isLoggedIn
-                      ? "ورود به اکانت"
-                      : pendingPlanId === plan.id
-                        ? "در حال انتقال..."
-                        : plan.ctaText || "فعال‌سازی اشتراک"}
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  {plan.isPurchasable === false || plan.comingSoon ? (
+                    "بزودی"
+                  ) : !isLoggedIn ? (
+                    "ورود به اکانت"
+                  ) : pendingPlanId === plan.id ? (
+                    "در حال انتقال..."
+                  ) : (
+                    plan.ctaText || "فعال‌سازی اشتراک"
+                  )}
                 </span>
               </Button>
             </div>
@@ -809,16 +1003,43 @@ export default function PlansSection({
               }
               .plans-swiper .swiper-pagination {
                 position: static !important;
-                margin-top: 24px;
+                margin: 14px auto 8px auto !important;
                 line-height: 0;
                 text-align: center;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                gap: 6px !important;
+              }
+              .plans-swiper .swiper-pagination-bullet {
+                margin: 0 !important;
+              }
+              @media (min-width: 640px) {
+                .plans-swiper .swiper-pagination {
+                  margin: 20px auto 10px auto !important;
+                }
               }
               .plans-swiper .swiper-wrapper {
-                align-items: stretch;
+                align-items: stretch !important;
+                display: flex !important;
               }
               .plans-swiper .swiper-slide {
-                height: auto;
-                display: flex;
+                height: auto !important;
+                display: flex !important;
+                flex-direction: column !important;
+              }
+              .plans-swiper .swiper-slide > div {
+                height: 100% !important;
+                min-height: 640px !important;
+                flex: 1 1 0% !important;
+                display: flex !important;
+                flex-direction: column !important;
+                width: 100% !important;
+              }
+              @media (max-width: 768px) {
+                .plans-swiper .swiper-slide > div {
+                  min-height: 520px !important;
+                }
               }
               .plans-swiper {
                 direction: rtl;
@@ -852,8 +1073,8 @@ export default function PlansSection({
 
               <Swiper
                 modules={[Pagination, Navigation, Autoplay]}
-                spaceBetween={20}
-                slidesPerView={1.08}
+                spaceBetween={12}
+                slidesPerView={1}
                 autoplay={{
                   delay: 4000,
                   disableOnInteraction: false,
@@ -866,12 +1087,20 @@ export default function PlansSection({
                 }}
                 breakpoints={{
                   640: {
-                    slidesPerView: 2,
+                    slidesPerView: 1.15,
                     spaceBetween: 16,
                   },
-                  1024: {
-                    slidesPerView: 3,
+                  768: {
+                    slidesPerView: 1.5,
                     spaceBetween: 18,
+                  },
+                  1024: {
+                    slidesPerView: 2.1,
+                    spaceBetween: 20,
+                  },
+                  1280: {
+                    slidesPerView: 3,
+                    spaceBetween: 22,
                   },
                 }}
                 initialSlide={0}
@@ -882,7 +1111,7 @@ export default function PlansSection({
                 style={{ direction: "rtl" }}
               >
                 {desktopPlans.map((plan, index) => (
-                  <SwiperSlide key={plan.id} className="!h-auto py-2">
+                  <SwiperSlide key={plan.id} className="!h-auto !flex !flex-col py-2">
                     {renderPlanCard(plan, index, !showHeader)}
                   </SwiperSlide>
                 ))}
@@ -911,6 +1140,7 @@ export default function PlansSection({
         )}
       </div>
 
+      {/* Modal انتخاب دوره زمانی برای پلن‌های دارای چند دوره (هفتگی، دو هفته‌ای، ماهانه) */}
       <Dialog
         open={durationOpen}
         onOpenChange={(open) => {
@@ -922,140 +1152,173 @@ export default function PlansSection({
         }}
       >
         <DialogContent
-          className="box-border w-[calc(100vw-1.5rem)] max-w-[960px] max-h-[min(92dvh,900px)] gap-0 overflow-x-hidden overflow-y-auto md:overflow-y-hidden border border-[#E8C878]/20 bg-[#07040F] p-0 text-white shadow-[0_40px_120px_-30px_rgba(0,0,0,0.85)]"
+          overlayClassName="z-[70]"
+          className="z-[70] box-border w-[calc(100vw-1.5rem)] max-w-2xl max-h-[min(92dvh,850px)] flex flex-col gap-0 overflow-hidden border border-[#B57CFF]/25 bg-[#0b0518] bg-[radial-gradient(120%_120%_at_100%_0%,rgba(168,127,243,0.22)_0%,rgba(17,5,34,0.98)_45%,rgba(8,2,20,0.99)_100%)] p-0 text-white shadow-[0_32px_120px_-20px_rgba(93,49,160,0.6)] sm:rounded-3xl"
           dir="rtl"
         >
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(90%_70%_at_100%_0%,rgba(232,200,120,0.16)_0%,transparent_55%),radial-gradient(80%_60%_at_0%_100%,rgba(93,49,160,0.35)_0%,transparent_55%)]" />
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(90%_70%_at_100%_0%,rgba(232,200,120,0.14)_0%,transparent_55%),radial-gradient(80%_60%_at_0%_100%,rgba(93,49,160,0.30)_0%,transparent_55%)]" />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-l from-transparent via-[#E8C878]/70 to-transparent" />
+          <div className="pointer-events-none absolute -top-20 -right-20 h-48 w-48 rounded-full bg-fuchsia-400/20 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-24 -left-20 h-56 w-56 rounded-full bg-indigo-400/20 blur-3xl" />
 
-          <div className="relative px-4 pt-5 pb-2.5 md:px-6 md:pt-5 md:pb-3">
-            <DialogHeader className="space-y-2 text-right pe-8 md:space-y-2.5">
-              <div className="inline-flex w-fit items-center gap-1.5 rounded-full border border-[#E8C878]/35 bg-[#E8C878]/10 px-3 py-1 text-[11px] font-semibold tracking-wide text-[#F3D98A]">
-                <Crown className="h-3.5 w-3.5" />
-                {durationGroup?.isBundle
-                  ? "تجربه پریمیوم باندل"
-                  : durationGroup?.isMazaneh
-                    ? "اشتراک مظنه"
-                    : "تجربه پریمیوم انس"}
-              </div>
-              <div className="space-y-1.5 md:space-y-2">
-                <DialogTitle className="text-right text-[22px] md:text-[26px] font-black leading-tight tracking-tight text-white break-words">
-                  {durationGroup?.displayName ?? "اشتراک انس جهانی"}
-                </DialogTitle>
-                <DialogDescription className="text-right text-[13px] md:text-[14px] leading-6 md:leading-7 text-white/60 md:max-w-2xl">
-                  {durationGroup?.isBundle
-                    ? "مدت دسترسی خود را انتخاب کنید. با خرید باندل به سیگنال‌های انس و مظنه با پوشش کامل دسترسی خواهید داشت."
-                    : durationGroup?.isMazaneh
-                      ? "مدت دسترسی خود را انتخاب کنید. هر پلن سیگنال‌های مظنه را با پوشش کامل ارائه می‌دهد."
-                      : "مدت دسترسی خود را انتخاب کنید. هر پلن همان سیگنال‌های انس را با پوشش کامل ارائه می‌دهد."}
-                </DialogDescription>
-              </div>
-            </DialogHeader>
-          </div>
+          <div className="relative flex-1 overflow-y-auto overflow-x-hidden min-h-0 custom-scrollbar">
+            <div className="relative px-5 pt-6 pb-3 sm:px-7 sm:pt-7 sm:pb-4">
+              <DialogHeader className="space-y-2 text-right pe-6 sm:space-y-2.5">
+                <div className="inline-flex w-fit items-center gap-1.5 rounded-full border border-[#E8C878]/35 bg-[#E8C878]/10 px-3 py-1 text-[11px] font-semibold tracking-wide text-[#F3D98A]">
+                  <Clock className="h-3.5 w-3.5" />
+                  انتخاب دوره اشتراک
+                </div>
+                <div className="space-y-1.5">
+                  <DialogTitle className="text-right text-xl sm:text-2xl font-black leading-tight tracking-tight text-white break-words">
+                    {`انتخاب مدت زمان ${durationGroup?.displayName ?? "اشتراک"}`}
+                  </DialogTitle>
+                  <DialogDescription className="text-right text-xs sm:text-sm leading-6 text-white/65">
+                    مدت زمان مورد نظر خود را برای فعال‌سازی اشتراک انتخاب کنید. تمام دوره‌ها دارای دسترسی کامل و یکسان به سیگنال‌ها می‌باشند.
+                  </DialogDescription>
+                </div>
+              </DialogHeader>
+            </div>
 
-          <div className="relative grid w-full min-w-0 grid-cols-1 gap-2.5 px-4 pb-3 md:grid-cols-3 md:gap-3 md:px-6 md:pb-4">
-            {(durationGroup?.variants ?? []).map((variant) => {
-              const isSelected = selectedDurationId === variant.id;
-              const isRecommended = variant.durationInDays === 30;
-              const dailyLabel = getDailyPriceLabel(
-                variant.monthlyPrice,
-                variant.durationInDays,
-              );
+            <div className="relative grid w-full min-w-0 grid-cols-1 gap-3 px-5 pb-4 sm:grid-cols-3 sm:px-7">
+              {(durationGroup?.variants ?? []).map((variant) => {
+                const isSelected = selectedDurationId === variant.id;
+                const isRecommended = variant.durationInDays === 30;
+                const dailyLabel = getDailyPriceLabel(
+                  variant.monthlyPrice,
+                  variant.durationInDays,
+                );
 
-              return (
-                <button
-                  key={variant.id}
-                  type="button"
-                  onClick={() => setSelectedDurationId(variant.id)}
-                  className={`group relative w-full max-w-full overflow-hidden rounded-[18px] border text-right transition-[border-color,background-color,box-shadow] duration-300 cursor-pointer ${
-                    isSelected
-                      ? "border-[#E8C878]/65 bg-gradient-to-b from-[#E8C878]/18 via-[#2A1848]/80 to-[#120A22] shadow-[0_0_0_1px_rgba(232,200,120,0.25),0_18px_50px_-24px_rgba(232,200,120,0.55)]"
-                      : "border-white/10 bg-white/[0.03] hover:border-white/25 hover:bg-white/[0.05]"
-                  }`}
-                >
-                  <div className="flex w-full min-w-0 flex-col gap-2.5 p-3.5 md:gap-3 md:p-4">
-                    <div className="flex w-full min-w-0 items-center justify-between gap-2">
-                      <div className="flex min-w-0 items-center gap-2">
+                return (
+                  <button
+                    key={variant.id}
+                    type="button"
+                    onClick={() => setSelectedDurationId(variant.id)}
+                    className={cn(
+                      "group relative w-full overflow-hidden rounded-2xl border text-right transition-all duration-300 cursor-pointer p-4 flex flex-col justify-between gap-3",
+                      isSelected
+                        ? "border-amber-300/80 bg-gradient-to-b from-amber-400/20 via-[#2A1848]/90 to-[#120A22] shadow-[0_0_0_1px_rgba(232,200,120,0.35),0_12px_40px_-16px_rgba(232,200,120,0.5)]"
+                        : "border-white/10 bg-white/[0.03] hover:border-white/25 hover:bg-white/[0.06]",
+                    )}
+                  >
+                    <div className="flex w-full items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
                         <div
-                          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-all duration-300 ${
+                          className={cn(
+                            "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-all duration-200",
                             isSelected
-                              ? "border-[#E8C878] bg-[#E8C878] text-[#1A1205]"
-                              : "border-white/20 bg-transparent text-transparent"
-                          }`}
+                              ? "border-amber-300 bg-amber-400 text-black font-bold"
+                              : "border-white/30 bg-transparent text-transparent",
+                          )}
                         >
-                          <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                          <Check className="h-3 w-3 stroke-[3]" />
                         </div>
-                        <p className="truncate text-[16px] md:text-[18px] font-extrabold text-white">
+                        <span className="font-extrabold text-white text-base">
                           {getDurationLabel(variant.durationInDays)}
-                        </p>
+                        </span>
                       </div>
                       {isRecommended ? (
-                        <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[#E8C878]/40 bg-[#E8C878]/15 px-2 py-0.5 text-[10px] font-bold text-[#F6E2A4]">
-                          <Sparkles className="h-3 w-3" />
-                          پیشنهاد ویژه
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-300/40 bg-amber-400/15 px-2 py-0.5 text-[10px] font-bold text-amber-200">
+                          <Sparkles className="h-3 w-3 text-amber-300" />
+                          ویژه
                         </span>
                       ) : null}
                     </div>
 
                     {variant.durationInDays ? (
-                      <span className="w-fit rounded-md border border-white/10 bg-black/20 px-2 py-0.5 text-[10px] md:text-[11px] text-white/55">
+                      <span className="w-fit rounded-md border border-white/10 bg-black/30 px-2 py-0.5 text-[11px] text-white/70">
                         {toPersianDigits(variant.durationInDays)} روز دسترسی
                       </span>
                     ) : null}
 
                     <div
-                      className={`w-full min-w-0 rounded-2xl border px-3 py-2.5 md:px-3.5 md:py-3 transition-colors duration-300 ${
+                      className={cn(
+                        "w-full rounded-xl border p-2.5 transition-colors duration-200",
                         isSelected
-                          ? "border-[#E8C878]/30 bg-[#E8C878]/10"
-                          : "border-white/10 bg-black/20"
-                      }`}
+                          ? "border-amber-300/30 bg-amber-400/10"
+                          : "border-white/10 bg-black/25",
+                      )}
                     >
-                      <p className="text-[11px] text-white/50 mb-1">
-                        مبلغ پرداخت
-                      </p>
-                      <div className="flex min-w-0 flex-wrap items-baseline gap-1">
-                        <span className="text-[22px] md:text-[24px] font-black leading-none tracking-tight text-white break-all">
+                      <p className="text-[11px] text-white/50 mb-0.5">مبلغ پرداخت</p>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-xl sm:text-2xl font-black text-white">
                           {formatMoneyAmount(variant.monthlyPrice)}
                         </span>
-                        <span className="text-xs font-semibold text-white/65">
+                        <span className="text-xs font-semibold text-white/70">
                           تومان
                         </span>
                       </div>
                       {dailyLabel ? (
-                        <p className="mt-2 text-[11px] text-white/45 break-words">
+                        <p className="mt-1 text-[10px] sm:text-[11px] text-white/50">
                           {dailyLabel}
                         </p>
                       ) : null}
                     </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+                  </button>
+                );
+              })}
+            </div>
 
-          <div className="relative border-t border-white/10 bg-[#07040F]/95 px-4 py-3 md:px-6 md:py-3.5 backdrop-blur-md">
-            <div className="flex flex-col gap-2 md:flex-row-reverse md:items-center md:justify-between md:gap-4">
-              <Button
-                type="button"
-                onClick={confirmDurationSelection}
-                disabled={!selectedDurationId}
-                className="h-11 md:h-12 w-full md:w-auto md:min-w-[200px] rounded-2xl border-0 bg-gradient-to-l from-[#C9A24A] via-[#E8C878] to-[#F4E0A8] px-5 text-[15px] font-extrabold text-[#1A1205] shadow-[0_12px_40px_-12px_rgba(232,200,120,0.75)] hover:brightness-105 disabled:opacity-50 cursor-pointer"
-              >
-                <span className="inline-flex items-center gap-2">
-                  ادامه خرید
-                  <ArrowLeft className="h-4 w-4" />
+            <div className="relative mx-5 sm:mx-7 mb-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur-md space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs text-white/60">اشتراک انتخابی:</span>
+                <span className="text-sm font-bold text-white">
+                  {`${durationGroup?.displayName ?? ""} — ${getDurationLabel(selectedDurationVariant?.durationInDays)} (${toPersianDigits(selectedDurationVariant?.durationInDays ?? 0)} روز)`}
                 </span>
-              </Button>
-              <p className="text-[11px] md:text-[12px] leading-6 text-white/45 text-center md:text-right">
-                پس از انتخاب مدت، تایید نهایی خرید نمایش داده می‌شود.
-              </p>
+              </div>
+              <div className="h-px w-full bg-white/10" />
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-white/60">مبلغ نهایی:</span>
+                <span className="text-2xl font-black text-amber-200">
+                  {formatMoney(selectedDurationVariant?.monthlyPrice)}
+                </span>
+              </div>
+              <div className="rounded-xl border border-purple-400/20 bg-purple-500/10 p-3 text-xs leading-6 text-purple-200/90">
+                اگر در حال حاضر اشتراک فعالی داشته باشید، این خرید به عنوان رزرو ثبت شده و پس از پایان اشتراک فعلی آغاز خواهد شد.
+              </div>
             </div>
           </div>
+
+          <DialogFooter className="relative shrink-0 overflow-hidden border-t border-[#B57CFF]/20 bg-gradient-to-b from-[#1c0c38]/95 via-[#140728]/98 to-[#0f041e] px-5 py-4 sm:px-7 sm:py-4 backdrop-blur-xl shadow-[0_-16px_36px_-6px_rgba(80,35,140,0.35)] flex flex-col-reverse sm:flex-row sm:justify-start gap-2.5">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#C084FC]/60 to-transparent" />
+            <div className="pointer-events-none absolute -bottom-10 left-1/2 -translate-x-1/2 h-28 w-80 rounded-full bg-[#9D4EDD]/15 blur-2xl" />
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setDurationOpen(false)}
+              disabled={pendingPlanId === selectedDurationVariant?.id}
+              className="h-12 w-full sm:flex-1 rounded-2xl border border-white/15 bg-white/[0.08] text-white hover:bg-white/[0.16] hover:border-white/25 font-bold cursor-pointer transition-all"
+            >
+              انصراف
+            </Button>
+            <Button
+              type="button"
+              onClick={handleDurationPurchase}
+              disabled={!selectedDurationId || pendingPlanId === selectedDurationVariant?.id}
+              className="h-12 w-full sm:flex-1 rounded-2xl border-0 bg-gradient-to-r from-[#6E3BC2] via-[#9D4EDD] to-[#B15CFF] text-white font-bold shadow-[0_10px_30px_rgba(168,127,243,0.45)] hover:brightness-110 cursor-pointer transition-all"
+            >
+              <span className="inline-flex items-center gap-2">
+                {pendingPlanId === selectedDurationVariant?.id ? (
+                  "در حال انتقال به درگاه..."
+                ) : !isLoggedIn ? (
+                  "ورود به اکانت و پرداخت"
+                ) : (
+                  <>
+                    <span>تایید و پرداخت</span>
+                    <ArrowLeft className="h-4 w-4" />
+                  </>
+                )}
+              </span>
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
+      {/* Modal تایید نهایی برای پلن‌های تک‌دوره‌ای */}
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent className="max-w-md overflow-hidden bg-[radial-gradient(120%_120%_at_100%_0%,rgba(168,127,243,0.28)_0%,rgba(17,5,34,0.95)_45%,rgba(8,2,20,0.98)_100%)] border border-white/20 text-white shadow-[0_24px_90px_rgba(93,49,160,0.45)]">
+        <DialogContent
+          overlayClassName="z-[70]"
+          className="z-[70] max-w-md overflow-hidden bg-[radial-gradient(120%_120%_at_100%_0%,rgba(168,127,243,0.28)_0%,rgba(17,5,34,0.95)_45%,rgba(8,2,20,0.98)_100%)] border border-white/20 text-white shadow-[0_24px_90px_rgba(93,49,160,0.45)]"
+        >
           <div className="pointer-events-none absolute -top-20 -right-20 h-48 w-48 rounded-full bg-fuchsia-400/20 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-24 -left-20 h-56 w-56 rounded-full bg-indigo-400/20 blur-3xl" />
           <DialogHeader>

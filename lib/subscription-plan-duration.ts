@@ -19,6 +19,7 @@ export function getPaymentPeriodLabel(days?: number | null): string {
 export function isBundleCatalogPlan(
   plan: SubscriptionPlanCatalogItemDto,
 ): boolean {
+  if (plan.price === 0 || (plan.trialDays && plan.trialDays > 0)) return false;
   if (plan.marketFocus === 3) return true;
   if (plan.isHighlighted === true) return true;
 
