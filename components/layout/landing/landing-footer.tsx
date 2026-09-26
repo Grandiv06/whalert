@@ -3,9 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   ArrowLeftIcon,
-  CallCallingIcon,
   DirectboxNotifIcon,
-  LocationIcon,
   TelegramIcon,
 } from "@/components/icons/landing-icons";
 import { ContentWrapper } from "@/components/layout/landing/content-wrapper";
@@ -46,8 +44,8 @@ function NewsletterForm() {
             setEmail(event.target.value);
             if (message) setMessage(null);
           }}
-          placeholder="ایمیل خود را وارد کنید."
-          dir="ltr"
+          placeholder="ایمیل خود را وارد کنید"
+          dir="rtl"
         />
         <button
           type="submit"
@@ -85,11 +83,10 @@ const Footer = () => {
                   پلتفرمی پیشرو برای ارائه سیگنال‌های معاملاتی
                 </p>
               </div>
-              <p className="text-xs text-white/80">
-                لورم ایپسوم متــــــن ساخــتگی با تولـید سـادگی نامفهـوم از
-                صنعـــت چاپ، و با استـــفاده از طراحان گـــــرافیک است، چاپگرها
-                و متــون بلکه روزنامه و مجله در ستون و سطـرآنچنـان که لازم
-                است...
+              <p className="text-xs text-white/80 leading-relaxed">
+                والرت، سامانه هوشمند تحلیل و ارائه سیگنال‌های معاملاتی است که
+                با تکیه بر تحلیل‌های تخصصی و مدیریت ریسک، همراه مطمئن شما در
+                کسب بازدهی از بازارهای مالی است.
               </p>
             </div>
 
@@ -140,21 +137,6 @@ const Footer = () => {
             </div>
 
             <div className="flex-col gap-6 hidden lg:flex ">
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-2">
-                  <CallCallingIcon className="text-primary-450" />
-                  <p className="text-sm text-white/50">
-                    02100000000_0912000000000
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <LocationIcon className="text-primary-450" />
-                  <p className="text-sm text-white/50">
-                    لورم ایپسوم متن ساختگی با تولـید سـادگی نامفهـــــوم ...
-                  </p>
-                </div>
-              </div>
-
               <div className="bg-primary-450 rounded-2xl flex flex-col gap-4 p-6">
                 <div className="flex items-center gap-3">
                   <div className="opacity-50">
@@ -166,19 +148,6 @@ const Footer = () => {
                 </div>
                 <NewsletterForm />
               </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col lg:hidden gap-3">
-            <div className="flex items-start gap-2">
-              <CallCallingIcon className="text-primary-450" />
-              <p className="text-sm text-white/50">02100000000_0912000000000</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <LocationIcon className="text-primary-450" />
-              <p className="text-sm text-white/50">
-                لورم ایپسوم متن ساختگی با تولـید سـادگی نامفهـــــوم ...
-              </p>
             </div>
           </div>
 

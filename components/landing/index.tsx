@@ -87,9 +87,9 @@ const LandingPage = () => {
           <LatestSignal />
         </ContentWrapper>
 
-        <ContentWrapper>
+        <div className="max-w-[1536px] mx-auto px-3 sm:px-6 md:px-8 lg:px-10 xl:px-14 py-6 sm:py-8 md:py-10">
           <LandingPlans />
-        </ContentWrapper>
+        </div>
 
         <ContentWrapper>
           <Questions />
