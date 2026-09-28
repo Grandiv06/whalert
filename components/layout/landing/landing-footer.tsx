@@ -173,16 +173,17 @@ const Footer = () => {
               <a
                 referrerPolicy="origin"
                 target="_blank"
-                href="https://trustseal.enamad.ir/?id=710784&Code=a3Al6GSZ5AgNeS5JgNfyXrLUTXMUjdWp"
+                href="https://trustseal.enamad.ir/?id=7901445&Code=8LDchKTW5crQvTUBB5sNfeuPztzimlSw"
                 className="ml-1 inline-flex shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5 p-2 shadow-[0_8px_24px_rgba(0,0,0,0.18)] transition-colors hover:bg-white/10"
                 aria-label="نماد اعتماد الکترونیکی"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   referrerPolicy="origin"
-                  src="https://trustseal.enamad.ir/logo.aspx?id=710784&Code=a3Al6GSZ5AgNeS5JgNfyXrLUTXMUjdWp"
+                  src="https://trustseal.enamad.ir/logo.aspx?id=7901445&Code=8LDchKTW5crQvTUBB5sNfeuPztzimlSw"
                   alt="نماد اعتماد الکترونیکی"
                   className="h-12 w-auto max-w-[110px] object-contain cursor-pointer"
+                  {...({ code: "8LDchKTW5crQvTUBB5sNfeuPztzimlSw" } as Record<string, string>)}
                 />
               </a>
             </div>
